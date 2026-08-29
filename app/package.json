@@ -4,6 +4,7 @@
   "description": "Spotify-style client for Navidrome / Subsonic with offline downloading and Tauri 2.0 native support",
   "main": "src/index.html",
   "scripts": {
+    "tauri": "tauri",
     "dev": "tauri dev",
     "build": "echo \"Frontend assets ready\""
   },
