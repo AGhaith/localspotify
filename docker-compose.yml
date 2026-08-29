@@ -28,4 +28,4 @@ services:
     ports:
       - "6969:3000"
     environment:
-      - NUXT_PUBLIC_SERVER_URL=http://trplenine:6767
+      - NUXT_PUBLIC_SERVER_URL=http://100.92.248.49:6767
