@@ -5,7 +5,7 @@
   "main": "src/index.html",
   "scripts": {
     "dev": "tauri dev",
-    "build": "tauri build"
+    "build": "echo \"Frontend assets ready\""
   },
   "keywords": ["music", "navidrome", "subsonic", "spotify", "tauri"],
   "author": "Ahmed Wesam",

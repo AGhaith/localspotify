@@ -50,11 +50,10 @@ jobs:
         run: |
           cd app
           npx tauri android init
-          npx tauri android build --apk --target aarch64
+          npx tauri android build --apk --debug --target aarch64
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: localspotify-android-apk
           path: app/src-tauri/gen/android/app/build/outputs/apk/**/*.apk
-          if-no-files-found: warn
