@@ -31,7 +31,8 @@ app/node_modules/
 app/src-tauri/target/
 app/src-tauri/gen/
 
-# IDE & OS
-.DS_Store
-.vscode/
-.idea/
+# Binaries & APK outputs
+*.apk
+downloaded_apk/
+builds/
+

@@ -1,7 +1,7 @@
 {
-  "name": "localspotify-app",
+  "name": "subsonic-player-app",
   "version": "1.0.0",
-  "description": "Spotify-style client for Navidrome / Subsonic with offline downloading and Tauri 2.0 native support",
+  "description": "Android APK and Native Desktop Client for Subsonic Player / Navidrome",
   "main": "src/index.html",
   "scripts": {
     "tauri": "tauri",

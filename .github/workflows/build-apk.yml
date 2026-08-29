@@ -1,4 +1,4 @@
-name: 📱 Build LocalSpotify Android APK
+name: 📱 Build Subsonic Player Android APK
 
 on:
   push:
@@ -7,10 +7,31 @@ on:
       - 'app/**'
       - '.github/workflows/build-apk.yml'
   workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build Type'
+        required: true
+        default: 'debug'
+        type: choice
+        options:
+          - debug
+          - release
+      target:
+        description: 'Target Architecture'
+        required: true
+        default: 'aarch64'
+        type: choice
+        options:
+          - aarch64
+          - armv7
+          - x86_64
+          - all
 
 jobs:
   build-android:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -18,7 +39,7 @@ jobs:
       - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
+          distribution: 'temurin'
           java-version: '17'
 
       - name: Setup Android SDK
@@ -26,17 +47,28 @@ jobs:
 
       - name: Install Android NDK & Platforms
         run: |
+          yes | sdkmanager --licenses > /dev/null 2>&1 || true
           sdkmanager --install "ndk;26.1.10909125" "build-tools;34.0.0" "platforms;android-34"
+          NDK_PATH=$(find $ANDROID_HOME/ndk -maxdepth 1 -mindepth 1 | sort -V | tail -n 1)
+          echo "NDK_HOME=$NDK_PATH" >> $GITHUB_ENV
+          echo "Detected NDK at: $NDK_PATH"
 
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
 
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: app/src-tauri -> target
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
 
       - name: Install Node Dependencies
         run: |
@@ -45,15 +77,29 @@ jobs:
 
       - name: Initialize & Build Android APK
         env:
-          ANDROID_HOME: /usr/local/lib/android/sdk
-          NDK_HOME: /usr/local/lib/android/sdk/ndk/26.1.10909125
+          ANDROID_HOME: ${{ env.ANDROID_HOME }}
+          NDK_HOME: ${{ env.NDK_HOME }}
         run: |
           cd app
-          npx tauri android init
-          npx tauri android build --apk --debug --target aarch64
+          npx tauri android init --ci
+          TARGET="${{ github.event.inputs.target || 'aarch64' }}"
+          BUILD_TYPE="${{ github.event.inputs.build_type || 'debug' }}"
+          
+          FLAGS="--apk"
+          if [ "$BUILD_TYPE" = "debug" ]; then
+            FLAGS="$FLAGS --debug"
+          fi
+          
+          if [ "$TARGET" != "all" ]; then
+            FLAGS="$FLAGS --target $TARGET"
+          fi
+          
+          echo "Executing: npx tauri android build $FLAGS"
+          npx tauri android build $FLAGS
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: localspotify-android-apk
+          name: subsonic-player-android-apk
           path: app/src-tauri/gen/android/app/build/outputs/apk/**/*.apk
+          retention-days: 14

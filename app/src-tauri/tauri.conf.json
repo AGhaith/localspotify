@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "LocalSpotify",
+  "productName": "Subsonic Player",
   "version": "1.0.0",
-  "identifier": "com.localspotify.app",
+  "identifier": "com.subsonicplayer.app",
   "build": {
     "beforeBuildCommand": "",
     "frontendDist": "../src"
@@ -11,7 +11,7 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "LocalSpotify",
+        "title": "Subsonic Player",
         "width": 1150,
         "height": 760,
         "minWidth": 380,
