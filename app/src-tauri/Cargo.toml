@@ -1,0 +1,21 @@
+[package]
+name = "localspotify"
+version = "1.0.0"
+description = "LocalSpotify Tauri Native Music Player"
+authors = ["Ahmed Wesam"]
+edition = "2021"
+
+[lib]
+name = "localspotify_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.0.0", features = [] }
+
+[dependencies]
+tauri = { version = "2.0.0", features = [] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1", features = ["full"] }
+reqwest = { version = "0.12", features = ["json", "stream"] }
+futures-util = "0.3"

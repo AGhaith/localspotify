@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>LocalSpotify - High Quality Music Streaming & Offline Player</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- Main App Shell -->
+  <div class="app-container">
+
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-icon">🎧</span>
+        <span class="brand-title">LocalSpotify</span>
+      </div>
+
+      <nav class="nav-section">
+        <a class="nav-item active" data-view="view-liked">
+          <span class="nav-icon">💚</span>
+          <span>Liked Songs</span>
+        </a>
+        <a class="nav-item" data-view="view-playlists">
+          <span class="nav-icon">📁</span>
+          <span>Playlists</span>
+        </a>
+        <a class="nav-item" data-view="view-downloads">
+          <span class="nav-icon">📥</span>
+          <span>Offline Downloads</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button id="offline-toggle-btn" class="offline-toggle-btn" title="Toggle between Online Streaming & Offline Downloaded Tracks">
+          <span>✈️ Offline Mode</span>
+          <span id="offline-badge" class="pill-badge online">Online</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Sticky Top Header -->
+      <header class="top-header">
+        <div class="search-box">
+          <span>🔍</span>
+          <input type="text" id="search-input" placeholder="Search songs, artists, albums..." />
+        </div>
+
+        <div class="header-actions">
+          <button id="settings-btn" class="icon-btn" title="Server Connection Settings">⚙️</button>
+        </div>
+      </header>
+
+      <!-- View: Liked Songs -->
+      <section id="view-liked" class="view-page active">
+        <div class="hero-banner">
+          <div class="hero-cover" style="background: linear-gradient(135deg, #450af5, #c4efd9); display:flex; align-items:center; justify-content:center; font-size:48px;">
+            💚
+          </div>
+          <div class="hero-info">
+            <span class="hero-subtitle">Playlist</span>
+            <h1 class="hero-title">Liked Songs</h1>
+            <span id="liked-count" class="hero-meta">Loading library...</span>
+          </div>
+        </div>
+
+        <div class="track-list" id="liked-track-list"></div>
+      </section>
+
+      <!-- View: Playlists -->
+      <section id="view-playlists" class="view-page">
+        <div class="hero-banner" style="background: linear-gradient(180deg, rgba(59, 130, 246, 0.2) 0%, rgba(18, 18, 23, 0.6) 100%);">
+          <div class="hero-cover" style="background: #1e3a8a; display:flex; align-items:center; justify-content:center; font-size:48px;">
+            📁
+          </div>
+          <div class="hero-info">
+            <span class="hero-subtitle">Collection</span>
+            <h1 class="hero-title">Playlists</h1>
+            <span class="hero-meta">Your server playlists</span>
+          </div>
+        </div>
+
+        <div class="track-list" id="playlists-track-list"></div>
+      </section>
+
+      <!-- View: Offline Downloads -->
+      <section id="view-downloads" class="view-page">
+        <div class="hero-banner" style="background: linear-gradient(180deg, rgba(245, 158, 11, 0.2) 0%, rgba(18, 18, 23, 0.6) 100%);">
+          <div class="hero-cover" style="background: #78350f; display:flex; align-items:center; justify-content:center; font-size:48px;">
+            📥
+          </div>
+          <div class="hero-info">
+            <span class="hero-subtitle">Local Storage</span>
+            <h1 class="hero-title">Offline Downloads</h1>
+            <span id="downloads-count" class="hero-meta">0 songs downloaded</span>
+          </div>
+        </div>
+
+        <div class="track-list" id="downloads-track-list"></div>
+      </section>
+
+      <!-- View: Search Results -->
+      <section id="view-search" class="view-page">
+        <h2 style="font-size: 24px; font-weight: 800;">Search Results</h2>
+        <div class="track-list" id="search-track-list"></div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Bottom Player Bar -->
+  <footer class="player-bar">
+    <!-- Left: Track Meta -->
+    <div class="now-playing">
+      <img id="np-cover" class="now-playing-cover" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='56' height='56' viewBox='0 0 24 24' fill='%23333'><rect width='24' height='24' fill='%23181822'/><path d='M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z' fill='%23666'/></svg>" alt="Album Cover" />
+      <div class="now-playing-meta">
+        <div id="np-title" class="np-title">No track selected</div>
+        <div id="np-artist" class="np-artist">LocalSpotify</div>
+      </div>
+    </div>
+
+    <!-- Center: Controls & Timeline -->
+    <div class="player-controls">
+      <div class="control-buttons">
+        <button id="shuffle-btn" class="control-btn" title="Shuffle">🔀</button>
+        <button id="prev-btn" class="control-btn" title="Previous Track">⏮</button>
+        <button id="play-pause-btn" class="play-pause-btn" title="Play / Pause">▶</button>
+        <button id="next-btn" class="control-btn" title="Next Track">⏭</button>
+        <button id="repeat-btn" class="control-btn" title="Repeat">🔁</button>
+      </div>
+
+      <div class="timeline-container">
+        <span id="current-time" class="time-label">0:00</span>
+        <input type="range" id="seek-bar" class="seek-bar" min="0" max="100" value="0" step="0.1" />
+        <span id="duration-time" class="time-label">0:00</span>
+      </div>
+    </div>
+
+    <!-- Right: Volume -->
+    <div class="player-extras">
+      <div class="volume-container">
+        <span>🔊</span>
+        <input type="range" id="volume-bar" class="volume-bar" min="0" max="1" step="0.01" value="1" />
+      </div>
+    </div>
+  </footer>
+
+  <!-- Settings Modal -->
+  <div id="settings-modal" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">⚙️ Server Connection</h3>
+        <button id="close-settings-btn" class="control-btn">✕</button>
+      </div>
+
+      <div class="form-group">
+        <label>Navidrome Server URL</label>
+        <input type="text" id="cfg-server-url" placeholder="http://100.92.248.49:6767" />
+      </div>
+
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" id="cfg-username" placeholder="admin" />
+      </div>
+
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="cfg-password" placeholder="Enter password" />
+      </div>
+
+      <button id="save-settings-btn" class="btn-primary">Save & Connect</button>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/api.js"></script>
+  <script src="js/offline.js"></script>
+  <script src="js/player.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

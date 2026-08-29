@@ -72,3 +72,19 @@ environment:
   ND_LASTFM_APIKEY: "your_lastfm_api_key"
   ND_LASTFM_SECRET: "your_lastfm_secret"
 ```
+
+---
+
+## 📱 LocalSpotify Tauri 2.0 Native App
+
+A dedicated cross-platform client with **1-click offline downloads** stored in the app's hidden sandbox storage (Spotify-style):
+
+### Running the App Locally:
+```bash
+cd app
+npm run dev
+```
+
+### 📦 Automated Android APK Builds:
+A GitHub Actions workflow (`.github/workflows/build-apk.yml`) is included. Every time you push to `main`, GitHub Actions automatically compiles and packages the Android APK, available under the **Actions** tab of your repository.
+

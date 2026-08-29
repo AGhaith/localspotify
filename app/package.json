@@ -1,0 +1,16 @@
+{
+  "name": "localspotify-app",
+  "version": "1.0.0",
+  "description": "Spotify-style client for Navidrome / Subsonic with offline downloading and Tauri 2.0 native support",
+  "main": "src/index.html",
+  "scripts": {
+    "dev": "tauri dev",
+    "build": "tauri build"
+  },
+  "keywords": ["music", "navidrome", "subsonic", "spotify", "tauri"],
+  "author": "Ahmed Wesam",
+  "license": "MIT",
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.0.0"
+  }
+}
