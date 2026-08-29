@@ -15,7 +15,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Java
+      - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
@@ -24,7 +24,7 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install Android NDK & Build Tools
+      - name: Install Android NDK & Platforms
         run: |
           sdkmanager --install "ndk;26.1.10909125" "build-tools;34.0.0" "platforms;android-34"
 
@@ -38,21 +38,23 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install Tauri CLI
+      - name: Install Node Dependencies
         run: |
           cd app
           npm install
 
-      - name: Build Android APK
+      - name: Initialize & Build Android APK
         env:
-          NDK_HOME: ${{ steps.setup-android.outputs.ANDROID_HOME }}/ndk/26.1.10909125
+          ANDROID_HOME: /usr/local/lib/android/sdk
+          NDK_HOME: /usr/local/lib/android/sdk/ndk/26.1.10909125
         run: |
           cd app
-          npx tauri android init || true
-          npx tauri android build --apk
+          npx tauri android init
+          npx tauri android build --apk --target aarch64
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: localspotify-android-apk
           path: app/src-tauri/gen/android/app/build/outputs/apk/**/*.apk
+          if-no-files-found: warn
