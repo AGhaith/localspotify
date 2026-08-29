@@ -21,7 +21,12 @@ A modern self-hosted Spotify alternative powered by **Navidrome**, **Subsonic We
 
 ## 🛠️ Quick Start
 
-### 1. Start the Music Server Stack
+### 1. Install Downloader Requirements
+```bash
+./install_requirements.sh
+```
+
+### 2. Start the Music Server Stack
 ```bash
 docker compose up -d
 ```
@@ -29,7 +34,7 @@ docker compose up -d
 - **Navidrome Web UI**: `http://localhost:6767`
 - **Subsonic Player UI**: `http://localhost:6969`
 
-### 2. Download Your Spotify Library
+### 3. Download Your Spotify Library
 Place your Spotify export CSV (`Liked_Songs.csv`) in `my-music/` and run:
 
 ```bash
