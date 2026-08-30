@@ -1,0 +1,1 @@
+function e(e,t=200){let n;function r(...r){return clearTimeout(n),new Promise((i,a)=>{n=setTimeout(()=>{try{i(e(...r))}catch(e){a(e instanceof Error?e:Error(e))}},t)})}return r.cancel=()=>{clearTimeout(n)},r}export{e as t};

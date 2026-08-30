@@ -1,0 +1,1 @@
+function e(e){if(e)return`touches`in e?e.touches[0]||e.changedTouches[0]||void 0:e}export{e as t};

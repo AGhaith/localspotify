@@ -12,7 +12,7 @@ This skill provides step-by-step instructions for building Android APKs for Loca
 The GitHub Actions workflow is located at `.github/workflows/build-apk.yml`.
 
 ### How to Trigger:
-1. **Automatic**: Push any changes to `main` under `app/**` or `.github/workflows/build-apk.yml`.
+1. **Automatic**: Push any changes to `main` under `subsonic-player/**`, `app/**`, or `.github/workflows/build-apk.yml`.
 2. **Manual**: Go to **Actions** tab on GitHub -> Select **Build LocalSpotify Android APK** -> Click **Run workflow** (select `debug` or `release`, and target architecture `aarch64`, `armv7`, `x86_64`, or `all`).
 3. **Download via CLI**:
    ```bash

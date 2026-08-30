@@ -1,0 +1,1 @@
+import{a as e,g as t,i as n,m as r,n as i}from"./DpVpBRFu.js";import{t as a}from"./CQ7LubMJ.js";var o=r(r=>{if(!(r.params[e.albums.sortBy]&&Object.keys(a).includes(r.params[e.albums.sortBy])))return t({name:n.albums,params:{[e.albums.sortBy]:i[`A-Z`]}})});export{o as default};

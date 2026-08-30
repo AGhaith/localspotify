@@ -1,0 +1,1 @@
+import{a as e,g as t,i as n,m as r,r as i}from"./DpVpBRFu.js";var a=r(r=>{if(!(r.params[e.favourites.mediaType]&&Object.values(i).includes(r.params[e.favourites.mediaType])))return t({name:n.favourites,params:{[e.favourites.mediaType]:i.Tracks}})});export{a as default};

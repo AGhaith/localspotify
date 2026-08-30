@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-High-Speed High-Quality Music Downloader with Official Spotify HD Artwork & Rich Metadata
+High-Speed High-Quality Music Downloader with Official Spotify HD Artwork, Synced Lyrics & Rich Metadata
 Reads Spotify export CSV (Liked_Songs.csv) and downloads tracks concurrently in highest quality
-M4A (AAC) / MP3 / FLAC with 640x640 HD album artwork, rich metadata, and real-time MB progress tracking.
+M4A (AAC) / MP3 / FLAC with 640x640 HD album artwork, synchronized .lrc lyrics, rich metadata, and real-time progress tracking.
 """
 
 import os
@@ -14,6 +14,7 @@ import time
 import argparse
 import threading
 import urllib.request
+import urllib.parse
 import json
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -27,7 +28,7 @@ try:
     import mutagen
     from mutagen.mp4 import MP4, MP4Cover
     from mutagen.mp3 import MP3
-    from mutagen.id3 import ID3, APIC, TIT2, TPE1, TPE2, TALB, TDRC, TCON, TPUB, COMM
+    from mutagen.id3 import ID3, APIC, TIT2, TPE1, TPE2, TALB, TDRC, TCON, TPUB, COMM, USLT
     from mutagen.flac import FLAC, Picture
 except ImportError:
     print("Error: 'mutagen' library is required. Install it using: pip install mutagen")
@@ -38,6 +39,13 @@ try:
 except ImportError:
     print("Error: 'yt_dlp' library is required. Install it using: pip install yt-dlp")
     sys.exit(1)
+
+# Optional syncedlyrics library for multi-source lyrics fallback
+try:
+    import syncedlyrics
+    HAS_SYNCEDLYRICS = True
+except ImportError:
+    HAS_SYNCEDLYRICS = False
 
 
 # Global print lock for thread-safe console logging
@@ -145,6 +153,92 @@ def fetch_spotify_hd_cover(track_uri: str) -> bytes | None:
         return None
 
 
+def fetch_synced_lyrics(artist: str, track: str, album: str = "", duration_sec: float | None = None) -> tuple[str | None, bool]:
+    """
+    Fetches synchronized (.lrc) or plain text lyrics.
+    First tries LRCLIB API (free, open-source synced lyrics database),
+    then falls back to syncedlyrics multi-provider if available.
+    
+    Returns: (lyrics_content, is_synced)
+    """
+    clean_artist = re.split(r'[;,]', artist)[0].strip() if artist else ""
+    clean_track = re.sub(r'\(feat\..*?\)|\[feat\..*?\]', '', track, flags=re.IGNORECASE).strip()
+
+    # 1. Try LRCLIB API Direct GET (Exact match)
+    params = {
+        "track_name": clean_track,
+        "artist_name": clean_artist,
+    }
+    if album:
+        params["album_name"] = album
+    if duration_sec and duration_sec > 0:
+        params["duration"] = int(duration_sec)
+
+    query_str = urllib.parse.urlencode(params)
+    url = f"https://lrclib.net/api/get?{query_str}"
+    req = urllib.request.Request(
+        url,
+        headers={"User-Agent": "LocalSpotify/1.0 (https://github.com/AGhaith/localspotify)"}
+    )
+
+    try:
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data = json.loads(resp.read().decode('utf-8'))
+            synced = data.get("syncedLyrics")
+            plain = data.get("plainLyrics")
+            if synced:
+                return synced, True
+            if plain:
+                return plain, False
+    except Exception:
+        pass
+
+    # 2. Try LRCLIB Search endpoint (Fuzzy match)
+    search_q = urllib.parse.urlencode({"q": f"{clean_artist} {clean_track}"})
+    search_url = f"https://lrclib.net/api/search?{search_q}"
+    req_search = urllib.request.Request(
+        search_url,
+        headers={"User-Agent": "LocalSpotify/1.0 (https://github.com/AGhaith/localspotify)"}
+    )
+    try:
+        with urllib.request.urlopen(req_search, timeout=5) as resp:
+            results = json.loads(resp.read().decode('utf-8'))
+            if isinstance(results, list) and len(results) > 0:
+                best = results[0]
+                synced = best.get("syncedLyrics")
+                plain = best.get("plainLyrics")
+                if synced:
+                    return synced, True
+                if plain:
+                    return plain, False
+    except Exception:
+        pass
+
+    # 3. Fallback: syncedlyrics library (Musixmatch / Deezer / NetEase) if installed
+    if HAS_SYNCEDLYRICS:
+        try:
+            lrc_res = syncedlyrics.search(f"{clean_artist} {clean_track}")
+            if lrc_res:
+                is_synced = bool(re.search(r'\[\d{2}:\d{2}\.\d{2,3}\]', lrc_res))
+                return lrc_res, is_synced
+        except Exception:
+            pass
+
+    return None, False
+
+
+def save_lrc_file(output_base: str, lyrics_text: str) -> str:
+    """Saves synchronized or plain lyrics to a standard .lrc file for Navidrome."""
+    lrc_path = f"{output_base}.lrc"
+    try:
+        with open(lrc_path, "w", encoding="utf-8") as f:
+            f.write(lyrics_text.strip() + "\n")
+        return lrc_path
+    except Exception as e:
+        log(f"  ⚠️ Could not write .lrc file: {e}")
+        return ""
+
+
 def download_audio_with_ytdlp(artist: str, track: str, output_base: str, audio_format: str = "m4a", need_thumbnail: bool = False) -> tuple[str | None, bytes | None]:
     """
     Downloads audio using yt-dlp Python API with optimized stream selection
@@ -219,9 +313,9 @@ def download_audio_with_ytdlp(artist: str, track: str, output_base: str, audio_f
     return filepath, fallback_cover
 
 
-def embed_metadata(filepath: str, metadata: dict, cover_bytes: bytes | None, audio_format: str = "m4a"):
+def embed_metadata(filepath: str, metadata: dict, cover_bytes: bytes | None, lyrics_text: str | None = None, audio_format: str = "m4a"):
     """
-    Embeds rich metadata and high-resolution cover artwork into M4A / MP3 / FLAC files.
+    Embeds rich metadata, synchronized lyrics, and high-resolution cover artwork into M4A / MP3 / FLAC files.
     """
     title = metadata.get("title", "")
     artists = metadata.get("artists", "")
@@ -253,6 +347,8 @@ def embed_metadata(filepath: str, metadata: dict, cover_bytes: bytes | None, aud
                 audio["cprt"] = label
             if uri:
                 audio["\xa9cmt"] = uri
+            if lyrics_text:
+                audio["\xa9lyr"] = lyrics_text
 
             if cover_bytes:
                 audio["covr"] = [MP4Cover(cover_bytes, imageformat=MP4Cover.FORMAT_JPEG)]
@@ -284,6 +380,8 @@ def embed_metadata(filepath: str, metadata: dict, cover_bytes: bytes | None, aud
                 audio.tags.add(TPUB(encoding=3, text=label))
             if uri:
                 audio.tags.add(COMM(encoding=3, lang="eng", desc="Spotify URI", text=uri))
+            if lyrics_text:
+                audio.tags.add(USLT(encoding=3, lang="eng", desc="Lyrics", text=lyrics_text))
 
             if cover_bytes:
                 audio.tags.add(APIC(
@@ -316,6 +414,8 @@ def embed_metadata(filepath: str, metadata: dict, cover_bytes: bytes | None, aud
                 audio["organization"] = label
             if uri:
                 audio["comment"] = uri
+            if lyrics_text:
+                audio["lyrics"] = lyrics_text
 
             if cover_bytes:
                 pic = Picture()
@@ -340,6 +440,7 @@ class ProgressTracker:
         self.downloaded_count = 0
         self.skipped_count = 0
         self.failed_count = 0
+        self.lyrics_count = 0
         self.total_bytes = 0
         self.start_time = time.time()
 
@@ -351,10 +452,12 @@ class ProgressTracker:
             pct = (idx / self.total_tasks) * 100 if self.total_tasks else 100
         log(f"[{idx:>3}/{self.total_tasks}] ({pct:5.1f}%) ⏩ Skipping (Already exists): {track_display}")
 
-    def record_success(self, track_display: str, file_size: int, cover_source: str, duration_sec: float):
+    def record_success(self, track_display: str, file_size: int, cover_source: str, has_lyrics: bool, is_synced: bool, duration_sec: float):
         with self.lock:
             self.completed_count += 1
             self.downloaded_count += 1
+            if has_lyrics:
+                self.lyrics_count += 1
             self.total_bytes += file_size
             idx = self.completed_count
             total_mb_str = format_bytes(self.total_bytes)
@@ -363,7 +466,8 @@ class ProgressTracker:
             mb_sec = (self.total_bytes / (1024 * 1024)) / elapsed
 
         size_str = format_bytes(file_size)
-        log(f"[{idx:>3}/{self.total_tasks}] ({pct:5.1f}%) ✨ {track_display} | 🎵 {size_str} [{cover_source}] ({duration_sec:.1f}s) | 📦 Total: {total_mb_str} ({mb_sec:.2f} MB/s)")
+        lyric_tag = " [📜 Synced .lrc]" if is_synced else (" [📄 Lyrics]" if has_lyrics else "")
+        log(f"[{idx:>3}/{self.total_tasks}] ({pct:5.1f}%) ✨ {track_display} | 🎵 {size_str} [{cover_source}]{lyric_tag} ({duration_sec:.1f}s) | 📦 Total: {total_mb_str} ({mb_sec:.2f} MB/s)")
 
     def record_failure(self, track_display: str, reason: str = "Download failed"):
         with self.lock:
@@ -374,8 +478,8 @@ class ProgressTracker:
         log(f"[{idx:>3}/{self.total_tasks}] ({pct:5.1f}%) ❌ {reason}: {track_display}")
 
 
-def process_track(task_info: dict, tracker: ProgressTracker, audio_format: str, save_jpg: bool) -> bool:
-    """Worker task to process a single song end-to-end."""
+def process_track(task_info: dict, tracker: ProgressTracker, audio_format: str, save_jpg: bool, enable_lyrics: bool = True) -> bool:
+    """Worker task to process a single song end-to-end (audio + HD cover + synced lyrics + ID3)."""
     if shutdown_event.is_set():
         return False
 
@@ -399,6 +503,12 @@ def process_track(task_info: dict, tracker: ProgressTracker, audio_format: str, 
 
     # Check if already downloaded
     if os.path.exists(expected_file):
+        # If lyrics are enabled and .lrc is missing, try fetching lyrics only
+        if enable_lyrics and not os.path.exists(f"{output_base}.lrc"):
+            lyrics_text, is_synced = fetch_synced_lyrics(artists, track_name, album_name)
+            if lyrics_text:
+                save_lrc_file(output_base, lyrics_text)
+                log(f"  📜 Added missing lyrics for: {display_title}")
         tracker.record_skip(display_title)
         return True
 
@@ -408,10 +518,21 @@ def process_track(task_info: dict, tracker: ProgressTracker, audio_format: str, 
     cover_bytes = fetch_spotify_hd_cover(track_uri)
     cover_source = "Spotify HD 640x640" if cover_bytes else "YouTube Thumb"
 
+    # 2. Fetch Synced Lyrics (LRCLIB / Syncedlyrics) concurrently
+    lyrics_text = None
+    is_synced = False
+    if enable_lyrics:
+        try:
+            lyrics_text, is_synced = fetch_synced_lyrics(artists, track_name, album_name)
+            if lyrics_text:
+                save_lrc_file(output_base, lyrics_text)
+        except Exception:
+            pass
+
     if shutdown_event.is_set():
         return False
 
-    # 2. Download audio stream (only fetch YouTube thumb if Spotify HD cover failed)
+    # 3. Download audio stream (only fetch YouTube thumb if Spotify HD cover failed)
     file_path, fallback_cover = download_audio_with_ytdlp(
         artists, track_name, output_base, audio_format=audio_format, need_thumbnail=(cover_bytes is None)
     )
@@ -441,7 +562,7 @@ def process_track(task_info: dict, tracker: ProgressTracker, audio_format: str, 
         except Exception:
             pass
 
-    # 3. Embed metadata & artwork
+    # 4. Embed metadata, lyrics & artwork
     metadata = {
         "title": track_name,
         "artists": artists,
@@ -451,7 +572,7 @@ def process_track(task_info: dict, tracker: ProgressTracker, audio_format: str, 
         "label": label,
         "uri": track_uri
     }
-    embed_metadata(file_path, metadata, final_cover, audio_format=audio_format)
+    embed_metadata(file_path, metadata, final_cover, lyrics_text=lyrics_text, audio_format=audio_format)
 
     # Re-calculate size after embedding metadata and cover
     try:
@@ -460,25 +581,69 @@ def process_track(task_info: dict, tracker: ProgressTracker, audio_format: str, 
         pass
 
     duration_sec = time.time() - t0
-    tracker.record_success(display_title, file_size, cover_source, duration_sec)
+    tracker.record_success(display_title, file_size, cover_source, bool(lyrics_text), is_synced, duration_sec)
     return True
+
+
+def fetch_lyrics_for_existing_files(directory: str = "."):
+    """Scans all audio files in the directory and downloads missing .lrc files."""
+    audio_exts = (".mp3", ".m4a", ".flac", ".opus", ".ogg")
+    files = [f for f in os.listdir(directory) if f.lower().endswith(audio_exts)]
+    
+    log("=" * 70)
+    log(f"📜 Scanning {len(files)} local songs for missing synced lyrics...")
+    log("=" * 70)
+
+    count_added = 0
+    for filename in files:
+        base_name, _ = os.path.splitext(filename)
+        lrc_file = os.path.join(directory, f"{base_name}.lrc")
+        if os.path.exists(lrc_file):
+            continue
+
+        parts = base_name.split(" - ", 1)
+        if len(parts) == 2:
+            artist, title = parts[0].strip(), parts[1].strip()
+        else:
+            artist, title = "", base_name.strip()
+
+        lyrics_text, is_synced = fetch_synced_lyrics(artist, title)
+        if lyrics_text:
+            save_lrc_file(os.path.join(directory, base_name), lyrics_text)
+            sync_tag = "⚡ Synced" if is_synced else "Plain"
+            log(f"  ✔ [{sync_tag}] Downloaded lyrics for: {base_name}")
+            count_added += 1
+        else:
+            log(f"  ❌ No lyrics found for: {base_name}")
+
+    log("=" * 70)
+    log(f"🎉 Lyrics scan finished: {count_added} new .lrc files saved!")
+    log("=" * 70)
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="High-Speed Spotify tracks downloader with HD cover art, rich tags, and parallel downloads."
+        description="High-Speed Spotify tracks downloader with HD cover art, synchronized .lrc lyrics, rich tags, and parallel downloads."
     )
     parser.add_argument("--csv", "-c", default="Liked_Songs.csv", help="Path to Liked_Songs.csv (default: Liked_Songs.csv)")
     parser.add_argument("--format", "-f", default="m4a", choices=["m4a", "mp3", "flac"], help="Audio format (default: m4a)")
     parser.add_argument("--workers", "-w", type=int, default=5, help="Number of concurrent download threads (default: 5)")
     parser.add_argument("--save-jpg", action="store_true", help="Also save standalone .jpg album artwork file alongside song")
+    parser.add_argument("--no-lyrics", action="store_true", help="Disable automatic lyrics downloading and .lrc generation")
+    parser.add_argument("--lyrics-only", action="store_true", help="Only scan existing downloaded files and fetch missing .lrc lyrics")
     parser.add_argument("--limit", "-n", type=int, default=0, help="Limit number of tracks to download (0 for all)")
     parser.add_argument("--start", "-s", type=int, default=1, help="Start from row index (1-based, default: 1)")
     args = parser.parse_args()
 
+    # Lyrics-only mode
+    if args.lyrics_only:
+        fetch_lyrics_for_existing_files(".")
+        return
+
     csv_file = args.csv
     audio_format = args.format.lower()
     num_workers = max(1, min(args.workers, 16))
+    enable_lyrics = not args.no_lyrics
 
     if not os.path.exists(csv_file):
         print(f"Error: CSV file '{csv_file}' not found.")
@@ -494,11 +659,12 @@ def main():
     total_selected = len(selected_rows)
 
     print("=" * 70)
-    print(f"⚡ High-Speed Spotify Music Downloader")
+    print(f"⚡ High-Speed Spotify Music & Lyrics Downloader")
     print(f"📁 CSV File      : {csv_file} ({total_csv_tracks} total, {total_selected} selected)")
     print(f"🚀 Concurrency   : {num_workers} parallel worker threads")
     print(f"🎵 Audio Format  : {audio_format.upper()} (Optimized stream)")
     print(f"🖼️ Cover Art     : Spotify HD 640x640 (Embedded{' + Standalone .jpg' if args.save_jpg else ''})")
+    print(f"📜 Synced Lyrics : {'Enabled (LRCLIB + Embedded + .lrc sidecar)' if enable_lyrics else 'Disabled'}")
     print(f"🏷️ Metadata     : Complete ID3/MP4 tags (Title, Artist, Album, Date, Genre, Label)")
     print("=" * 70)
     print("Starting download pool...\n")
@@ -509,7 +675,7 @@ def main():
     try:
         with ThreadPoolExecutor(max_workers=num_workers) as executor:
             futures = [
-                executor.submit(process_track, task, tracker, audio_format, args.save_jpg)
+                executor.submit(process_track, task, tracker, audio_format, args.save_jpg, enable_lyrics)
                 for task in tasks
             ]
             for future in as_completed(futures):
@@ -528,6 +694,7 @@ def main():
     print("\n" + "=" * 70)
     print(f"🎉 Summary:")
     print(f"   Downloaded : {tracker.downloaded_count} tracks ({format_bytes(tracker.total_bytes)})")
+    print(f"   Lyrics     : {tracker.lyrics_count} synchronized .lrc lyrics generated")
     print(f"   Skipped    : {tracker.skipped_count} tracks (already existed)")
     print(f"   Failed     : {tracker.failed_count} tracks")
     print(f"   Processed  : {tracker.completed_count} / {total_selected} tracks")

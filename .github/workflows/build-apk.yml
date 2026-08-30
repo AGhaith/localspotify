@@ -3,6 +3,10 @@ name: 📱 Build & Release Android APK
 on:
   push:
     branches: [main]
+    paths:
+      - 'subsonic-player/**'
+      - 'app/**'
+      - '.github/workflows/build-apk.yml'
     tags:
       - 'v*'
   workflow_dispatch:
@@ -67,10 +71,18 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'npm'
-          cache-dependency-path: app/package-lock.json
 
-      - name: Install Node Dependencies
+      - name: Build Subsonic Player Nuxt Frontend (New UI)
+        env:
+          SPA_MODE: 'true'
+        run: |
+          cd subsonic-player
+          npm install --legacy-peer-deps
+          npm run generate
+          mkdir -p ../app/src
+          cp -r .output/public/* ../app/src/
+
+      - name: Install Tauri CLI Dependencies
         run: |
           cd app
           npm install

@@ -6,7 +6,8 @@
   "scripts": {
     "tauri": "tauri",
     "dev": "tauri dev",
-    "build": "echo \"Frontend assets ready\""
+    "build": "tauri build",
+    "build:frontend": "npm --prefix ../subsonic-player run generate && node -e \"const fs = require('fs'); fs.cpSync('../subsonic-player/.output/public', './src', { recursive: true, force: true }); console.log('Frontend synced to src');\""
   },
   "keywords": ["music", "navidrome", "subsonic", "spotify", "tauri"],
   "author": "Ahmed Wesam",

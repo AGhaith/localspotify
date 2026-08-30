@@ -1,0 +1,1 @@
+import{a as e,g as t,i as n,m as r,n as i}from"./DpVpBRFu.js";var a=r(r=>{if(!r.params[e.album.id])return t({name:n.albums,params:{[e.albums.sortBy]:i[`A-Z`]}})});export{a as default};

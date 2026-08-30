@@ -1,0 +1,1 @@
+import{a as e,g as t,i as n,m as r}from"./DpVpBRFu.js";var i=r(r=>{if(!r.params[e.artist.id])return t({name:n.artists})});export{i as default};

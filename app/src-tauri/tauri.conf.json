@@ -4,7 +4,9 @@
   "version": "1.0.0",
   "identifier": "com.subsonicplayer.app",
   "build": {
-    "beforeBuildCommand": "",
+    "beforeDevCommand": "npm --prefix ../subsonic-player run dev",
+    "devUrl": "http://localhost:3000",
+    "beforeBuildCommand": "npm --prefix ../subsonic-player run generate",
     "frontendDist": "../src"
   },
   "app": {

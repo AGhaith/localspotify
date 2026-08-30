@@ -1,0 +1,1 @@
+import{n as e}from"./DpVpBRFu.js";var t={[e.Random]:`random`,[e[`A-Z`]]:`alphabeticalByName`,[e[`By artist`]]:`alphabeticalByArtist`,[e[`Most played`]]:`frequent`,[e[`Recently added`]]:`newest`,[e[`Recently played`]]:`recent`};export{t};
