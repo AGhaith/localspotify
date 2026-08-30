@@ -50,19 +50,27 @@ const {
 <style module>
 .mainLayout {
   display: flex;
+  min-height: 100svh;
+  background-color: #000000;
 }
 
 .header {
   position: fixed;
   inset: 0 0 auto;
   z-index: 15;
+  height: var(--header-height);
   min-height: var(--header-height);
-  background-color: #000000;
+  padding-top: var(--safe-area-top);
+  padding-left: var(--safe-area-left);
+  padding-right: var(--safe-area-right);
+  background-color: rgba(0, 0, 0, 0.96);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.9);
+  transform: translateZ(0);
 
   @media (--tablet-up) {
     margin-left: var(--sidebar-width);
+    padding-top: 0;
   }
 }
 
@@ -70,6 +78,7 @@ const {
   display: flex;
   align-items: center;
   width: 100%;
+  height: 100%;
 }
 
 .leftNavSection {
@@ -86,6 +95,8 @@ const {
   flex: 1;
   min-height: 100svh;
   overflow: hidden;
+  -webkit-overflow-scrolling: touch;
+  transform: translateZ(0);
 
   @media (--tablet-up) {
     margin-left: var(--sidebar-width);
@@ -94,17 +105,19 @@ const {
 
 .mainContentInner {
   --main-width: 100vw;
-  --main-padding-top: calc(var(--header-height) + var(--space-40));
+  --main-padding-top: calc(var(--header-height) + 16px);
   --main-padding-bottom: calc(
-    var(--sidebar-bottom) + var(--space-40) + var(--header-height)
+    var(--sidebar-bottom) + var(--bottom-nav-height) + 24px
   );
 
   width: var(--main-width);
-  padding: var(--main-padding-top) 0 var(--main-padding-bottom);
+  padding: var(--main-padding-top) var(--safe-area-right) var(--main-padding-bottom) var(--safe-area-left);
 
   @media (--tablet-up) {
     --main-width: calc(100vw - var(--sidebar-width));
     --main-padding-bottom: calc(var(--sidebar-bottom) + var(--space-40));
+    padding-left: 0;
+    padding-right: 0;
   }
 }
 </style>

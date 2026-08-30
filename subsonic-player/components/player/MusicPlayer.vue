@@ -108,10 +108,11 @@ const { currentTrack } = useQueue();
 <style module>
 .musicPlayerContainer {
   position: fixed;
-  inset: auto 0 var(--header-height) 0;
+  inset: auto 0 var(--bottom-nav-height) 0;
   z-index: 18;
   width: 100%;
   pointer-events: none;
+  transform: translateZ(0);
 
   @media (--tablet-up) {
     inset: auto 0 0 0;

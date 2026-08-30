@@ -102,12 +102,29 @@ section {
 
 html {
   scrollbar-gutter: stable;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 body {
   line-height: 1;
   -webkit-touch-callout: none;
   touch-action: manipulation;
+  overscroll-behavior-y: none;
+  -webkit-overflow-scrolling: touch;
+  background-color: #000000;
+  color: #ffffff;
+}
+
+/* 120 FPS Hardware Acceleration for scrolling elements */
+main,
+.inner,
+.tracklistWrapper,
+ul,
+ol {
+  -webkit-overflow-scrolling: touch;
+  transform: translateZ(0);
 }
 
 ol,

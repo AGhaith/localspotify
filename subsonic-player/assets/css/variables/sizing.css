@@ -1,24 +1,36 @@
 :root {
-  /* Header height. */
-  --header-height: 65px;
+  /* Safe Area Insets (Mobile notch, dynamic island, home gesture pill) */
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-left: env(safe-area-inset-left, 0px);
+  --safe-area-right: env(safe-area-inset-right, 0px);
 
-  /* Media player. */
+  /* Top Navigation Bar Height */
+  --header-base-height: 60px;
+  --header-height: calc(var(--header-base-height) + var(--safe-area-top));
+
+  /* Bottom Navigation Bar Height */
+  --bottom-nav-base-height: 62px;
+  --bottom-nav-height: calc(var(--bottom-nav-base-height) + var(--safe-area-bottom));
+
+  /* Media player */
   --media-player-height: 62px;
 
-  /* 100% width/heights. */
+  /* 100% width/heights */
   --width-height-100: 100%;
 
-  /* Track play/pause. */
+  /* Track play/pause */
   --track-width-height-default: 40px;
   --track-width-height-large: 95px;
 
-  /* Track table. */
+  /* Track table */
   --track-table-header-row-height: 55px;
 }
 
 @media (--tablet-up) {
   :root {
-    /* Media player. */
+    --header-base-height: 65px;
     --media-player-height: 85px;
   }
 }
+

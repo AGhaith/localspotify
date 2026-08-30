@@ -38,16 +38,21 @@ export function useMediaSession(actions: MediaSessionActions) {
     }
   }
 
-  function getAbsoluteImageUrl(imageSource: string, size: string): string {
-    const url = getImageUrl(imageSource, size);
-    if (!url) return '';
-    if (url.startsWith('http://') || url.startsWith('https://')) {
+  function getAbsoluteImageUrl(imageSource?: string, size = '512'): string {
+    if (!imageSource) return '';
+    try {
+      const url = getImageUrl(imageSource, size);
+      if (!url) return '';
+      if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:') || url.startsWith('blob:')) {
+        return url;
+      }
+      if (typeof window !== 'undefined' && window.location) {
+        return `${window.location.origin}${url.startsWith('/') ? '' : '/'}${url}`;
+      }
       return url;
+    } catch {
+      return '';
     }
-    if (typeof window !== 'undefined') {
-      return `${window.location.origin}${url.startsWith('/') ? '' : '/'}${url}`;
-    }
-    return url;
   }
 
   function setMediaSessionMetadata() {
@@ -56,24 +61,33 @@ export function useMediaSession(actions: MediaSessionActions) {
     }
 
     try {
-      const { album, artist, title } = getTrackDisplayMetadata(
-        actions.currentTrack.value,
-      );
+      const track = actions.currentTrack.value;
+      const { album, artist, title } = getTrackDisplayMetadata(track);
 
-      const artwork = MEDIA_SESSION_ARTWORK_SIZES.map((size) => ({
-        sizes: `${size}x${size}`,
-        src: getAbsoluteImageUrl(actions.currentTrack.value.image, size),
-        type: 'image/jpeg',
-      }));
+      const artworkList: MediaImage[] = [];
+      const imageSrc = track?.image;
+
+      if (imageSrc) {
+        for (const size of MEDIA_SESSION_ARTWORK_SIZES) {
+          const absoluteUrl = getAbsoluteImageUrl(imageSrc, `${size}`);
+          if (absoluteUrl) {
+            artworkList.push({
+              sizes: `${size}x${size}`,
+              src: absoluteUrl,
+              type: 'image/jpeg',
+            });
+          }
+        }
+      }
 
       navigator.mediaSession.metadata = new MediaMetadata({
-        artwork,
-        title: title || 'Unknown Title',
-        ...(album && { album }),
-        ...(artist && { artist }),
+        title: title || 'LocalSpotify Music',
+        artist: artist || 'Local Server',
+        album: album || 'LocalSpotify',
+        ...(artworkList.length > 0 ? { artwork: artworkList } : {}),
       });
-    } catch {
-      // Ignore metadata parsing error
+    } catch (e) {
+      console.warn('[MediaSession] Failed to set metadata:', e);
     }
   }
 

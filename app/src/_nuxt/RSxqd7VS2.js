@@ -1,0 +1,1 @@
+import{a as e,g as t,i as n,m as r,r as i}from"./Cf6UC_mb.js";var a=r(r=>{if(!(r.params[e.genre.mediaType]&&r.params[e.genre.genre]&&[i.Albums,i.Tracks].includes(r.params[e.genre.mediaType])))return t({name:n.genres})});export{a as default};

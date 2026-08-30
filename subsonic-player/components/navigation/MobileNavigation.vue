@@ -62,16 +62,20 @@ function getIconForTitle(title: string) {
   inset: auto 0 0;
   z-index: 25;
   width: 100%;
-  height: 62px;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.85) 0%, #000000 35%);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  height: var(--bottom-nav-height);
+  padding-bottom: var(--safe-area-bottom);
+  padding-left: var(--safe-area-left);
+  padding-right: var(--safe-area-right);
+  background: rgba(8, 8, 12, 0.96);
   border-top: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.85);
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 .mobileNavigation {
   width: 100%;
-  height: 100%;
+  height: var(--bottom-nav-base-height);
   padding: 0 12px;
   margin: 0 auto;
   display: flex;

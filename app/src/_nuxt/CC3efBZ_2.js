@@ -1,0 +1,1 @@
+import{a as e,g as t,i as n,m as r,r as i}from"./Cf6UC_mb.js";var a=r(r=>{if(!(r.params[e.search.mediaType]&&r.params[e.search.query]&&Object.values(i).includes(r.params[e.search.mediaType])))return t({name:n.index})});export{a as default};
