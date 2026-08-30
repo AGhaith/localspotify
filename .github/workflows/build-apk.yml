@@ -79,6 +79,7 @@ jobs:
         env:
           ANDROID_HOME: ${{ env.ANDROID_HOME }}
           NDK_HOME: ${{ env.NDK_HOME }}
+          GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=512m"
         run: |
           cd app
           npx tauri android init --ci
