@@ -38,7 +38,7 @@ mobile_app/
 ## 2. Audio Engine Guidelines
 
 - **Playback & Notification**: Uses `just_audio` backed by `audio_service`'s `BaseAudioHandler`.
-- **Activity Inheritance**: `MainActivity.kt` MUST extend `AudioServiceActivity`.
+- **Activity Inheritance**: `MainActivity.kt` extends standard `io.flutter.embedding.android.FlutterActivity`.
 - **Manifest Requirements**:
   - `FOREGROUND_SERVICE` and `FOREGROUND_SERVICE_MEDIA_PLAYBACK` permissions.
   - `AudioService` service definition with `android:foregroundServiceType="mediaPlayback"`.
