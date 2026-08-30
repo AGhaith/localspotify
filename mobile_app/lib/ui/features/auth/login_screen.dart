@@ -13,7 +13,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _serverUrlController = TextEditingController(text: 'http://');
+  final _serverUrlController = TextEditingController(text: 'http://100.92.248.49:6767');
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
