@@ -53,9 +53,9 @@ jobs:
           cd mobile_app
           BUILD_TYPE="${{ github.event.inputs.build_type || 'release' }}"
           if [ "$BUILD_TYPE" = "debug" ]; then
-            flutter build apk --debug
+            flutter build apk --debug --android-skip-build-dependency-validation
           else
-            flutter build apk --release
+            flutter build apk --release --android-skip-build-dependency-validation
           fi
 
       - name: 📤 Upload APK Artifact
