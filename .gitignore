@@ -28,11 +28,15 @@ venv/
 # Node & Tauri
 node_modules/
 app/node_modules/
+subsonic-player/node_modules/
+subsonic-player/.output/
+subsonic-player/.nuxt/
 app/src-tauri/target/
 app/src-tauri/gen/
 
 # Binaries & APK outputs
 *.apk
 downloaded_apk/
+downloaded_subsonic_apk/
 builds/
 

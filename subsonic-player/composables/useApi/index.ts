@@ -1,0 +1,118 @@
+import type { UseFetchOptions } from 'nuxt/app';
+
+export function useAPI() {
+  const config = useRuntimeConfig();
+  const { IMAGE_SIZE } = config.public;
+
+  const { handleError } = useErrorHandler();
+  const { streamBitrate } = useSettings();
+
+  function getUrl(path: string, queryParams: Record<string, number | string>) {
+    const authCookie = useCookie(COOKIE_NAMES.auth);
+    const { baseParams, baseURL } = getBaseOptions(authCookie.value!);
+
+    const url = new URL(`${baseURL}/${path}`);
+    url.search = convertToQueryString({
+      ...baseParams,
+      ...queryParams,
+    });
+
+    return url.toString();
+  }
+
+  function getImageUrl(imageSource: string, size = IMAGE_SIZE) {
+    // If radio station.
+    if (isUrl(imageSource)) {
+      return imageSource;
+    }
+
+    return getUrl('getCoverArt', {
+      id: imageSource,
+      size,
+    });
+  }
+
+  function getStreamUrl(streamSource: string) {
+    // If radio station.
+    if (isUrl(streamSource)) {
+      return streamSource;
+    }
+
+    return getUrl('stream', {
+      id: streamSource,
+      maxBitRate: streamBitrate.value,
+    });
+  }
+
+  function getAvatarUrl(username: string) {
+    return getUrl('getAvatar', {
+      username,
+    });
+  }
+
+  function getDownloadUrl(id: string) {
+    return getUrl('download', {
+      id,
+    });
+  }
+
+  async function fetchData<DataT = SubsonicResponse>(
+    url: string,
+    options: { suppressErrorSnack?: boolean } & UseFetchOptions<
+      SubsonicResponse,
+      DataT
+    > = {},
+  ) {
+    try {
+      const { $api } = useNuxtApp();
+
+      const authCookie = useCookie(COOKIE_NAMES.auth);
+
+      const { baseParams, baseURL } = getBaseOptions(authCookie.value!);
+
+      const response = await $api(url, {
+        ...options,
+        baseURL: options.baseURL ?? baseURL,
+        query: {
+          ...baseParams,
+          ...options.query,
+        },
+      } as never);
+
+      if (!response) {
+        throw new Error(DEFAULT_ERROR_MESSAGE);
+      }
+
+      let result = response as DataT;
+
+      if (options.transform) {
+        result = await options.transform(response as SubsonicResponse);
+      }
+
+      return {
+        data: result,
+        error: null,
+      };
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error : new Error(error as string);
+
+      if (!options.suppressErrorSnack) {
+        handleError(error, 'api');
+      }
+
+      return {
+        data: null,
+        error: errorMessage,
+      };
+    }
+  }
+
+  return {
+    fetchData,
+    getAvatarUrl,
+    getDownloadUrl,
+    getImageUrl,
+    getStreamUrl,
+  };
+}

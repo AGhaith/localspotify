@@ -1,0 +1,2 @@
+@custom-media --mobile-only (width < 769px);
+@custom-media --tablet-up (width >= 769px);

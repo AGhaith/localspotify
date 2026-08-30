@@ -1,0 +1,20 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`MobileNavigation > matches the snapshot 1`] = `
+"<nav aria-label="Mobile">
+  <ul class="inner centerAll spaceBetween mobileNavigation">
+    <li class="item"><a class="centerItems buttonLink link smallFont column centerAll link smallFont column centerAll" draggable="false" title="Browse">
+        <phcompass aria-hidden="true" class="icon" size="24" weight="regular"></phcompass><span class="clamp text">Browse</span>
+      </a></li>
+    <li class="item"><a class="centerItems buttonLink link smallFont column centerAll link smallFont column centerAll" draggable="false" title="Your library">
+        <phmusicnotes aria-hidden="true" class="icon" size="24" weight="regular"></phmusicnotes><span class="clamp text">Your library</span>
+      </a></li>
+    <li class="item"><a class="centerItems buttonLink link smallFont column centerAll link smallFont column centerAll" draggable="false" title="Playlists">
+        <phplaylist aria-hidden="true" class="icon" size="24" weight="regular"></phplaylist><span class="clamp text">Playlists</span>
+      </a></li>
+    <li class="item"><a class="centerItems buttonLink link smallFont column centerAll link smallFont column centerAll" draggable="false" title="Bookmarks">
+        <phbookmarks aria-hidden="true" class="icon" size="24" weight="regular"></phbookmarks><span class="clamp text">Bookmarks</span>
+      </a></li>
+  </ul>
+</nav>"
+`;

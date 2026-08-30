@@ -1,0 +1,98 @@
+.themeHoverButton {
+  background-color: var(--theme-color);
+  color: #000000 !important;
+  font-weight: 700;
+  border: 2px solid #000000;
+  border-radius: var(--border-radius-large, 12px);
+  box-shadow: 3px 3px 0px #000000;
+  transition: transform 0.12s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.12s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 5px 5px 0px #000000;
+  }
+
+  &:active {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0px #000000;
+  }
+}
+
+.largeThemeHoverButton {
+  @extend .themeHoverButton;
+
+  margin: var(--space-4);
+  padding: var(--space-8) var(--space-16);
+  font-size: 1rem;
+}
+
+.neoButton {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-8);
+  padding: var(--space-8) var(--space-16);
+  font-family: var(--font-family);
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--header-font-color);
+  background-color: var(--secondary-background-color);
+  border: 2px solid var(--border-color);
+  border-radius: 10px;
+  box-shadow: 3px 3px 0px #000000;
+  cursor: pointer;
+  transition: transform 0.12s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.12s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.12s;
+
+  &:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 5px 5px 0px #000000;
+    background-color: var(--hover-selected-color);
+  }
+
+  &:active {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0px #000000;
+  }
+}
+
+.neoButtonPrimary {
+  @extend .neoButton;
+  background-color: var(--neo-green);
+  color: #000000 !important;
+  border-color: #000000;
+  box-shadow: 3px 3px 0px #000000;
+
+  &:hover {
+    background-color: #1eb350;
+    box-shadow: 5px 5px 0px #000000;
+  }
+}
+
+.neoButtonAccent {
+  @extend .neoButton;
+  background-color: var(--neo-purple);
+  color: #ffffff !important;
+  border-color: #000000;
+  box-shadow: 3px 3px 0px #000000;
+}
+
+.neoButtonYellow {
+  @extend .neoButton;
+  background-color: var(--neo-yellow);
+  color: #000000 !important;
+  border-color: #000000;
+  box-shadow: 3px 3px 0px #000000;
+}
+
+.globalLink {
+  position: unset !important;
+
+  &::after {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    cursor: pointer;
+    content: '';
+  }
+}

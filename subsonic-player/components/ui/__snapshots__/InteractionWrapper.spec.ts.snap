@@ -1,0 +1,17 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`InteractionWrapper > matches the snapshot 1`] = `"<div class="interactionWrapper" draggable="false">Default slot content.</div>"`;
+
+exports[`InteractionWrapper > when the mouseenter event is triggered > matches the snapshot 1`] = `"<div class="interactionWrapper" draggable="true">Default slot content.</div>"`;
+
+exports[`InteractionWrapper > when the mouseenter event is triggered > when the draggable prop is set to false > matches the snapshot 1`] = `"<div class="interactionWrapper" draggable="false">Default slot content.</div>"`;
+
+exports[`InteractionWrapper > when the mouseenter event is triggered > when the isAnyOpen value is true > matches the snapshot 1`] = `"<div class="interactionWrapper" draggable="false">Default slot content.</div>"`;
+
+exports[`InteractionWrapper > when the mouseenter event is triggered > when the mouseleave event is triggered > matches the snapshot 1`] = `"<div class="interactionWrapper" draggable="false">Default slot content.</div>"`;
+
+exports[`InteractionWrapper > when the mouseenter event is triggered > when the onDragStart event is not attached > matches the snapshot 1`] = `"<div class="interactionWrapper" draggable="false">Default slot content.</div>"`;
+
+exports[`InteractionWrapper > when the touchstart event is triggered > when the mouseenter event is triggered > matches the snapshot 1`] = `"<div class="interactionWrapper" draggable="false">Default slot content.</div>"`;
+
+exports[`InteractionWrapper > when the touchstart event is triggered > when the mouseleave event is triggered > when the mouseenter event is triggered > matches the snapshot 1`] = `"<div class="interactionWrapper" draggable="true">Default slot content.</div>"`;

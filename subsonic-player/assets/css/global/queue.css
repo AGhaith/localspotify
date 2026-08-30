@@ -1,0 +1,15 @@
+.queueWrapper {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  width: var(--width-height-100);
+  height: var(--width-height-100);
+  overflow-x: hidden;
+  overflow-y: auto;
+  background-color: #000000;
+  -webkit-overflow-scrolling: touch;
+}
+
+.queueAction {
+  padding: var(--space-16);
+}

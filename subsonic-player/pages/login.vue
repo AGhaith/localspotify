@@ -1,0 +1,67 @@
+<script setup lang="ts">
+import LoginForm from '@/components/auth/LoginForm.vue';
+import ThemeSwitcher from '@/components/settings/ThemeSwitcher.vue';
+import HeaderWithAction from '@/components/ui/HeaderWithAction.vue';
+
+definePageMeta({
+  layout: 'login',
+});
+
+const route = useRoute();
+
+const { error, isAuthenticated, loading, login } = useAuth();
+
+async function onFormSubmit(fields: AuthData) {
+  const { password, server, username } = fields;
+
+  await login({
+    password,
+    server,
+    username,
+  });
+
+  await redirectIfAuthenticated();
+}
+
+function redirectIfAuthenticated() {
+  if (isAuthenticated.value) {
+    setLocalStorage(LOCAL_STORAGE_KEYS.login, Date.now().toString());
+
+    const destination = route.query.redirect?.toString() || {
+      name: ROUTE_NAMES.index,
+    };
+
+    return navigateTo(destination);
+  }
+}
+
+useHead({
+  title: 'Login',
+});
+</script>
+
+<template>
+  <div :class="['mBAllM', 'inner', $style.login]">
+    <HeaderWithAction>
+      <h1>Login</h1>
+
+      <template #actions>
+        <ThemeSwitcher />
+      </template>
+    </HeaderWithAction>
+
+    <LoginForm :error :loading @submit="onFormSubmit" />
+  </div>
+</template>
+
+<style module>
+.login {
+  position: relative;
+  max-width: 500px;
+  padding: var(--space-40);
+  background-color: var(--background-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-large);
+  box-shadow: var(--box-shadow-large);
+}
+</style>

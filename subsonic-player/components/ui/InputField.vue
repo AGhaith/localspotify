@@ -1,0 +1,125 @@
+<script setup lang="ts">
+const props = withDefaults(
+  defineProps<{
+    error?: string;
+    hideLabel?: boolean;
+    id: string;
+    label: string;
+    placeholder?: string;
+    required?: boolean;
+    type?: string;
+  }>(),
+  {
+    error: undefined,
+    placeholder: undefined,
+    type: 'text',
+  },
+);
+
+const internalValue = defineModel<string | string[]>();
+
+const inputAttributes = computed(() => ({
+  ariaDescribedby: props.error ? `${props.id}-error` : undefined,
+  ariaInvalid: props.error ? true : undefined,
+}));
+</script>
+
+<template>
+  <div
+    :class="[
+      'column',
+      $style.inputField,
+      {
+        [$style.error]: error,
+      },
+    ]"
+  >
+    <label
+      ref="label"
+      :class="[
+        'mBXS',
+        'sentenceCase',
+        'smallFont',
+        $style.label,
+        {
+          visuallyHidden: hideLabel,
+        },
+      ]"
+      :for="id"
+    >
+      {{ label }}
+      <span v-if="required" ref="required" :class="$style.required">*</span>
+    </label>
+
+    <input
+      :id
+      ref="input"
+      v-model="internalValue"
+      :aria-describedby="inputAttributes.ariaDescribedby"
+      :aria-invalid="inputAttributes.ariaInvalid"
+      autocomplete="off"
+      :class="[INTERACTION_INPUT_CLASS, $style.input]"
+      :placeholder
+      :required
+      :type
+      v-bind="$attrs"
+    />
+
+    <p
+      v-if="error"
+      :id="`${id}-error`"
+      ref="error"
+      class="smallFont sentenceCase"
+    >
+      {{ error }}
+    </p>
+  </div>
+</template>
+
+<style module>
+.inputField {
+  --label-color: var(--secondary-font-color);
+  --input-border-color: var(--border-color);
+  --input-width: var(--width-height-100);
+
+  width: var(--input-width);
+  color: var(--label-color);
+}
+
+.error {
+  --label-color: var(--error-color);
+  --input-border-color: var(--error-color);
+}
+
+.label {
+  display: inline-block;
+  color: var(--secondary-font-color);
+}
+
+.input {
+  position: relative;
+  width: var(--input-width);
+  padding: calc(var(--space-12) - 2px) var(--space-12);
+  margin-bottom: var(--space-2);
+  color: var(--body-font-color);
+  background-color: var(--secondary-background-color);
+  border: 2px solid var(--input-border-color);
+  border-radius: 10px;
+  font-family: var(--font-family);
+  font-weight: 600;
+  transition: all 0.15s ease;
+
+  &:focus {
+    border-color: var(--neo-green);
+    box-shadow: 3px 3px 0px #000000;
+  }
+
+  &::placeholder {
+    opacity: 0.6;
+  }
+}
+
+.required {
+  color: var(--error-color);
+}
+</style>

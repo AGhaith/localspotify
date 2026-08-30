@@ -1,0 +1,46 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`PrimaryNavigation > matches the snapshot 1`] = `
+"<ul class="mBM">
+  <li class="mBM">
+    <p class="strong mBM sidebarTitle">Browse</p>
+    <ul>
+      <li class=""><a exactactiveclass="sidebarCurrentLink" class="centerItems buttonLink sidebarLink sidebarLink" draggable="false" title="Discover">
+          <phcompass aria-hidden="true" class="icon" size="24" weight="regular"></phcompass><span class="clamp text">Discover</span>
+        </a></li>
+      <li class=""><a exactactiveclass="sidebarCurrentLink" class="centerItems buttonLink sidebarLink sidebarLink" draggable="false" title="Podcasts">
+          <phapplepodcastslogo aria-hidden="true" class="icon" size="24" weight="regular"></phapplepodcastslogo><span class="clamp text">Podcasts</span>
+        </a></li>
+      <li class=""><a exactactiveclass="sidebarCurrentLink" class="centerItems buttonLink sidebarLink sidebarLink" draggable="false" title="Radio Stations">
+          <phradio aria-hidden="true" class="icon" size="24" weight="regular"></phradio><span class="clamp text">Radio Stations</span>
+        </a></li>
+      <li class="isDroppable"><a exactactiveclass="sidebarCurrentLink" class="centerItems buttonLink sidebarLink sidebarLink" draggable="false" title="Queue">
+          <phqueue aria-hidden="true" class="icon" size="24" weight="regular"></phqueue><span class="clamp text">Queue</span>
+        </a></li>
+      <li class=""><a exactactiveclass="sidebarCurrentLink" class="centerItems buttonLink sidebarLink sidebarLink" draggable="false" title="Bookmarks">
+          <phbookmarks aria-hidden="true" class="icon" size="24" weight="regular"></phbookmarks><span class="clamp text">Bookmarks</span>
+        </a></li>
+    </ul>
+  </li>
+  <li class="mBM">
+    <p class="strong mBM sidebarTitle">Your library</p>
+    <ul>
+      <li class=""><a exactactiveclass="sidebarCurrentLink" class="centerItems buttonLink sidebarLink sidebarLink" draggable="false" title="Albums">
+          <phvinylrecord aria-hidden="true" class="icon" size="24" weight="regular"></phvinylrecord><span class="clamp text">Albums</span>
+        </a></li>
+      <li class=""><a exactactiveclass="sidebarCurrentLink" class="centerItems buttonLink sidebarLink sidebarLink" draggable="false" title="Artists">
+          <phusersthree aria-hidden="true" class="icon" size="24" weight="regular"></phusersthree><span class="clamp text">Artists</span>
+        </a></li>
+      <li class=""><a exactactiveclass="sidebarCurrentLink" class="centerItems buttonLink sidebarLink sidebarLink" draggable="false" title="Playlists">
+          <phplaylist aria-hidden="true" class="icon" size="24" weight="regular"></phplaylist><span class="clamp text">Playlists</span>
+        </a></li>
+      <li class=""><a exactactiveclass="sidebarCurrentLink" class="centerItems buttonLink sidebarLink sidebarLink" draggable="false" title="Favourites">
+          <phheart aria-hidden="true" class="icon" size="24" weight="regular"></phheart><span class="clamp text">Favourites</span>
+        </a></li>
+      <li class=""><a exactactiveclass="sidebarCurrentLink" class="centerItems buttonLink sidebarLink sidebarLink" draggable="false" title="Genres">
+          <phwaveform aria-hidden="true" class="icon" size="24" weight="regular"></phwaveform><span class="clamp text">Genres</span>
+        </a></li>
+    </ul>
+  </li>
+</ul>"
+`;

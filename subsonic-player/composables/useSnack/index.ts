@@ -1,0 +1,82 @@
+export function useSnack() {
+  const snacks = useState<Snack[]>(STATE_KEYS.snacks, () => []);
+
+  function addSnack(snackData: Omit<Snack, 'id'>) {
+    if (import.meta.server) {
+      return;
+    }
+
+    const existing = snacks.value.find(
+      (snack) =>
+        snack.content === snackData.content && snack.type === snackData.type,
+    );
+
+    if (existing) {
+      removeSnack(existing.id);
+    }
+
+    let timer = null;
+    const id = generateRandomString(50);
+
+    if (snackData.auto) {
+      timer = setTimeout(() => {
+        removeSnack(id);
+      }, SNACK_ALIVE_DURATION);
+    }
+
+    snacks.value.push({
+      content: snackData.content,
+      id,
+      timer,
+      type: snackData.type,
+    });
+  }
+
+  function removeSnack(id: string) {
+    const current = snacks.value.find((snack) => snack.id === id);
+    const index = snacks.value.findIndex((snack) => snack.id === id);
+
+    if (current?.timer) {
+      clearTimeout(current.timer);
+    }
+
+    snacks.value.splice(index, 1);
+  }
+
+  function clearAllSnacks() {
+    snacks.value = [];
+  }
+
+  function addErrorSnack(message = DEFAULT_ERROR_MESSAGE, auto = false) {
+    addSnack({
+      auto,
+      content: message,
+      type: 'error',
+    });
+  }
+
+  function addSuccessSnack(message: string, auto = true) {
+    addSnack({
+      auto,
+      content: message,
+      type: 'success',
+    });
+  }
+
+  function addInfoSnack(message: string, auto = true) {
+    addSnack({
+      auto,
+      content: message,
+      type: 'info',
+    });
+  }
+
+  return {
+    addErrorSnack,
+    addInfoSnack,
+    addSuccessSnack,
+    clearAllSnacks,
+    removeSnack,
+    snacks,
+  };
+}

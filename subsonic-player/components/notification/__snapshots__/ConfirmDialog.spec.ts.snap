@@ -1,0 +1,12 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ConfirmDialog > matches the snapshot 1`] = `
+"<div class="content">
+  <p>Are you sure?</p>
+  <div class="centerItems actions"><button class="centerItems buttonLink actionButton actionButton" draggable="false" type="button">
+      <!--v-if--><span class="clamp text"> Cancel </span>
+    </button><button class="centerItems buttonLink actionButton actionButton" draggable="false" type="button">
+      <!--v-if--><span class="clamp text">Confirm</span>
+    </button></div>
+</div>"
+`;

@@ -1,0 +1,192 @@
+import type { Page, TestInfo } from '@playwright/test';
+
+import { test } from '@nuxt/test-utils/playwright';
+
+test.describe.configure({ timeout: 600000 });
+
+const TEST_SETTINGS = {
+  imagePath: 'docs/images',
+  loginDetails: {
+    password: 'demodemo',
+    server: 'https://demo.ampache.dev',
+    username: 'demo',
+  },
+  videoPath: 'docs/videos',
+};
+
+function getPath(rootPath: string, device: string, isDark = false) {
+  return `${rootPath}/${device}${isDark ? '-dark' : '-light'}`;
+}
+
+async function goToAlbumPage(page: Page, device: string, isDark = false) {
+  await goToPage(page, 5, device, isDark);
+  await setLayoutViaSettings(page, 'listLayout');
+  await goToPage(page, 5, device, isDark);
+  await setLayoutViaSettings(page, 'gridLayout');
+  await goToPage(page, 5, device, isDark);
+  await goToSubPage(page);
+}
+
+async function goToArtistPage(page: Page, device: string, isDark = false) {
+  await goToPage(page, 6, device, isDark);
+  await setLayoutViaSettings(page, 'listLayout');
+  await goToPage(page, 6, device, isDark);
+  await setLayoutViaSettings(page, 'gridLayout');
+  await goToPage(page, 6, device, isDark);
+  await goToSubPage(page);
+}
+
+async function goToPage(
+  page: Page,
+  index: number,
+  device: string,
+  isDark = false,
+) {
+  const tag = device === 'mobile' ? 'mobileOnly' : 'desktopOnly';
+
+  await page.locator(`aside .${tag} ul a`).nth(index).click();
+  await page.waitForTimeout(10000);
+
+  if (index === 0) {
+    await takeScreenshot(page, device, isDark);
+  }
+}
+
+async function goToPagesDesktop(page: Page, device: string, isDark = false) {
+  for (const index of [0, 2, 4, 7, 9, 10]) {
+    await goToPage(page, index, device, isDark);
+  }
+
+  await goToAlbumPage(page, device, isDark);
+  await goToArtistPage(page, device, isDark);
+  await goToPodcastsPageDesktop(page, device, isDark);
+}
+
+async function goToPagesMobile(page: Page, device: string, isDark = false) {
+  for (const index of [0, 1, 3, 0]) {
+    await goToPage(page, index, device, isDark);
+  }
+
+  await goToPodcastsPageMobile(page);
+}
+
+async function goToPodcastsPageDesktop(
+  page: Page,
+  device: string,
+  isDark = false,
+) {
+  await goToPage(page, 1, device, isDark);
+  await setLayoutViaSettings(page, 'listLayout');
+  await goToPage(page, 1, device, isDark);
+  await setLayoutViaSettings(page, 'gridLayout');
+  await goToPage(page, 1, device, isDark);
+  await goToSubPage(page);
+}
+
+async function goToPodcastsPageMobile(page: Page) {
+  await page.locator('.main nav a').nth(1).click();
+  await goToSubPage(page);
+}
+
+async function goToSubPage(page: Page) {
+  await page.locator('section article a').nth(1).click();
+  await page.waitForTimeout(10000);
+}
+
+async function login(page: Page, isDark = false) {
+  await page.goto('/login', { waitUntil: 'load' });
+
+  if (isDark) {
+    await selectDarkThemeMode(page);
+  }
+
+  await page.getByLabel('server').fill(TEST_SETTINGS.loginDetails.server);
+  await page.getByLabel('username').fill(TEST_SETTINGS.loginDetails.username);
+  await page.getByLabel('password').fill(TEST_SETTINGS.loginDetails.password);
+  await page.getByRole('button', { name: 'Login' }).click();
+  await page.waitForURL('/', { waitUntil: 'load' });
+}
+
+async function playMusic(page: Page, device: string) {
+  const currentTrackIndex = device === 'mobile' ? 1 : 2;
+
+  await page.locator('[title="Play podcast episodes"]').click();
+  await page.waitForTimeout(1000);
+
+  const pauseButtons = page.locator('[title="Pause current track"]');
+
+  if (await pauseButtons.nth(currentTrackIndex).isVisible()) {
+    await pauseButtons.nth(currentTrackIndex).click();
+  } else {
+    await pauseButtons
+      .nth(currentTrackIndex)
+      .evaluate((el: HTMLElement) => el.click());
+  }
+
+  const queueIndex = device === 'mobile' ? 0 : 1;
+
+  await page.locator('[title="Open queue"]').nth(queueIndex).click();
+  await page.locator('.queueWrapper [title="Open queue list"]').click();
+  await page.waitForTimeout(2000);
+  await page.locator('[title="Clear queue"]').click();
+}
+
+async function runTest(page: Page, workerInfo: TestInfo, isDark = false) {
+  const device = workerInfo.project.name;
+
+  await login(page, isDark);
+
+  const goToPages = device === 'mobile' ? goToPagesMobile : goToPagesDesktop;
+
+  await goToPages(page, device, isDark);
+  await playMusic(page, device);
+  await page.close();
+  await saveVideo(page, device, isDark);
+}
+
+async function saveVideo(page: Page, device: string, isDark = false) {
+  const fullPath = `${getPath(TEST_SETTINGS.videoPath, device, isDark)}.mp4`;
+
+  try {
+    await page.video()?.saveAs(fullPath);
+    await page.video()?.delete();
+  } catch (error) {
+    console.error('Error saving video:', error);
+  }
+}
+
+async function selectDarkThemeMode(page: Page) {
+  await page.locator('[title="Activate dark mode"]').click();
+  await page.waitForTimeout(500);
+}
+
+async function setLayoutViaSettings(
+  page: Page,
+  layout: 'gridLayout' | 'listLayout',
+) {
+  await page.goto('/settings', { waitUntil: 'load' });
+
+  await page.waitForTimeout(5000);
+  await page
+    .getByRole('button', {
+      name: layout === 'gridLayout' ? /^Grid / : /^List /,
+    })
+    .click();
+  await page.waitForTimeout(10000);
+}
+
+async function takeScreenshot(page: Page, device: string, isDark = false) {
+  const fullPath = `${getPath(TEST_SETTINGS.imagePath, device, isDark)}.png`;
+
+  await page.screenshot({
+    path: fullPath,
+  });
+}
+
+test('Dark Theme', async ({ page }, workerInfo) => {
+  await runTest(page, workerInfo, true);
+});
+
+test('Light Theme', async ({ page }, workerInfo) => {
+  await runTest(page, workerInfo);
+});

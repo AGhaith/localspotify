@@ -1,0 +1,87 @@
+export const REWIND_TRACK_TIME = 10;
+
+export const FAST_FORWARD_TRACK_TIME = 30;
+
+export const VOLUME_INCREASE = 0.02;
+
+export const SAVE_INTERVAL = 10000;
+
+export const PREFETCH_TRACK_COUNT = 3;
+
+export const SCROBBLE_THRESHOLD = 0.8;
+
+export const CROSSFADE_SCROBBLE_THRESHOLD = 0.5;
+
+export const SEEK_JUMP_THRESHOLD = 2;
+
+export const PLAYBACK_RATES = [
+  {
+    speed: 0.5,
+    title: '0.5x',
+  },
+  {
+    speed: 0.75,
+    title: '0.75x',
+  },
+  {
+    speed: 1,
+    title: 'Normal',
+  },
+  {
+    speed: 1.5,
+    title: '1.5x',
+  },
+  {
+    speed: 2,
+    title: '2x',
+  },
+  {
+    speed: 2.5,
+    title: '2.5x',
+  },
+] as const;
+
+export const REPEAT_MODE = {
+  all: Number.POSITIVE_INFINITY,
+  off: -1,
+  one: 1,
+};
+
+export const AUDIO_PLAYER_DEFAULT_STATES = {
+  audioPlayer: null,
+  audioPreloader: null,
+  bufferedDuration: 0,
+  currentTime: 0,
+  isBuffering: false,
+  isPlaying: false,
+  playbackRate: PLAYBACK_RATES.findIndex((rate) => rate.title === 'Normal'),
+  repeat: REPEAT_MODE.off,
+  shuffle: false,
+  trackHasScrobbled: false,
+  volume: 1,
+};
+
+export const MEDIA_SESSION_ACTION_DETAILS = {
+  nextTrack: 'nexttrack',
+  pause: 'pause',
+  play: 'play',
+  previousTrack: 'previoustrack',
+  seekBackward: 'seekbackward',
+  seekForward: 'seekforward',
+  seekTo: 'seekto',
+  stop: 'stop',
+} as const;
+
+export const REWIND_FAST_FORWARD_TITLES = {
+  fastForward: `Fast forward ${FAST_FORWARD_TRACK_TIME} seconds`,
+  rewind: `Rewind back ${REWIND_TRACK_TIME} seconds`,
+} as const;
+
+export const MEDIA_SESSION_ARTWORK_SIZES = [
+  '96',
+  '128',
+  '192',
+  '256',
+  '384',
+  '512',
+] as const;

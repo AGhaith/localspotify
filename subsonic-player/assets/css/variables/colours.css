@@ -1,0 +1,96 @@
+:root {
+  /* Default stark constants. */
+  --black-color: #000000;
+  --white-color: #ffffff;
+
+  /* Neo-Brutalism Pop Accents */
+  --neo-green: #22c55e;
+  --neo-yellow: #facc15;
+  --neo-purple: #8b5cf6;
+  --neo-pink: #ff477e;
+  --neo-cyan: #06b6d4;
+
+  /* Snack colours. */
+  --success-color: #22c55e;
+  --error-color: #ff477e;
+  --info-color: #8b5cf6;
+
+  /* High-Contrast Neo-Brutalist Borders & Shadows (0px blur) */
+  --border-color: #000000;
+  --neo-border-width: 2px;
+  --neo-border: var(--neo-border-width) solid var(--border-color);
+
+  --box-shadow-large: 6px 6px 0px #000000;
+  --box-shadow-medium: 4px 4px 0px #000000;
+  --box-shadow-small: 2px 2px 0px #000000;
+  --box-shadow-accent: 4px 4px 0px var(--neo-green);
+  --box-shadow-yellow: 4px 4px 0px var(--neo-yellow);
+
+  /* Text shadow. */
+  --text-shadow: none;
+
+  /* Light colours. */
+  --invert-color: var(--black-color);
+  --invert-color-clear: rgb(0 0 0 / 15%);
+
+  /* Font colours. */
+  --header-font-color: var(--black-color);
+  --body-font-color: #1a1a24;
+  --secondary-font-color: #555566;
+
+  /* Background. */
+  --body-background-color: #f7f5f0;
+  --background-color: #ffffff;
+  --secondary-background-color: #ede9e1;
+  --hover-selected-color: #e5e0d4;
+  --invert-background-color: var(--black-color);
+  --track-background-color: var(--background-color);
+  --track-hover-background-color: #f0ece3;
+  --modal-background-color: var(--background-color);
+
+  /* Blur. */
+  --image-blur: linear-gradient(
+    to bottom,
+    rgb(0 0 0 / 20%),
+    rgb(255 255 255 / 15%),
+    var(--body-background-color)
+  );
+}
+
+.dark {
+  /* Dark Neo-Brutalism colours. */
+  --border-color: rgba(255, 255, 255, 0.12);
+  --neo-border: 2px solid var(--border-color);
+
+  --box-shadow-large: 6px 6px 0px #000000;
+  --box-shadow-medium: 4px 4px 0px #000000;
+  --box-shadow-small: 2px 2px 0px #000000;
+  --box-shadow-accent: 4px 4px 0px var(--neo-green);
+  --box-shadow-yellow: 4px 4px 0px var(--neo-yellow);
+
+  --invert-color: var(--white-color);
+  --invert-color-clear: rgb(255 255 255 / 20%);
+
+  /* Font colours. */
+  --header-font-color: #ffffff;
+  --body-font-color: #f4f4f5;
+  --secondary-font-color: #a1a1aa;
+
+  /* Background - Pure Black & Greyish-Black Surfaces */
+  --body-background-color: #000000;
+  --background-color: #000000;
+  --secondary-background-color: #0d0d11;
+  --hover-selected-color: #16161b;
+  --invert-background-color: var(--white-color);
+  --track-background-color: #000000;
+  --track-hover-background-color: #0e0e12;
+  --modal-background-color: #09090b;
+
+  /* Blur. */
+  --image-blur: linear-gradient(
+    to bottom,
+    rgb(0 0 0 / 70%),
+    rgb(0 0 0 / 40%),
+    var(--body-background-color)
+  );
+}

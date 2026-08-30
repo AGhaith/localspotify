@@ -1,0 +1,187 @@
+export function usePodcast() {
+  const { fetchData } = useAPI();
+  const { addSuccessSnack } = useSnack();
+  const { closeModal, openModal } = useModal();
+
+  const podcast = useState<PodcastState>(STATE_KEYS.podcast, () => ({}));
+  const podcasts = useState<Podcast[]>(STATE_KEYS.podcasts, () => []);
+  const newestPodcastEpisodes = useState<PodcastEpisode[]>(
+    STATE_KEYS.newestPodcastEpisodes,
+    () => [],
+  );
+
+  function resetPodcasts() {
+    podcast.value = {};
+    podcasts.value = [];
+    newestPodcastEpisodes.value = [];
+  }
+
+  async function addPodcast(url: string) {
+    const { data: podcastData } = await fetchData('/createPodcastChannel', {
+      method: 'POST',
+      query: {
+        url,
+      },
+      // Server might return error, however, some servers still add podcast.
+      retry: 0,
+    });
+
+    if (podcastData) {
+      addSuccessSnack('Successfully added podcast.');
+    }
+
+    getPodcastsAndNewestPodcastEpisodes();
+  }
+
+  /* istanbul ignore next -- @preserve */
+  function addPodcastModal() {
+    openModal(MODAL_TYPE.addPodcastModal, {
+      async onSubmit(podcastUrl: string) {
+        await addPodcast(podcastUrl);
+        closeModal();
+      },
+    });
+  }
+
+  async function deletePodcast(id: string) {
+    const { data: podcastData } = await fetchData('/deletePodcastChannel', {
+      query: {
+        id,
+      },
+    });
+
+    if (podcastData) {
+      addSuccessSnack('Successfully deleted podcast.');
+    }
+
+    getPodcastsAndNewestPodcastEpisodes();
+  }
+
+  async function deletePodcastEpisode(podcastEpisode: PodcastEpisode) {
+    const { data: podcastData } = await fetchData('/deletePodcastEpisode', {
+      query: {
+        id: podcastEpisode.id,
+      },
+    });
+
+    if (podcastData) {
+      addSuccessSnack(
+        'Podcast episode deleted from the server. Please allow a moment for any updates to appear.',
+      );
+    }
+
+    if (!podcastEpisode.podcastId) {
+      return;
+    }
+
+    refreshPodcastAfterDelay(podcastEpisode.podcastId);
+  }
+
+  async function downloadPodcastEpisode(podcastEpisode: PodcastEpisode) {
+    const { data: podcastData } = await fetchData('/downloadPodcastEpisode', {
+      query: {
+        id: podcastEpisode.id,
+      },
+    });
+
+    if (podcastData) {
+      addSuccessSnack(
+        'Download has begun on the server. Podcast will update automatically.',
+      );
+    }
+
+    if (!podcastEpisode.podcastId) {
+      return;
+    }
+
+    refreshPodcastAfterDelay(podcastEpisode.podcastId);
+  }
+
+  async function getNewestPodcastEpisodes() {
+    const { data: newestPodcastEpisodesData } = await fetchData(
+      '/getNewestPodcasts',
+      {
+        query: {
+          count: 15,
+        },
+        transform: /* istanbul ignore next -- @preserve */ (response) =>
+          (response.newestPodcasts.episode || []).map(formatPodcastEpisode),
+      },
+    );
+
+    newestPodcastEpisodes.value = newestPodcastEpisodesData || [];
+  }
+
+  async function getPodcast(id: string) {
+    const { data: podcastData } = await getPodcastsData({
+      id,
+      includeEpisodes: true,
+    });
+
+    const podcastDataItem = podcastData?.[0] || null;
+
+    podcast.value = {
+      ...podcast.value,
+      [id]: podcastDataItem,
+    };
+
+    return podcastDataItem;
+  }
+
+  async function getPodcasts() {
+    const { data: podcastsData } = await getPodcastsData();
+    podcasts.value = podcastsData || [];
+  }
+
+  function getPodcastsAndNewestPodcastEpisodes() {
+    return Promise.all([getPodcasts(), getNewestPodcastEpisodes()]);
+  }
+
+  function getPodcastsData(params?: PodcastsParams) {
+    const finalParams = params || {
+      includeEpisodes: false,
+    };
+
+    return fetchData('/getPodcasts', {
+      query: finalParams,
+      transform: /* istanbul ignore next -- @preserve */ (response) =>
+        (response.podcasts.channel || [])
+          .map(formatPodcast)
+          .sort((podcastA, podcastB) =>
+            podcastA.name
+              .toLowerCase()
+              .localeCompare(podcastB.name.toLowerCase()),
+          ),
+    });
+  }
+
+  /* istanbul ignore next -- @preserve */
+  async function refreshPodcasts() {
+    await fetchData('/refreshPodcasts');
+  }
+
+  function refreshPodcastAfterDelay(podcastId: string) {
+    runTaskOnSchedule(
+      `refreshPodcast-${podcastId}`,
+      [0, 5, 10, 15],
+      async () => {
+        await Promise.all([getPodcast(podcastId), getNewestPodcastEpisodes()]);
+      },
+    );
+  }
+
+  return {
+    addPodcast,
+    addPodcastModal,
+    deletePodcast,
+    deletePodcastEpisode,
+    downloadPodcastEpisode,
+    getPodcast,
+    getPodcastsAndNewestPodcastEpisodes,
+    newestPodcastEpisodes,
+    podcast,
+    podcasts,
+    refreshPodcasts,
+    resetPodcasts,
+  };
+}

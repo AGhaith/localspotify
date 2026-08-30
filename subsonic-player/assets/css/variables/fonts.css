@@ -1,0 +1,27 @@
+:root {
+  --h1-font-size: clamp(1.875rem, 1.6142rem + 0.9934vw, 2.25rem);
+  --h2-font-size: clamp(1.5rem, 1.2392rem + 0.9934vw, 1.875rem);
+  --h3-font-size: clamp(1.25rem, 1.0762rem + 0.6623vw, 1.5rem);
+  --h4-font-size: clamp(1.125rem, 1.0381rem + 0.3311vw, 1.25rem);
+  --body-font-size: clamp(1rem, 0.9131rem + 0.3311vw, 1.125rem);
+  --small-font-size: clamp(0.875rem, 0.7881rem + 0.3311vw, 1rem);
+
+  /* Font weight. */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-black: 800;
+
+  /* Line height. */
+  --line-height: 1.15;
+  --line-height-medium: 1.5;
+
+  /* Letter spacing. */
+  --letter-spacing: -0.015em;
+  --letter-spacing-normal: 0;
+
+  /* Font family - Spotify Circular stack */
+  --font-family: 'CircularSp', 'CircularStd', 'Circular', 'Plus Jakarta Sans', 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-family-display: 'CircularSp', 'CircularStd', 'Circular', 'Plus Jakarta Sans', 'Outfit', var(--font-family);
+}

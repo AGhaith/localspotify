@@ -1,0 +1,22 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`NavigationItem > matches the snapshot 1`] = `
+"<li>
+  <p class="strong mBM sidebarTitle">title</p>
+  <!--v-if-->
+</li>"
+`;
+
+exports[`NavigationItem > when the collapsed prop is true > matches the snapshot 1`] = `
+"<li>
+  <p class="strong mBM sidebarTitle visuallyHidden">title</p>
+  <!--v-if-->
+</li>"
+`;
+
+exports[`NavigationItem > when the default slot is set > matches the snapshot 1`] = `
+"<li>
+  <p class="strong mBM sidebarTitle">title</p>
+  <ul>Default slot content.</ul>
+</li>"
+`;

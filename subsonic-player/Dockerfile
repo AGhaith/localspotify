@@ -1,0 +1,55 @@
+ARG NODE_VERSION=24.15.0
+
+# Create build stage
+FROM node:${NODE_VERSION}-alpine AS base
+
+# Define environment variables
+ARG NODE_ENV=production
+ENV NODE_ENV=${NODE_ENV}
+
+# Set the working directory inside the container.
+WORKDIR /app
+
+# Create build stage.
+FROM base AS build
+
+ARG APP_VERSION=dev
+ARG APP_RELEASE_DATE=
+
+ENV APP_VERSION=${APP_VERSION}
+ENV APP_RELEASE_DATE=${APP_RELEASE_DATE}
+
+# Copy package.json and package-lock.json files to the working directory.
+COPY ./package.json .
+COPY ./package-lock.json .
+
+# Configure npm network timeouts and install dependencies for the build
+RUN npm config set fetch-retries 5 && \
+    npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retry-maxtimeout 120000 && \
+    npm install --include=dev --legacy-peer-deps --ignore-scripts
+
+# Copy the rest of the application files to the working directory.
+COPY . .
+
+# Build the application.
+RUN npm run build
+
+# Create a new stage for the production image.
+FROM base
+
+# Define environment variables.
+ARG PORT=3000
+ENV PORT=${PORT}
+
+ARG HOSTNAME=0.0.0.0
+ENV HOSTNAME=${HOSTNAME}
+
+# Copy the output from the build stage to the working directory.
+COPY --from=build /app/.output /app/.output
+
+# Expose the port the application will run on.
+EXPOSE 3000
+
+# Start the application
+CMD ["node", ".output/server/index.mjs"]

@@ -1,0 +1,18 @@
+.dropdownWrapper {
+  position: relative;
+}
+
+.dropdownOverlay {
+  position: fixed;
+  z-index: 20;
+}
+
+.dropdownContent {
+  position: relative;
+  min-width: 190px;
+  padding: var(--space-6) 0;
+  background-color: var(--background-color);
+  border: 2px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: 5px 5px 0px #000000;
+}

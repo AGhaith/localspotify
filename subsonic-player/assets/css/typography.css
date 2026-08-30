@@ -1,0 +1,71 @@
+html {
+  text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-family);
+  font-size: var(--body-font-size);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-medium);
+  text-shadow: var(--text-shadow);
+}
+
+h1 {
+  font-size: var(--h1-font-size);
+}
+
+h2 {
+  font-size: var(--h2-font-size);
+}
+
+h3 {
+  font-size: var(--h3-font-size);
+}
+
+h4 {
+  font-size: var(--h4-font-size);
+}
+
+a,
+p,
+label,
+input,
+button {
+  letter-spacing: var(--letter-spacing-normal);
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-family-display);
+  font-weight: var(--font-weight-black);
+  line-height: var(--line-height);
+  color: var(--header-font-color);
+  letter-spacing: var(--letter-spacing);
+}
+
+.smallFont {
+  font-size: var(--small-font-size);
+}
+
+.strong {
+  font-weight: var(--font-weight-bold);
+}
+
+.link {
+  position: relative;
+
+  @media (hover: hover) {
+    &:hover,
+    &:focus {
+      text-decoration: underline;
+    }
+  }
+}
+
+.sentenceCase {
+  &::first-letter {
+    text-transform: uppercase;
+  }
+}

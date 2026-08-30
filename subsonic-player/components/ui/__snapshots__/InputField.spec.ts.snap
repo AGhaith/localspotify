@@ -1,0 +1,31 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`InputField > when an attribute is passed to the component > matches the snapshot 1`] = `
+"<div class="column inputField"><label class="mBXS sentenceCase smallFont label" for="id">label
+    <!--v-if-->
+  </label><input id="id" autocomplete="off" class="interactionInput input" placeholder="Placeholder" type="text">
+  <!--v-if-->
+</div>"
+`;
+
+exports[`InputField > when the error prop is set > matches the snapshot 1`] = `
+"<div class="column inputField error"><label class="mBXS sentenceCase smallFont label" for="id">label
+    <!--v-if-->
+  </label><input id="id" aria-describedby="id-error" aria-invalid="true" autocomplete="off" class="interactionInput input" type="text">
+  <p id="id-error" class="smallFont sentenceCase">Error message.</p>
+</div>"
+`;
+
+exports[`InputField > when the hideLabel prop is set to true > matches the snapshot 1`] = `
+"<div class="column inputField"><label class="mBXS sentenceCase smallFont label visuallyHidden" for="id">label
+    <!--v-if-->
+  </label><input id="id" autocomplete="off" class="interactionInput input" type="text">
+  <!--v-if-->
+</div>"
+`;
+
+exports[`InputField > when the required prop is set to true > matches the snapshot 1`] = `
+"<div class="column inputField"><label class="mBXS sentenceCase smallFont label" for="id">label <span class="required">*</span></label><input id="id" autocomplete="off" class="interactionInput input" required="" type="text">
+  <!--v-if-->
+</div>"
+`;

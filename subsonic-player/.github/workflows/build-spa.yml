@@ -1,0 +1,81 @@
+name: Build SPA
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  metadata:
+    uses: ./.github/workflows/compute-build-metadata.yml
+    with:
+      version_policy: release
+
+  build:
+    name: Build SPA static export
+    needs: metadata
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      APP_RELEASE_DATE: ${{ needs.metadata.outputs.app_release_date }}
+      APP_VERSION: ${{ needs.metadata.outputs.app_version }}
+      ARTIFACT_NAME: subsonic-player-static-${{ needs.metadata.outputs.short_sha }}
+      RELEASE_TAG: ${{ needs.metadata.outputs.short_sha }}
+      SHORT_SHA: ${{ needs.metadata.outputs.short_sha }}
+      TARBALL_NAME: subsonic-player-static-${{ needs.metadata.outputs.short_sha }}.tar.gz
+
+    steps:
+      - name: Checkout branch 🛎
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Generate release notes 📝
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -n "$PREV_TAG" ]; then
+            echo "Changes since ${PREV_TAG}:" > release-notes.md
+            git log ${PREV_TAG}..HEAD --pretty=format:'- `%h` %s' \
+              | grep -v 'dependabot\|Bump ' >> release-notes.md
+          else
+            echo "Initial release" > release-notes.md
+            git log --max-count=15 --pretty=format:'- `%h` %s' \
+              | grep -v 'dependabot\|Bump ' >> release-notes.md
+          fi
+
+      - name: Setup node env 🏗
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies 👨🏻‍💻
+        run: npm ci
+
+      - name: Build SPA 📦
+        run: npm run generate
+        env:
+          SPA_MODE: "true"
+          APP_RELEASE_DATE: ${{ env.APP_RELEASE_DATE }}
+          APP_VERSION: ${{ env.APP_VERSION }}
+
+      - name: Package artifacts 🗜️
+        run: |
+          tar -czvf ${{ env.TARBALL_NAME }} -C .output/public .
+
+      - name: Upload build artifacts ☁️
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: ${{ env.TARBALL_NAME }}
+          retention-days: 7
+
+      - name: Create release 🚀
+        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: ${{ env.RELEASE_TAG }}
+          body_path: release-notes.md
+          files: ${{ env.TARBALL_NAME }}
+          make_latest: true

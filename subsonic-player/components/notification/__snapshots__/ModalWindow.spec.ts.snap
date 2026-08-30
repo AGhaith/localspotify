@@ -1,0 +1,95 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ModalWindow > when modal values are not set > matches the snapshot 1`] = `
+"<teleport-stub to="#teleports">
+  <!--v-if-->
+</teleport-stub>"
+`;
+
+exports[`ModalWindow > when modal values are set > matches the snapshot 1`] = `
+"<teleport-stub to="#teleports">
+  <dialog aria-labelledby="modal-title" class="fullscreen centerAll modalDialog fade-enter-from fade-enter-active" open="">
+    <div class="modalContent">
+      <div class="centerItems spaceBetween headerWithAction">
+        <div class="centerItems"><button class="centerItems buttonLink" draggable="false" type="button" title="Close modal">
+            <phx aria-hidden="true" class="icon" size="32" weight="bold"></phx><span class="clamp text visuallyHidden"> Close modal </span>
+          </button></div>
+      </div>
+      <div class="main body">
+        <div></div>
+      </div>
+    </div>
+  </dialog>
+</teleport-stub>"
+`;
+
+exports[`ModalWindow > when modal values are set > when modal container is clicked > matches the snapshot 1`] = `
+"<teleport-stub to="#teleports">
+  <dialog aria-labelledby="modal-title" class="fullscreen centerAll modalDialog fade-leave-from fade-leave-active" open="">
+    <div class="modalContent">
+      <div class="centerItems spaceBetween headerWithAction">
+        <div class="centerItems"><button class="centerItems buttonLink" draggable="false" type="button" title="Close modal">
+            <phx aria-hidden="true" class="icon" size="32" weight="bold"></phx><span class="clamp text visuallyHidden"> Close modal </span>
+          </button></div>
+      </div>
+      <div class="main body">
+        <div></div>
+      </div>
+    </div>
+  </dialog>
+  <!--v-if-->
+</teleport-stub>"
+`;
+
+exports[`ModalWindow > when modal values are set > when modal content is clicked > matches the snapshot 1`] = `
+"<teleport-stub to="#teleports">
+  <dialog aria-labelledby="modal-title" class="fullscreen centerAll modalDialog" open="">
+    <div class="modalContent">
+      <div class="centerItems spaceBetween headerWithAction">
+        <div class="centerItems"><button class="centerItems buttonLink" draggable="false" type="button" title="Close modal">
+            <phx aria-hidden="true" class="icon" size="32" weight="bold"></phx><span class="clamp text visuallyHidden"> Close modal </span>
+          </button></div>
+      </div>
+      <div class="main body">
+        <div></div>
+      </div>
+    </div>
+  </dialog>
+</teleport-stub>"
+`;
+
+exports[`ModalWindow > when modal values are set > when the ButtonLink component is clicked > matches the snapshot 1`] = `
+"<teleport-stub to="#teleports">
+  <dialog aria-labelledby="modal-title" class="fullscreen centerAll modalDialog fade-enter-from fade-leave-from fade-leave-active" open="">
+    <div class="modalContent">
+      <div class="centerItems spaceBetween headerWithAction">
+        <div class="centerItems"><button class="centerItems buttonLink" draggable="false" type="button" title="Close modal">
+            <phx aria-hidden="true" class="icon" size="32" weight="bold"></phx><span class="clamp text visuallyHidden"> Close modal </span>
+          </button></div>
+      </div>
+      <div class="main body">
+        <div></div>
+      </div>
+    </div>
+  </dialog>
+  <!--v-if-->
+</teleport-stub>"
+`;
+
+exports[`ModalWindow > when modal values are set > when title is set > matches the snapshot 1`] = `
+"<teleport-stub to="#teleports">
+  <dialog aria-labelledby="modal-title" class="fullscreen centerAll modalDialog" open="">
+    <div class="modalContent">
+      <div class="centerItems spaceBetween headerWithAction">
+        <h3 id="modal-title" class="title">Title</h3>
+        <div class="centerItems"><button class="centerItems buttonLink" draggable="false" type="button" title="Close modal">
+            <phx aria-hidden="true" class="icon" size="32" weight="bold"></phx><span class="clamp text visuallyHidden"> Close modal </span>
+          </button></div>
+      </div>
+      <div class="main body">
+        <div></div>
+      </div>
+    </div>
+  </dialog>
+</teleport-stub>"
+`;

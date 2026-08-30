@@ -1,0 +1,112 @@
+<script setup lang="ts">
+const props = withDefaults(
+  defineProps<{
+    disabled?: boolean;
+    fullWidth?: boolean;
+    icon?: Component | Icon;
+    iconColor?: string;
+    iconPosition?: 'left' | 'right';
+    iconSize?: IconSize;
+    iconWeight?: IconWeight;
+    is?: ButtonOrLinkType;
+    showText?: boolean;
+    type?: string;
+  }>(),
+  {
+    disabled: undefined,
+    icon: undefined,
+    iconColor: undefined,
+    iconPosition: 'left',
+    iconSize: 'medium',
+    iconWeight: 'regular',
+    is: 'button',
+    type: 'button',
+  },
+);
+
+const type = props.is === 'button' ? props.type : undefined;
+const isComponent =
+  props.is === 'nuxt-link' ? resolveComponent('NuxtLink') : props.is;
+</script>
+
+<template>
+  <component
+    :is="isComponent"
+    :class="[
+      'centerItems',
+      $style.buttonLink,
+      {
+        [$style.alignRight]: ($slots.icon || icon) && iconPosition === 'right',
+        [$style.disabled]: disabled,
+        'centerAll fullWidth': fullWidth,
+      },
+    ]"
+    :disabled
+    draggable="false"
+    :type
+    v-bind="$attrs"
+  >
+    <slot name="icon">
+      <component
+        :is="icon"
+        v-if="icon"
+        ref="iconComponent"
+        aria-hidden="true"
+        :class="$style.icon"
+        :color="iconColor"
+        :size="ICON_SIZE[iconSize]"
+        :weight="iconWeight"
+      />
+    </slot>
+
+    <span
+      ref="text"
+      :class="[
+        'clamp',
+        $style.text,
+        {
+          visuallyHidden: !showText,
+        },
+      ]"
+    >
+      <slot />
+    </span>
+  </component>
+</template>
+
+<style module>
+.buttonLink {
+  position: relative;
+  gap: var(--default-space);
+  padding: var(--default-space);
+  white-space: nowrap;
+  transition: transform 0.12s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.12s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &:active {
+    transform: scale(0.96) translate(1px, 1px);
+  }
+}
+
+.alignRight {
+  flex-direction: row-reverse;
+}
+
+.disabled {
+  pointer-events: none;
+  opacity: 0.25;
+}
+
+.icon {
+  flex-shrink: 0;
+
+  [opacity='0.2'] {
+    opacity: 0.4;
+    fill: var(--secondary-font-color);
+  }
+}
+
+.text {
+  display: block;
+  margin-bottom: 1px;
+}
+</style>

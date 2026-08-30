@@ -75,9 +75,9 @@ environment:
 
 ---
 
-## 📱 LocalSpotify Tauri 2.0 Native App
+## 📱 Subsonic Player Tauri 2.0 Native & Mobile App
 
-A dedicated cross-platform client with **1-click offline downloads** stored in the app's hidden sandbox storage (Spotify-style):
+A dedicated cross-platform client and Android APK builder connecting directly to your Subsonic / Navidrome music server.
 
 ### Running the App Locally:
 ```bash
@@ -85,6 +85,8 @@ cd app
 npm run dev
 ```
 
-### 📦 Automated Android APK Builds:
-A GitHub Actions workflow (`.github/workflows/build-apk.yml`) is included. Every time you push to `main`, GitHub Actions automatically compiles and packages the Android APK, available under the **Actions** tab of your repository.
+### 📦 Automated Android APK Builds via GitHub Actions:
+A GitHub Actions workflow (`.github/workflows/build-apk.yml`) is configured. Every time you push changes to `main`, GitHub Actions automatically builds the Android APK.
+
+You can download the compiled APK under the **Actions** tab on your GitHub repository.
 

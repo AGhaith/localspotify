@@ -1,0 +1,176 @@
+export interface Album {
+  artists: BaseArtist[];
+  created: string;
+  duration: number;
+  favourite: boolean;
+  formattedDuration: string;
+  genres: Genre[];
+  id: string;
+  image: string;
+  information: AlbumStats;
+  name: string;
+  size: string;
+  totalDiscNumber: number;
+  trackCount: number;
+  tracks: Track[];
+  tracksByDiscNumber: TracksByDiscNumber;
+  type: MediaType;
+  year: number | string;
+}
+export interface AllMedia {
+  albums: Album[];
+  artists: Artist[];
+  tracks: Track[];
+}
+
+export interface Artist extends BaseArtist {
+  albums: Album[];
+  biography?: string;
+  favourite: boolean;
+  genres: Genre[];
+  image: string;
+  lastFmUrl?: string;
+  musicBrainzUrl?: string;
+  similarArtists: Artist[];
+  similarTracks: Track[];
+  topTracks: Track[];
+  totalAlbums: number;
+  totalTracks: number;
+  type: MediaType;
+}
+
+export interface BaseArtist {
+  id: string;
+  name: string;
+}
+
+export interface Bookmark extends PodcastEpisode {
+  formattedPosition: string;
+  position: number;
+}
+
+export interface FormattedPlayQueue {
+  current?: number;
+  position: number;
+  tracks: (PodcastEpisode | Track)[];
+}
+
+export interface Genre {
+  albumCount?: number;
+  name: string;
+  trackCount?: number;
+}
+
+export type MediaType = TypeofMediaType[keyof TypeofMediaType];
+
+export interface Playlist {
+  duration: number;
+  formattedDuration: string;
+  id: string;
+  images: string[];
+  information: PlaylistInformation;
+  name: string;
+  trackCount: number;
+  tracks: (PodcastEpisode | Track)[];
+  type: MediaType;
+}
+
+export interface Podcast {
+  description?: string;
+  episodes: Record<PodcastSortByParam, PodcastEpisode[]>;
+  id: string;
+  image: string;
+  lastUpdated: string;
+  name: string;
+  totalDownloadedEpisodes: number;
+  totalEpisodes: number;
+  type: MediaType;
+  url: string;
+}
+
+export interface PodcastEpisode {
+  author: string;
+  description?: string;
+  downloaded: boolean;
+  duration: number;
+  formattedDuration: string;
+  genres: Genre[];
+  id: string;
+  image: string;
+  name: string;
+  podcastId?: string;
+  podcastName: string;
+  position?: number;
+  publishDate: string;
+  streamUrlId?: string;
+  trackNumber: number | string;
+  type: MediaType;
+}
+
+export interface RadioStation {
+  duration: number;
+  formattedDuration: string;
+  homePageUrl?: string;
+  id: string;
+  image: string;
+  name: string;
+  position?: number;
+  streamUrlId: string;
+  trackNumber: number | string;
+  type: MediaType;
+}
+
+export interface Track {
+  album: string;
+  albumId?: string;
+  artists: BaseArtist[];
+  discNumber: number | string;
+  duration: number;
+  favourite: boolean;
+  formattedDuration: string;
+  genres: Genre[];
+  id: string;
+  image: string;
+  index: number;
+  information: TrackDetails;
+  name: string;
+  peak?: number;
+  peakAlbum?: number;
+  position?: number;
+  replayGain?: number;
+  replayGainAlbum?: number;
+  size: string;
+  streamUrlId: string;
+  trackNumber: number | string;
+  type: MediaType;
+  year: number | string;
+}
+
+export interface TracksByDiscNumber {
+  [key: string]: Track[];
+}
+
+interface AlbumStats {
+  playCount: number;
+}
+
+interface PlaylistInformation {
+  changed: string;
+  comment?: string;
+  created: string;
+  owner: string;
+  public: boolean;
+}
+
+interface TrackDetails {
+  bitRate: string;
+  contentType: string;
+  created: string;
+  path: string;
+  playCount: number;
+  suffix: string;
+  transcodedContentType: string;
+  transcodedSuffix: string;
+}
+
+type TypeofMediaType = typeof MEDIA_TYPE;

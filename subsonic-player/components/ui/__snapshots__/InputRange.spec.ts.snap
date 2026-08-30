@@ -1,0 +1,319 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`InputRange > matches the snapshot 1`] = `
+"<div aria-disabled="false" class="inputRange" style="--input-slider-height: 6px;">
+  <div class="centerItems slider">
+    <div class="progressWrapper">
+      <div class="progress" style="width: 25px;"></div>
+      <!--v-if-->
+    </div>
+    <div class="thumb" style="left: 19px;"></div>
+    <!--v-if-->
+  </div>
+</div>"
+`;
+
+exports[`InputRange > when the bufferLength prop is set to true > matches the snapshot 1`] = `
+"<div aria-disabled="false" class="inputRange" style="--input-slider-height: 6px;">
+  <div class="centerItems slider">
+    <div class="progressWrapper">
+      <div class="progress" style="width: 25px;"></div>
+      <div class="buffer" style="width: 50px;"></div>
+    </div>
+    <div class="thumb" style="left: 19px;"></div>
+    <!--v-if-->
+  </div>
+</div>"
+`;
+
+exports[`InputRange > when the bufferLength prop is set to true > when buffer duration updates > matches the snapshot 1`] = `
+"<div aria-disabled="false" class="inputRange" style="--input-slider-height: 6px;">
+  <div class="centerItems slider">
+    <div class="progressWrapper">
+      <div class="progress" style="width: 25px;"></div>
+      <div class="buffer" style="width: 75px;"></div>
+    </div>
+    <div class="thumb" style="left: 19px;"></div>
+    <!--v-if-->
+  </div>
+</div>"
+`;
+
+exports[`InputRange > when the default slot is set > when the hideThumb prop is set to true > matches the snapshot 1`] = `
+"<div aria-disabled="false" class="inputRange" style="--input-slider-height: 6px;">
+  <div class="centerItems slider">
+    <div class="progressWrapper">
+      <div class="progress" style="width: 25px;"></div>
+      <!--v-if-->
+    </div>
+    <!--v-if-->
+    <!--v-if-->
+  </div>
+</div>"
+`;
+
+exports[`InputRange > when the default slot is set > when the max prop greater than 0 > matches the snapshot 1`] = `
+"<div aria-disabled="false" class="inputRange" style="--input-slider-height: 6px;">
+  <div class="centerItems slider">
+    <div class="progressWrapper">
+      <div class="progress" style="width: 25px;"></div>
+      <!--v-if-->
+    </div>
+    <div class="thumb" style="left: 19px;"></div>
+    <div class="mBS strong smallFont tooltip" style="left: 25px;">
+      <p>2.5</p>
+    </div>
+  </div>
+</div>"
+`;
+
+exports[`InputRange > when the default slot is set > when the max prop greater than 0 > when the mousemove on slider is called > when the mouseover on slider is called before > matches the snapshot 1`] = `
+"<div aria-disabled="false" class="inputRange" style="--input-slider-height: 6px;">
+  <div class="centerItems slider">
+    <div class="progressWrapper">
+      <div class="progress" style="width: 25px;"></div>
+      <!--v-if-->
+    </div>
+    <div class="thumb" style="left: 19px;"></div>
+    <div class="mBS strong smallFont tooltip" style="left: 80px;">
+      <p>8</p>
+    </div>
+  </div>
+</div>"
+`;
+
+exports[`InputRange > when the default slot is set > when the max prop greater than 0 > when the mousemove on slider is called > when the mouseover on slider is not called before > matches the snapshot 1`] = `
+"<div aria-disabled="false" class="inputRange" style="--input-slider-height: 6px;">
+  <div class="centerItems slider">
+    <div class="progressWrapper">
+      <div class="progress" style="width: 25px;"></div>
+      <!--v-if-->
+    </div>
+    <div class="thumb" style="left: 19px;"></div>
+    <div class="mBS strong smallFont tooltip" style="left: 25px;">
+      <p>2.5</p>
+    </div>
+  </div>
+</div>"
+`;
+
+exports[`InputRange > when the disabled prop is set to true > matches the snapshot 1`] = `
+"<div aria-disabled="true" class="inputRange disabled" style="--input-slider-height: 6px;">
+  <div class="centerItems slider">
+    <div class="progressWrapper">
+      <div class="progress" style="width: 25px;"></div>
+      <!--v-if-->
+    </div>
+    <div class="thumb" style="left: 19px;"></div>
+    <!--v-if-->
+  </div>
+</div>"
+`;
+
+exports[`InputRange > when the height prop is set > matches the snapshot 1`] = `
+"<div aria-disabled="false" class="inputRange" style="--input-slider-height: 10px;">
+  <div class="centerItems slider">
+    <div class="progressWrapper">
+      <div class="progress" style="width: 25px;"></div>
+      <!--v-if-->
+    </div>
+    <div class="thumb" style="left: 19px;"></div>
+    <!--v-if-->
+  </div>
+</div>"
+`;
+
+exports[`InputRange > when the hideThumb prop is set to true > matches the snapshot 1`] = `
+"<div aria-disabled="false" class="inputRange" style="--input-slider-height: 6px;">
+  <div class="centerItems slider">
+    <div class="progressWrapper">
+      <div class="progress" style="width: 25px;"></div>
+      <!--v-if-->
+    </div>
+    <!--v-if-->
+    <!--v-if-->
+  </div>
+</div>"
+`;
+
+exports[`InputRange > when the max prop equal to 0 > matches the snapshot 1`] = `
+"<div aria-disabled="false" class="inputRange standard" style="--input-slider-height: 6px;">
+  <div class="centerItems slider">
+    <div class="progressWrapper">
+      <div class="progress" style="width: 100px;"></div>
+      <!--v-if-->
+    </div>
+    <!--v-if-->
+    <!--v-if-->
+  </div>
+</div>"
+`;
+
+exports[`InputRange > when the min prop is set to a value greater than 0 > matches the snapshot 1`] = `
+"<div aria-disabled="false" class="inputRange" style="--input-slider-height: 6px;">
+  <div class="centerItems slider">
+    <div class="progressWrapper">
+      <div class="progress" style="width: 0px;"></div>
+      <!--v-if-->
+    </div>
+    <div class="thumb" style="left: -6px;"></div>
+    <!--v-if-->
+  </div>
+</div>"
+`;
+
+exports[`InputRange > when the min prop is set to a value greater than 0 > when the modelValue changes to a middle value > matches the snapshot 1`] = `
+"<div aria-disabled="false" class="inputRange" style="--input-slider-height: 6px;">
+  <div class="centerItems slider">
+    <div class="progressWrapper">
+      <div class="progress" style="width: 50px;"></div>
+      <!--v-if-->
+    </div>
+    <div class="thumb" style="left: 44px;"></div>
+    <!--v-if-->
+  </div>
+</div>"
+`;
+
+exports[`InputRange > when the model value updates > matches the snapshot 1`] = `
+"<div aria-disabled="false" class="inputRange" style="--input-slider-height: 6px;">
+  <div class="centerItems slider">
+    <div class="progressWrapper">
+      <div class="progress" style="width: 50px;"></div>
+      <!--v-if-->
+    </div>
+    <div class="thumb" style="left: 44px;"></div>
+    <!--v-if-->
+  </div>
+</div>"
+`;
+
+exports[`InputRange > when the mousedown on slider is called > matches the snapshot 1`] = `
+"<div aria-disabled="false" class="inputRange seeking" style="--input-slider-height: 6px;">
+  <div class="centerItems slider">
+    <div class="progressWrapper">
+      <div class="progress" style="width: 60px;"></div>
+      <!--v-if-->
+    </div>
+    <div class="thumb" style="left: 54px;"></div>
+    <!--v-if-->
+  </div>
+</div>"
+`;
+
+exports[`InputRange > when the mousedown on slider is called > when slider mousemove is called > matches the snapshot 1`] = `
+"<div aria-disabled="false" class="inputRange seeking" style="--input-slider-height: 6px;">
+  <div class="centerItems slider">
+    <div class="progressWrapper">
+      <div class="progress" style="width: 30px;"></div>
+      <!--v-if-->
+    </div>
+    <div class="thumb" style="left: 24px;"></div>
+    <!--v-if-->
+  </div>
+</div>"
+`;
+
+exports[`InputRange > when the mousedown on slider is called > when the mouseup is called > matches the snapshot 1`] = `
+"<div aria-disabled="false" class="inputRange" style="--input-slider-height: 6px;">
+  <div class="centerItems slider">
+    <div class="progressWrapper">
+      <div class="progress" style="width: 60px;"></div>
+      <!--v-if-->
+    </div>
+    <div class="thumb" style="left: 54px;"></div>
+    <!--v-if-->
+  </div>
+</div>"
+`;
+
+exports[`InputRange > when the touchstart on slider is called > when touches is an empty array and changedTouches is not an empty array > matches the snapshot 1`] = `
+"<div aria-disabled="false" class="inputRange seeking" style="--input-slider-height: 6px;">
+  <div class="centerItems slider">
+    <div class="progressWrapper">
+      <div class="progress" style="width: 60px;"></div>
+      <!--v-if-->
+    </div>
+    <div class="thumb" style="left: 54px;"></div>
+    <!--v-if-->
+  </div>
+</div>"
+`;
+
+exports[`InputRange > when the touchstart on slider is called > when touches is an empty array and changedTouches is not an empty array > when slider mousemove is called > matches the snapshot 1`] = `
+"<div aria-disabled="false" class="inputRange seeking" style="--input-slider-height: 6px;">
+  <div class="centerItems slider">
+    <div class="progressWrapper">
+      <div class="progress" style="width: 30px;"></div>
+      <!--v-if-->
+    </div>
+    <div class="thumb" style="left: 24px;"></div>
+    <!--v-if-->
+  </div>
+</div>"
+`;
+
+exports[`InputRange > when the touchstart on slider is called > when touches is an empty array and changedTouches is not an empty array > when the mouseup is called > matches the snapshot 1`] = `
+"<div aria-disabled="false" class="inputRange" style="--input-slider-height: 6px;">
+  <div class="centerItems slider">
+    <div class="progressWrapper">
+      <div class="progress" style="width: 60px;"></div>
+      <!--v-if-->
+    </div>
+    <div class="thumb" style="left: 54px;"></div>
+    <!--v-if-->
+  </div>
+</div>"
+`;
+
+exports[`InputRange > when the touchstart on slider is called > when touches is not an empty array > matches the snapshot 1`] = `
+"<div aria-disabled="false" class="inputRange seeking" style="--input-slider-height: 6px;">
+  <div class="centerItems slider">
+    <div class="progressWrapper">
+      <div class="progress" style="width: 60px;"></div>
+      <!--v-if-->
+    </div>
+    <div class="thumb" style="left: 54px;"></div>
+    <!--v-if-->
+  </div>
+</div>"
+`;
+
+exports[`InputRange > when the touchstart on slider is called > when touches is not an empty array > when slider mousemove is called > matches the snapshot 1`] = `
+"<div aria-disabled="false" class="inputRange seeking" style="--input-slider-height: 6px;">
+  <div class="centerItems slider">
+    <div class="progressWrapper">
+      <div class="progress" style="width: 30px;"></div>
+      <!--v-if-->
+    </div>
+    <div class="thumb" style="left: 24px;"></div>
+    <!--v-if-->
+  </div>
+</div>"
+`;
+
+exports[`InputRange > when the touchstart on slider is called > when touches is not an empty array > when the mouseup is called > matches the snapshot 1`] = `
+"<div aria-disabled="false" class="inputRange" style="--input-slider-height: 6px;">
+  <div class="centerItems slider">
+    <div class="progressWrapper">
+      <div class="progress" style="width: 60px;"></div>
+      <!--v-if-->
+    </div>
+    <div class="thumb" style="left: 54px;"></div>
+    <!--v-if-->
+  </div>
+</div>"
+`;
+
+exports[`InputRange > when the window change size is called > matches the snapshot 1`] = `
+"<div aria-disabled="false" class="inputRange" style="--input-slider-height: 6px;">
+  <div class="centerItems slider">
+    <div class="progressWrapper">
+      <div class="progress" style="width: 25px;"></div>
+      <!--v-if-->
+    </div>
+    <div class="thumb" style="left: 19px;"></div>
+    <!--v-if-->
+  </div>
+</div>"
+`;

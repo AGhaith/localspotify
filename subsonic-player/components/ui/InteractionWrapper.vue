@@ -1,0 +1,123 @@
+<script setup lang="ts">
+const props = withDefaults(
+  defineProps<{
+    draggable?: boolean;
+    is?: string;
+  }>(),
+  {
+    draggable: true,
+    is: 'div',
+  },
+);
+
+const emit = defineEmits<{
+  click: [event: MouseEvent];
+  contextMenu: [event: MouseEvent];
+  dragStart: [event: DragEvent];
+}>();
+
+const instance = getCurrentInstance();
+
+const { isAnyOpen } = useDropdownMenuState();
+const { isDragging } = useSortableListState();
+
+const isMouseOver = ref(false);
+const isTouched = ref(false);
+
+// Only allow the event if the following is true.
+function isInteractiveTarget(event: Event) {
+  const target = event.target as HTMLElement;
+  const element = target.closest('a, button');
+
+  return (
+    !!element && !element.classList.contains(INTERACTION_WRAPPER_LINK_CLASS)
+  );
+}
+
+function onClick(event: MouseEvent) {
+  if (isInteractiveTarget(event) || isAnyOpen.value || isDragging.value) {
+    return;
+  }
+
+  emit('click', event);
+}
+
+function onContextMenu(event: MouseEvent) {
+  if (isDragging.value) {
+    event.preventDefault();
+    event.stopPropagation();
+    return;
+  }
+
+  if (!isTouched.value && isInteractiveTarget(event)) {
+    return;
+  }
+
+  event.preventDefault();
+  event.stopPropagation();
+
+  emit('contextMenu', event);
+}
+
+function onDragStart(event: DragEvent) {
+  if (isInteractiveTarget(event)) {
+    event.preventDefault();
+    event.stopPropagation();
+    return;
+  }
+
+  emit('dragStart', event);
+}
+
+function onMouseEnter() {
+  if (!isTouched.value) {
+    isMouseOver.value = true;
+  }
+}
+
+function onMouseLeave() {
+  isMouseOver.value = false;
+  isTouched.value = false;
+}
+
+function onTouchStart() {
+  isTouched.value = true;
+}
+
+const isDraggable = computed(
+  () =>
+    isMouseOver.value &&
+    !isAnyOpen.value &&
+    !isDragging.value &&
+    props.draggable &&
+    !!instance?.vnode.props?.onDragStart,
+);
+</script>
+
+<template>
+  <component
+    :is
+    :class="$style.interactionWrapper"
+    :draggable="isDraggable"
+    @click="onClick"
+    @contextmenu="onContextMenu"
+    @dragstart="onDragStart"
+    @mouseenter="onMouseEnter"
+    @mouseleave="onMouseLeave"
+    @touchstart.passive="onTouchStart"
+  >
+    <slot />
+  </component>
+</template>
+
+<style module>
+.interactionWrapper {
+  position: relative;
+  display: inherit;
+  align-content: flex-start;
+  width: var(--width-height-100);
+  height: var(--width-height-100);
+  pointer-events: auto;
+  user-select: none;
+}
+</style>

@@ -1,0 +1,508 @@
+import type { VueWrapper } from '@vue/test-utils';
+
+import { mockNuxtImport } from '@nuxt/test-utils/runtime';
+import { mount } from '@vue/test-utils';
+
+import AlbumList from '@/components/album/AlbumList.vue';
+import ArtistList from '@/components/artist/ArtistList.vue';
+import GenreList from '@/components/artist/GenreList.vue';
+import NoMediaMessage from '@/components/notification/NoMediaMessage.vue';
+import TextClamp from '@/components/ui/TextClamp.vue';
+import {
+  getFormattedArtistsMock,
+  getFormattedTracksMock,
+} from '@/test/helpers';
+import { useAudioPlayerMock } from '@/test/useAudioPlayerMock';
+import { useHeadMock } from '@/test/useHeadMock';
+
+import ArtistPage from './[[id]].vue';
+
+mockNuxtImport('useAPI', () => () => ({
+  fetchData: vi.fn(),
+  getImageUrl: vi.fn((path) => path),
+}));
+
+const openModalMock = vi.hoisted(() => vi.fn());
+
+mockNuxtImport('useModal', (original) => () => ({
+  ...original(),
+  openModal: openModalMock,
+}));
+
+const downloadTrackMock = vi.hoisted(() => vi.fn());
+
+mockNuxtImport('useMediaLibrary', (original) => () => ({
+  ...original(),
+  downloadTrack: downloadTrackMock,
+}));
+
+const addToPlaylistModalMock = vi.hoisted(() => vi.fn());
+
+mockNuxtImport('usePlaylist', (original) => () => ({
+  ...original(),
+  addToPlaylistModal: addToPlaylistModalMock,
+}));
+
+const { openAlbumDetailsModalMock, openTrackDetailsModalMock } = vi.hoisted(
+  () => ({
+    openAlbumDetailsModalMock: vi.fn(),
+    openTrackDetailsModalMock: vi.fn(),
+  }),
+);
+
+mockNuxtImport('useMediaInformation', (original) => () => ({
+  ...original(),
+  openAlbumDetailsModal: openAlbumDetailsModalMock,
+  openTrackDetailsModal: openTrackDetailsModalMock,
+}));
+
+const getMediaTracksMock = vi.hoisted(() => vi.fn());
+
+mockNuxtImport('useMediaTracks', (original) => () => ({
+  ...original(),
+  getMediaTracks: getMediaTracksMock,
+}));
+
+const dragStartMock = vi.hoisted(() => vi.fn());
+
+mockNuxtImport('useDragAndDrop', (original) => () => ({
+  ...original(),
+  dragStart: dragStartMock,
+}));
+
+const artistDataMock = ref<Artist | null>(null);
+
+mockNuxtImport('useArtist', (original) => () => ({
+  ...original(),
+  getArtist: vi.fn().mockReturnValue({
+    data: artistDataMock,
+    status: ref('success'),
+  }),
+}));
+
+const { useHeadTitleMock } = useHeadMock();
+const { addTracksToQueueMock, addTrackToQueueMock, playTracksMock } =
+  useAudioPlayerMock();
+
+const track = getFormattedTracksMock()[0];
+const albumTracks = getFormattedTracksMock(3);
+const artist = getFormattedArtistsMock()[0];
+const album = artist.albums[0];
+
+function factory(props = {}) {
+  return mount(ArtistPage, {
+    global: {
+      stubs: {
+        AlbumList: true,
+        ArtistList: true,
+        GenreList: true,
+        TracklistGeneric: true,
+      },
+    },
+    props: {
+      ...props,
+    },
+  });
+}
+
+describe('[[id]]', () => {
+  let wrapper: VueWrapper;
+
+  beforeEach(() => {
+    wrapper = factory();
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('matches the snapshot', () => {
+    expect(wrapper.html()).toMatchSnapshot();
+  });
+
+  describe('when getArtist does not return any data', () => {
+    beforeEach(() => {
+      wrapper = factory();
+    });
+
+    it('sets the useHead function with correct title', () => {
+      expect(useHeadTitleMock.value).toBe('Artist');
+    });
+
+    it('shows the NoMediaMessage component', () => {
+      expect(wrapper.findComponent(NoMediaMessage).exists()).toBe(true);
+    });
+
+    it('does not show the artist content', () => {
+      expect(wrapper.find({ ref: 'artistContent' }).exists()).toBe(false);
+    });
+  });
+
+  describe('when getArtist does returns data', () => {
+    beforeEach(() => {
+      artistDataMock.value = getFormattedArtistsMock()[0];
+      wrapper = factory();
+    });
+
+    it('sets the useHead function with correct title', () => {
+      expect(useHeadTitleMock.value).toBe('artist-0 - Artist');
+    });
+
+    it('does not show the NoMediaMessage component', () => {
+      expect(wrapper.findComponent(NoMediaMessage).exists()).toBe(false);
+    });
+
+    it('shows the artist content', () => {
+      expect(wrapper.find({ ref: 'artistContent' }).exists()).toBe(true);
+    });
+
+    describe('when artistData.biography is not set', () => {
+      it('does not show the TextClamp component', () => {
+        expect(wrapper.findComponent(TextClamp).exists()).toBe(false);
+      });
+    });
+
+    describe('when artistData.biography is set', () => {
+      beforeEach(() => {
+        artistDataMock.value = getFormattedArtistsMock(1, {
+          biography: 'biography',
+        })[0];
+
+        wrapper = factory();
+      });
+
+      it('matches the snapshot', () => {
+        expect(wrapper.html()).toMatchSnapshot();
+      });
+
+      it('shows the TextClamp component', () => {
+        expect(wrapper.findComponent(TextClamp).exists()).toBe(true);
+      });
+
+      describe('when the TextClamp component emits the more event', () => {
+        beforeEach(() => {
+          wrapper.findComponent(TextClamp).vm.$emit('expand');
+        });
+
+        it('calls the openModal function with the correct parameters', () => {
+          expect(openModalMock).toHaveBeenCalledWith(MODAL_TYPE.readMoreModal, {
+            text: artistDataMock.value!.biography,
+            title: 'Artist biography',
+          });
+        });
+      });
+    });
+
+    describe('when artistData.genres is an empty array', () => {
+      beforeEach(() => {
+        artistDataMock.value = getFormattedArtistsMock(1, {
+          genres: [],
+        })[0];
+
+        wrapper = factory();
+      });
+
+      it('matches the snapshot', () => {
+        expect(wrapper.html()).toMatchSnapshot();
+      });
+
+      it('does not show the GenreList component', () => {
+        expect(wrapper.findComponent(GenreList).exists()).toBe(false);
+      });
+    });
+
+    describe('when artistData.genres is not an empty array', () => {
+      it('shows the GenreList component', () => {
+        expect(wrapper.findComponent(GenreList).exists()).toBe(true);
+      });
+    });
+
+    describe('when artistData.totalAlbums is 1', () => {
+      it('shows the correct album count text', () => {
+        expect(wrapper.find({ ref: 'albumCount' }).text()).toBe('1 Album');
+      });
+    });
+
+    describe('when artistData.totalAlbums is greater than 1', () => {
+      beforeEach(() => {
+        artistDataMock.value = getFormattedArtistsMock(1, {
+          totalAlbums: 5,
+        })[0];
+
+        wrapper = factory();
+      });
+
+      it('matches the snapshot', () => {
+        expect(wrapper.html()).toMatchSnapshot();
+      });
+
+      it('shows the correct album count text', () => {
+        expect(wrapper.find({ ref: 'albumCount' }).text()).toBe('5 Albums');
+      });
+    });
+
+    describe('when artistData.totalTracks is 1', () => {
+      it('shows the correct track count text', () => {
+        expect(wrapper.find({ ref: 'trackCount' }).text()).toBe('1 Track');
+      });
+    });
+
+    describe('when artistData.totalTracks is greater than 1', () => {
+      beforeEach(() => {
+        artistDataMock.value = getFormattedArtistsMock(1, {
+          totalTracks: 10,
+        })[0];
+
+        wrapper = factory();
+      });
+
+      it('matches the snapshot', () => {
+        expect(wrapper.html()).toMatchSnapshot();
+      });
+
+      it('shows the correct track count text', () => {
+        expect(wrapper.find({ ref: 'trackCount' }).text()).toBe('10 Tracks');
+      });
+    });
+
+    describe('when artistData.lastFmUrl is not set', () => {
+      it('does not show the LastFm ButtonLink component', () => {
+        expect(wrapper.findComponent({ ref: 'lastFmButton' }).exists()).toBe(
+          false,
+        );
+      });
+    });
+
+    describe('when artistData.lastFmUrl is set', () => {
+      beforeEach(() => {
+        artistDataMock.value = getFormattedArtistsMock(1, {
+          lastFmUrl: 'lastFmUrl',
+        })[0];
+
+        wrapper = factory();
+      });
+
+      it('matches the snapshot', () => {
+        expect(wrapper.html()).toMatchSnapshot();
+      });
+
+      it('shows the LastFm ButtonLink component', () => {
+        expect(wrapper.findComponent({ ref: 'lastFmButton' }).exists()).toBe(
+          true,
+        );
+      });
+    });
+
+    describe('when artistData.musicBrainzUrl is not set', () => {
+      it('does not show the MusicBrainz ButtonLink component', () => {
+        expect(
+          wrapper.findComponent({ ref: 'musicBrainzButton' }).exists(),
+        ).toBe(false);
+      });
+    });
+
+    describe('when artistData.musicBrainzUrl is set', () => {
+      beforeEach(() => {
+        artistDataMock.value = getFormattedArtistsMock(1, {
+          musicBrainzUrl: 'musicBrainzUrl',
+        })[0];
+
+        wrapper = factory();
+      });
+
+      it('matches the snapshot', () => {
+        expect(wrapper.html()).toMatchSnapshot();
+      });
+
+      it('shows the MusicBrainz ButtonLink component', () => {
+        expect(
+          wrapper.findComponent({ ref: 'musicBrainzButton' }).exists(),
+        ).toBe(true);
+      });
+    });
+
+    describe.each([
+      ['top', 'topTracks', 'topTracksTracklistGeneric'],
+      ['similar', 'similarTracks', 'similarTracksTracklistGeneric'],
+    ])('_', (component, key, ref) => {
+      describe(`when artistData.${key} is an empty array`, () => {
+        it(`does not show the ${component} tracks TracklistGeneric component`, () => {
+          expect(wrapper.findComponent({ ref }).exists()).toBe(false);
+        });
+      });
+
+      describe(`when artistData.${key} is not an empty array`, () => {
+        beforeEach(() => {
+          artistDataMock.value = getFormattedArtistsMock(1, {
+            [key]: getFormattedTracksMock(5),
+          })[0];
+
+          wrapper = factory();
+        });
+
+        it('matches the snapshot', () => {
+          expect(wrapper.html()).toMatchSnapshot();
+        });
+
+        it(`shows the ${component} tracks TracklistGeneric component`, () => {
+          expect(wrapper.findComponent({ ref }).exists()).toBe(true);
+        });
+
+        describe(`when the ${component} TracklistGeneric component emits the addToPlaylist event`, () => {
+          beforeEach(() => {
+            wrapper.findComponent({ ref }).vm.$emit('addToPlaylist', track);
+          });
+
+          it('calls the addToPlaylistModal function with the correct parameters', () => {
+            expect(addToPlaylistModalMock).toHaveBeenCalledWith(track);
+          });
+        });
+
+        describe(`when the ${component} TracklistGeneric component emits the addToQueue event`, () => {
+          beforeEach(() => {
+            wrapper.findComponent({ ref }).vm.$emit('addToQueue', track);
+          });
+
+          it('calls the addTrackToQueue function with the correct parameters', () => {
+            expect(addTrackToQueueMock).toHaveBeenCalledWith(track);
+          });
+        });
+
+        describe(`when the ${component} TracklistGeneric component emits the downloadMedia event`, () => {
+          beforeEach(() => {
+            wrapper.findComponent({ ref }).vm.$emit('downloadMedia', track);
+          });
+
+          it('calls the downloadTrack function with the correct parameters', () => {
+            expect(downloadTrackMock).toHaveBeenCalledWith(track);
+          });
+        });
+
+        describe(`when the ${component} TracklistGeneric component emits the dragStart event`, () => {
+          beforeEach(() => {
+            wrapper.findComponent({ ref }).vm.$emit('dragStart', track);
+          });
+
+          it('calls the dragStart function with the correct parameters', () => {
+            expect(dragStartMock).toHaveBeenCalledWith(track);
+          });
+        });
+
+        describe(`when the ${component} TracklistGeneric component emits the playTrack event`, () => {
+          beforeEach(() => {
+            wrapper.findComponent({ ref }).vm.$emit('playTrack', 2);
+          });
+
+          it('calls the playTracks function with the correct parameters', () => {
+            expect(playTracksMock).toHaveBeenCalledWith(
+              artistDataMock.value![key as keyof Artist],
+              2,
+            );
+          });
+        });
+
+        describe(`when the ${component} TracklistGeneric component emits the favouriteTrack event`, () => {
+          beforeEach(() => {
+            wrapper.findComponent({ ref }).vm.$emit('mediaInformation', track);
+          });
+
+          it('calls the openTrackDetailsModal function with the correct parameters', () => {
+            expect(openTrackDetailsModalMock).toHaveBeenCalledWith(track);
+          });
+        });
+      });
+    });
+
+    describe('when artistData.similarArtists is an empty array', () => {
+      it('does not show the ArtistList component', () => {
+        expect(wrapper.findComponent(ArtistList).exists()).toBe(false);
+      });
+    });
+
+    describe('when artistData.similarArtists is not an empty array', () => {
+      beforeEach(() => {
+        artistDataMock.value = getFormattedArtistsMock(1, {
+          similarArtists: [artist],
+        })[0];
+
+        wrapper = factory();
+      });
+
+      it('matches the snapshot', () => {
+        expect(wrapper.html()).toMatchSnapshot();
+      });
+
+      it('shows the ArtistList component', () => {
+        expect(wrapper.findComponent(ArtistList).exists()).toBe(true);
+      });
+    });
+
+    describe('when the AlbumList component emits the dragStart event', () => {
+      beforeEach(() => {
+        wrapper.findComponent(AlbumList).vm.$emit('dragStart', album);
+      });
+
+      it('calls the dragStart function with the correct parameters', () => {
+        expect(dragStartMock).toHaveBeenCalledWith(album);
+      });
+    });
+
+    describe('when the AlbumList component emits the addToQueue event', () => {
+      describe('when getMediaTracks returns tracks', () => {
+        beforeEach(() => {
+          getMediaTracksMock.mockResolvedValue(albumTracks);
+          wrapper.findComponent(AlbumList).vm.$emit('addToQueue', album);
+        });
+
+        it('calls the addTracksToQueue function with the correct parameters', () => {
+          expect(addTracksToQueueMock).toHaveBeenCalledWith(albumTracks);
+        });
+      });
+
+      describe('when getMediaTracks returns null', () => {
+        beforeEach(() => {
+          getMediaTracksMock.mockResolvedValue(null);
+          wrapper.findComponent(AlbumList).vm.$emit('addToQueue', album);
+        });
+
+        it('does not call the addTracksToQueue function', () => {
+          expect(addTracksToQueueMock).not.toHaveBeenCalled();
+        });
+      });
+    });
+
+    describe('when the AlbumList component emits the mediaInformation event', () => {
+      beforeEach(() => {
+        wrapper.findComponent(AlbumList).vm.$emit('mediaInformation', album);
+      });
+
+      it('calls the openAlbumDetailsModal function with the correct parameters', () => {
+        expect(openAlbumDetailsModalMock).toHaveBeenCalledWith(album);
+      });
+    });
+
+    describe('when the AlbumList component emits the playAlbum event', () => {
+      describe('when getMediaTracks returns tracks', () => {
+        beforeEach(() => {
+          getMediaTracksMock.mockResolvedValue(albumTracks);
+          wrapper.findComponent(AlbumList).vm.$emit('playAlbum', album);
+        });
+
+        it('calls the playTracks function with the correct parameters', () => {
+          expect(playTracksMock).toHaveBeenCalledWith(albumTracks);
+        });
+      });
+
+      describe('when getMediaTracks returns null', () => {
+        beforeEach(() => {
+          getMediaTracksMock.mockResolvedValue(null);
+          wrapper.findComponent(AlbumList).vm.$emit('playAlbum', album);
+        });
+
+        it('does not call the playTracks function', () => {
+          expect(playTracksMock).not.toHaveBeenCalled();
+        });
+      });
+    });
+  });
+});

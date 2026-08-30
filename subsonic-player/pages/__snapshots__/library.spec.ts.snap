@@ -1,0 +1,972 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`library > matches the snapshot 1`] = `
+"<div class="column centerAll loadingData" style="display: none;"><span class="mainLoader"><span class="headphones"><svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.25" viewBox="0 0 24 24" width="75" xmlns="http://www.w3.org/2000/svg"><path d="M4 13.5V13c0-4.97 3.582-9 8-9s8 4.03 8 9v.5"></path><path d="M2 17.439v-1.877a2 2 0 0 1 1.515-1.94L4 13.5l1.254-.314a.6.6 0 0 1 .746.582v5.464a.6.6 0 0 1-.746.582l-1.74-.435A2 2 0 0 1 2 17.439ZM22 17.439v-1.877a2 2 0 0 0-1.515-1.94L20 13.5l-1.255-.314a.6.6 0 0 0-.745.582v5.464a.6.6 0 0 0 .745.582l1.74-.435A2 2 0 0 0 22 17.439Z"></path></svg></span><span class="centerItems loader"><span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span></span><output class="visuallyHidden">Loading data</output></span></div>
+<div class="mainContent">
+  <div class="column centerAll noMediaMessage">
+    <phwaveformslash size="50"></phwaveformslash>
+    <p>No media found.</p>
+  </div>
+</div>"
+`;
+
+exports[`library > when data returns a value > matches the snapshot 1`] = `
+"<div class="column centerAll loadingData" style="display: none;"><span class="mainLoader"><span class="headphones"><svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.25" viewBox="0 0 24 24" width="75" xmlns="http://www.w3.org/2000/svg"><path d="M4 13.5V13c0-4.97 3.582-9 8-9s8 4.03 8 9v.5"></path><path d="M2 17.439v-1.877a2 2 0 0 1 1.515-1.94L4 13.5l1.254-.314a.6.6 0 0 1 .746.582v5.464a.6.6 0 0 1-.746.582l-1.74-.435A2 2 0 0 1 2 17.439ZM22 17.439v-1.877a2 2 0 0 0-1.515-1.94L20 13.5l-1.255-.314a.6.6 0 0 0-.745.582v5.464a.6.6 0 0 0 .745.582l1.74-.435A2 2 0 0 0 22 17.439Z"></path></svg></span><span class="centerItems loader"><span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span></span><output class="visuallyHidden">Loading data</output></span></div>
+<div class="mainContent">
+  <h1 class="visuallyHidden">Library</h1>
+  <div class="centerItems spaceBetween">
+    <h2 class="header"><a draggable="false"> Albums <phcaretdoubleright class="moreIcon" size="18" weight="regular"></phcaretdoubleright></a></h2>
+    <div class="centerItems"><a class="mobileOnly link" draggable="false"> See all </a></div>
+  </div>
+  <div class="mBL carouselSwiper">
+    <swiper-container>
+      <swiper-slide data-test-id="random-album-item" style="margin-right: 15px;" role="group" aria-label="1 / 2" class="swiper-slide-active">
+        <article class="interactionWrapper layoutItem" draggable="false">
+          <div class="layoutImage layoutItemImageWrapper">
+            <figure><a class="interactionWrapperLink" draggable="false" title="Go to album album-0">
+                <div class="centerAll preloadImage"><span class="skeletonLoader"><span class="visuallyHidden">Loading image</span></span><img alt="Go to album album-0" class="image" draggable="false" src="image"></div>
+              </a></figure>
+            <div class="hideOnListLayout layoutItemActions layoutItemHoverActions">
+              <div class="centerItems actionsLeft"><button class="centerItems buttonLink themeHoverButton themeHoverButton" draggable="false" type="button" title="Play album album-0">
+                  <phplay aria-hidden="true" class="icon" size="24" weight="regular"></phplay><span class="clamp text visuallyHidden">Play album album-0</span>
+                </button><button class="centerItems buttonLink" draggable="false" type="button" title="Add album to queue">
+                  <phpluscircle aria-hidden="true" class="icon" size="24" weight="regular"></phpluscircle><span class="clamp text visuallyHidden"> Add album to queue </span>
+                </button></div><button class="centerItems buttonLink alignRight" draggable="false" type="button" title="Unlike album">
+                <phheart aria-hidden="true" class="icon" color="var(--error-color)" size="24" weight="fill"></phheart><span class="clamp text visuallyHidden">Unlike album</span>
+              </button>
+            </div>
+          </div>
+          <div class="layoutContent">
+            <p class="mBXS strong smallFont clamp2"><a aria-label="Go to album album-0" class="layoutLink" draggable="false">album-0</a></p>
+            <ul class="commaList smallFont clamp2">
+              <li data-test-id="artist-list-item"><a aria-label="Go to artist name" class="link">name</a></li>
+              <li data-test-id="artist-list-item"><a aria-label="Go to artist name1" class="link">name1</a></li>
+            </ul>
+          </div>
+          <div class="layoutDropdownMenu layoutItemHoverActions">
+            <div class="centerItems dropdownWrapper"><button class="centerItems buttonLink alignRight buttonLink buttonLink" draggable="false" type="button" aria-expanded="false" aria-haspopup="menu" title="More">
+                <phdotsthreevertical aria-hidden="true" class="icon" size="24" weight="regular"></phdotsthreevertical><span class="clamp text visuallyHidden"> More</span>
+              </button>
+              <teleport-stub disabled="false" to="#teleports">
+                <!--v-if-->
+              </teleport-stub>
+            </div>
+          </div>
+        </article>
+      </swiper-slide>
+      <swiper-slide data-test-id="random-album-item" style="margin-right: 15px;" role="group" aria-label="2 / 2" class="swiper-slide-next">
+        <article class="interactionWrapper layoutItem" draggable="false">
+          <div class="layoutImage layoutItemImageWrapper">
+            <figure><a class="interactionWrapperLink" draggable="false" title="Go to album album-1">
+                <div class="centerAll preloadImage"><span class="skeletonLoader"><span class="visuallyHidden">Loading image</span></span><img alt="Go to album album-1" class="image" draggable="false" src="image"></div>
+              </a></figure>
+            <div class="hideOnListLayout layoutItemActions layoutItemHoverActions">
+              <div class="centerItems actionsLeft"><button class="centerItems buttonLink themeHoverButton themeHoverButton" draggable="false" type="button" title="Play album album-1">
+                  <phplay aria-hidden="true" class="icon" size="24" weight="regular"></phplay><span class="clamp text visuallyHidden">Play album album-1</span>
+                </button><button class="centerItems buttonLink" draggable="false" type="button" title="Add album to queue">
+                  <phpluscircle aria-hidden="true" class="icon" size="24" weight="regular"></phpluscircle><span class="clamp text visuallyHidden"> Add album to queue </span>
+                </button></div><button class="centerItems buttonLink alignRight" draggable="false" type="button" title="Unlike album">
+                <phheart aria-hidden="true" class="icon" color="var(--error-color)" size="24" weight="fill"></phheart><span class="clamp text visuallyHidden">Unlike album</span>
+              </button>
+            </div>
+          </div>
+          <div class="layoutContent">
+            <p class="mBXS strong smallFont clamp2"><a aria-label="Go to album album-1" class="layoutLink" draggable="false">album-1</a></p>
+            <ul class="commaList smallFont clamp2">
+              <li data-test-id="artist-list-item"><a aria-label="Go to artist name" class="link">name</a></li>
+              <li data-test-id="artist-list-item"><a aria-label="Go to artist name1" class="link">name1</a></li>
+            </ul>
+          </div>
+          <div class="layoutDropdownMenu layoutItemHoverActions">
+            <div class="centerItems dropdownWrapper"><button class="centerItems buttonLink alignRight buttonLink buttonLink" draggable="false" type="button" aria-expanded="false" aria-haspopup="menu" title="More">
+                <phdotsthreevertical aria-hidden="true" class="icon" size="24" weight="regular"></phdotsthreevertical><span class="clamp text visuallyHidden"> More</span>
+              </button>
+              <teleport-stub disabled="false" to="#teleports">
+                <!--v-if-->
+              </teleport-stub>
+            </div>
+          </div>
+        </article>
+      </swiper-slide>
+    </swiper-container><button class="centerItems buttonLink previous previous" draggable="false" type="button" title="Previous slide">
+      <phcaretdoubleleft aria-hidden="true" class="icon" size="24" weight="regular"></phcaretdoubleleft><span class="clamp text visuallyHidden"> Previous slide </span>
+    </button><button class="centerItems buttonLink next next" draggable="false" type="button" title="Next slide">
+      <phcaretdoubleright aria-hidden="true" class="icon" size="24" weight="regular"></phcaretdoubleright><span class="clamp text visuallyHidden"> Next slide </span>
+    </button>
+  </div>
+  <div class="centerItems spaceBetween">
+    <h2 class="header"><a draggable="false"> Artists <phcaretdoubleright class="moreIcon" size="18" weight="regular"></phcaretdoubleright></a></h2>
+    <div class="centerItems"><a class="mobileOnly link" draggable="false"> See all </a></div>
+  </div>
+  <div class="mBL carouselSwiper">
+    <swiper-container>
+      <swiper-slide data-test-id="random-artist-item" style="margin-right: 15px;" role="group" aria-label="1 / 3" class="swiper-slide-active">
+        <article class="interactionWrapper layoutItem" draggable="false">
+          <div class="layoutImage layoutItemImageWrapper">
+            <figure><a class="interactionWrapperLink" draggable="false" title="Go to artist artist-0">
+                <div class="centerAll preloadImage"><span class="skeletonLoader"><span class="visuallyHidden">Loading image</span></span><img alt="Go to artist artist-0" class="image" draggable="false" src="image"></div>
+              </a></figure>
+            <div class="hideOnListLayout layoutItemActions layoutItemActionsEnd layoutItemHoverActions"><button class="centerItems buttonLink alignRight" draggable="false" type="button" title="Unlike artist">
+                <phheart aria-hidden="true" class="icon" color="var(--error-color)" size="24" weight="fill"></phheart><span class="clamp text visuallyHidden">Unlike artist</span>
+              </button></div>
+          </div>
+          <div class="layoutContent">
+            <p class="strong smallFont clamp2"><a aria-label="Go to artist artist-0" class="layoutLink" draggable="false">artist-0</a></p>
+          </div>
+          <div class="layoutDropdownMenu layoutItemHoverActions">
+            <div class="centerItems dropdownWrapper"><button class="centerItems buttonLink alignRight buttonLink buttonLink" draggable="false" type="button" aria-expanded="false" aria-haspopup="menu" title="More">
+                <phdotsthreevertical aria-hidden="true" class="icon" size="24" weight="regular"></phdotsthreevertical><span class="clamp text visuallyHidden"> More</span>
+              </button>
+              <teleport-stub disabled="false" to="#teleports">
+                <!--v-if-->
+              </teleport-stub>
+            </div>
+          </div>
+        </article>
+      </swiper-slide>
+      <swiper-slide data-test-id="random-artist-item" style="margin-right: 15px;" role="group" aria-label="2 / 3" class="swiper-slide-next">
+        <article class="interactionWrapper layoutItem" draggable="false">
+          <div class="layoutImage layoutItemImageWrapper">
+            <figure><a class="interactionWrapperLink" draggable="false" title="Go to artist artist-1">
+                <div class="centerAll preloadImage"><span class="skeletonLoader"><span class="visuallyHidden">Loading image</span></span><img alt="Go to artist artist-1" class="image" draggable="false" src="image"></div>
+              </a></figure>
+            <div class="hideOnListLayout layoutItemActions layoutItemActionsEnd layoutItemHoverActions"><button class="centerItems buttonLink alignRight" draggable="false" type="button" title="Unlike artist">
+                <phheart aria-hidden="true" class="icon" color="var(--error-color)" size="24" weight="fill"></phheart><span class="clamp text visuallyHidden">Unlike artist</span>
+              </button></div>
+          </div>
+          <div class="layoutContent">
+            <p class="strong smallFont clamp2"><a aria-label="Go to artist artist-1" class="layoutLink" draggable="false">artist-1</a></p>
+          </div>
+          <div class="layoutDropdownMenu layoutItemHoverActions">
+            <div class="centerItems dropdownWrapper"><button class="centerItems buttonLink alignRight buttonLink buttonLink" draggable="false" type="button" aria-expanded="false" aria-haspopup="menu" title="More">
+                <phdotsthreevertical aria-hidden="true" class="icon" size="24" weight="regular"></phdotsthreevertical><span class="clamp text visuallyHidden"> More</span>
+              </button>
+              <teleport-stub disabled="false" to="#teleports">
+                <!--v-if-->
+              </teleport-stub>
+            </div>
+          </div>
+        </article>
+      </swiper-slide>
+      <swiper-slide data-test-id="random-artist-item" style="margin-right: 15px;" role="group" aria-label="3 / 3">
+        <article class="interactionWrapper layoutItem" draggable="false">
+          <div class="layoutImage layoutItemImageWrapper">
+            <figure><a class="interactionWrapperLink" draggable="false" title="Go to artist artist-2">
+                <div class="centerAll preloadImage"><span class="skeletonLoader"><span class="visuallyHidden">Loading image</span></span><img alt="Go to artist artist-2" class="image" draggable="false" src="image"></div>
+              </a></figure>
+            <div class="hideOnListLayout layoutItemActions layoutItemActionsEnd layoutItemHoverActions"><button class="centerItems buttonLink alignRight" draggable="false" type="button" title="Unlike artist">
+                <phheart aria-hidden="true" class="icon" color="var(--error-color)" size="24" weight="fill"></phheart><span class="clamp text visuallyHidden">Unlike artist</span>
+              </button></div>
+          </div>
+          <div class="layoutContent">
+            <p class="strong smallFont clamp2"><a aria-label="Go to artist artist-2" class="layoutLink" draggable="false">artist-2</a></p>
+          </div>
+          <div class="layoutDropdownMenu layoutItemHoverActions">
+            <div class="centerItems dropdownWrapper"><button class="centerItems buttonLink alignRight buttonLink buttonLink" draggable="false" type="button" aria-expanded="false" aria-haspopup="menu" title="More">
+                <phdotsthreevertical aria-hidden="true" class="icon" size="24" weight="regular"></phdotsthreevertical><span class="clamp text visuallyHidden"> More</span>
+              </button>
+              <teleport-stub disabled="false" to="#teleports">
+                <!--v-if-->
+              </teleport-stub>
+            </div>
+          </div>
+        </article>
+      </swiper-slide>
+    </swiper-container><button class="centerItems buttonLink previous previous" draggable="false" type="button" title="Previous slide">
+      <phcaretdoubleleft aria-hidden="true" class="icon" size="24" weight="regular"></phcaretdoubleleft><span class="clamp text visuallyHidden"> Previous slide </span>
+    </button><button class="centerItems buttonLink next next" draggable="false" type="button" title="Next slide">
+      <phcaretdoubleright aria-hidden="true" class="icon" size="24" weight="regular"></phcaretdoubleright><span class="clamp text visuallyHidden"> Next slide </span>
+    </button>
+  </div>
+  <div class="centerItems spaceBetween">
+    <h2 class="header"><a draggable="false"> Genres <phcaretdoubleright class="moreIcon" size="18" weight="regular"></phcaretdoubleright></a></h2>
+    <div class="centerItems"><a class="mobileOnly link" draggable="false"> See all </a></div>
+  </div>
+  <div class="mBL carouselSwiper">
+    <swiper-container>
+      <swiper-slide data-test-id="random-genre-item" style="order: 0; margin-right: 15px;" role="group" aria-label="1 / 2" class="swiper-slide-active"><a aria-label="View all albums with Rock genre" class="centerAll genreLink" draggable="false">Rock</a></swiper-slide>
+      <swiper-slide data-test-id="random-genre-item" style="order: 1; margin-right: 15px;" role="group" aria-label="2 / 2" class="swiper-slide-next"><a aria-label="View all albums with Rock genre" class="centerAll genreLink" draggable="false">Rock</a></swiper-slide>
+    </swiper-container><button class="centerItems buttonLink previous previous" draggable="false" type="button" title="Previous slide">
+      <phcaretdoubleleft aria-hidden="true" class="icon" size="24" weight="regular"></phcaretdoubleleft><span class="clamp text visuallyHidden"> Previous slide </span>
+    </button><button class="centerItems buttonLink next next" draggable="false" type="button" title="Next slide">
+      <phcaretdoubleright aria-hidden="true" class="icon" size="24" weight="regular"></phcaretdoubleright><span class="clamp text visuallyHidden"> Next slide </span>
+    </button>
+  </div>
+  <div class="centerItems spaceBetween">
+    <h2 class="header"><a draggable="false"> Playlist <phcaretdoubleright class="moreIcon" size="18" weight="regular"></phcaretdoubleright></a></h2>
+    <div class="centerItems"><a class="mobileOnly link" draggable="false"> See all </a></div>
+  </div>
+  <playlist-list-stub playlists="[object Object],[object Object]"></playlist-list-stub>
+</div>"
+`;
+
+exports[`library > when data returns a value > when artists is an empty array > matches the snapshot 1`] = `
+"<div class="column centerAll loadingData" style="display: none;"><span class="mainLoader"><span class="headphones"><svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.25" viewBox="0 0 24 24" width="75" xmlns="http://www.w3.org/2000/svg"><path d="M4 13.5V13c0-4.97 3.582-9 8-9s8 4.03 8 9v.5"></path><path d="M2 17.439v-1.877a2 2 0 0 1 1.515-1.94L4 13.5l1.254-.314a.6.6 0 0 1 .746.582v5.464a.6.6 0 0 1-.746.582l-1.74-.435A2 2 0 0 1 2 17.439ZM22 17.439v-1.877a2 2 0 0 0-1.515-1.94L20 13.5l-1.255-.314a.6.6 0 0 0-.745.582v5.464a.6.6 0 0 0 .745.582l1.74-.435A2 2 0 0 0 22 17.439Z"></path></svg></span><span class="centerItems loader"><span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span></span><output class="visuallyHidden">Loading data</output></span></div>
+<div class="mainContent">
+  <h1 class="visuallyHidden">Library</h1>
+  <div class="centerItems spaceBetween">
+    <h2 class="header"><a draggable="false"> Albums <phcaretdoubleright class="moreIcon" size="18" weight="regular"></phcaretdoubleright></a></h2>
+    <div class="centerItems"><a class="mobileOnly link" draggable="false"> See all </a></div>
+  </div>
+  <div class="mBL carouselSwiper">
+    <swiper-container>
+      <swiper-slide data-test-id="random-album-item" style="margin-right: 15px;" role="group" aria-label="1 / 2" class="swiper-slide-active">
+        <article class="interactionWrapper layoutItem" draggable="false">
+          <div class="layoutImage layoutItemImageWrapper">
+            <figure><a class="interactionWrapperLink" draggable="false" title="Go to album album-0">
+                <div class="centerAll preloadImage"><span class="skeletonLoader"><span class="visuallyHidden">Loading image</span></span><img alt="Go to album album-0" class="image" draggable="false" src="image"></div>
+              </a></figure>
+            <div class="hideOnListLayout layoutItemActions layoutItemHoverActions">
+              <div class="centerItems actionsLeft"><button class="centerItems buttonLink themeHoverButton themeHoverButton" draggable="false" type="button" title="Play album album-0">
+                  <phplay aria-hidden="true" class="icon" size="24" weight="regular"></phplay><span class="clamp text visuallyHidden">Play album album-0</span>
+                </button><button class="centerItems buttonLink" draggable="false" type="button" title="Add album to queue">
+                  <phpluscircle aria-hidden="true" class="icon" size="24" weight="regular"></phpluscircle><span class="clamp text visuallyHidden"> Add album to queue </span>
+                </button></div><button class="centerItems buttonLink alignRight" draggable="false" type="button" title="Unlike album">
+                <phheart aria-hidden="true" class="icon" color="var(--error-color)" size="24" weight="fill"></phheart><span class="clamp text visuallyHidden">Unlike album</span>
+              </button>
+            </div>
+          </div>
+          <div class="layoutContent">
+            <p class="mBXS strong smallFont clamp2"><a aria-label="Go to album album-0" class="layoutLink" draggable="false">album-0</a></p>
+            <ul class="commaList smallFont clamp2">
+              <li data-test-id="artist-list-item"><a aria-label="Go to artist name" class="link">name</a></li>
+              <li data-test-id="artist-list-item"><a aria-label="Go to artist name1" class="link">name1</a></li>
+            </ul>
+          </div>
+          <div class="layoutDropdownMenu layoutItemHoverActions">
+            <div class="centerItems dropdownWrapper"><button class="centerItems buttonLink alignRight buttonLink buttonLink" draggable="false" type="button" aria-expanded="false" aria-haspopup="menu" title="More">
+                <phdotsthreevertical aria-hidden="true" class="icon" size="24" weight="regular"></phdotsthreevertical><span class="clamp text visuallyHidden"> More</span>
+              </button>
+              <teleport-stub disabled="false" to="#teleports">
+                <!--v-if-->
+              </teleport-stub>
+            </div>
+          </div>
+        </article>
+      </swiper-slide>
+      <swiper-slide data-test-id="random-album-item" style="margin-right: 15px;" role="group" aria-label="2 / 2" class="swiper-slide-next">
+        <article class="interactionWrapper layoutItem" draggable="false">
+          <div class="layoutImage layoutItemImageWrapper">
+            <figure><a class="interactionWrapperLink" draggable="false" title="Go to album album-1">
+                <div class="centerAll preloadImage"><span class="skeletonLoader"><span class="visuallyHidden">Loading image</span></span><img alt="Go to album album-1" class="image" draggable="false" src="image"></div>
+              </a></figure>
+            <div class="hideOnListLayout layoutItemActions layoutItemHoverActions">
+              <div class="centerItems actionsLeft"><button class="centerItems buttonLink themeHoverButton themeHoverButton" draggable="false" type="button" title="Play album album-1">
+                  <phplay aria-hidden="true" class="icon" size="24" weight="regular"></phplay><span class="clamp text visuallyHidden">Play album album-1</span>
+                </button><button class="centerItems buttonLink" draggable="false" type="button" title="Add album to queue">
+                  <phpluscircle aria-hidden="true" class="icon" size="24" weight="regular"></phpluscircle><span class="clamp text visuallyHidden"> Add album to queue </span>
+                </button></div><button class="centerItems buttonLink alignRight" draggable="false" type="button" title="Unlike album">
+                <phheart aria-hidden="true" class="icon" color="var(--error-color)" size="24" weight="fill"></phheart><span class="clamp text visuallyHidden">Unlike album</span>
+              </button>
+            </div>
+          </div>
+          <div class="layoutContent">
+            <p class="mBXS strong smallFont clamp2"><a aria-label="Go to album album-1" class="layoutLink" draggable="false">album-1</a></p>
+            <ul class="commaList smallFont clamp2">
+              <li data-test-id="artist-list-item"><a aria-label="Go to artist name" class="link">name</a></li>
+              <li data-test-id="artist-list-item"><a aria-label="Go to artist name1" class="link">name1</a></li>
+            </ul>
+          </div>
+          <div class="layoutDropdownMenu layoutItemHoverActions">
+            <div class="centerItems dropdownWrapper"><button class="centerItems buttonLink alignRight buttonLink buttonLink" draggable="false" type="button" aria-expanded="false" aria-haspopup="menu" title="More">
+                <phdotsthreevertical aria-hidden="true" class="icon" size="24" weight="regular"></phdotsthreevertical><span class="clamp text visuallyHidden"> More</span>
+              </button>
+              <teleport-stub disabled="false" to="#teleports">
+                <!--v-if-->
+              </teleport-stub>
+            </div>
+          </div>
+        </article>
+      </swiper-slide>
+    </swiper-container><button class="centerItems buttonLink previous previous" draggable="false" type="button" title="Previous slide">
+      <phcaretdoubleleft aria-hidden="true" class="icon" size="24" weight="regular"></phcaretdoubleleft><span class="clamp text visuallyHidden"> Previous slide </span>
+    </button><button class="centerItems buttonLink next next" draggable="false" type="button" title="Next slide">
+      <phcaretdoubleright aria-hidden="true" class="icon" size="24" weight="regular"></phcaretdoubleright><span class="clamp text visuallyHidden"> Next slide </span>
+    </button>
+  </div>
+  <!--v-if-->
+  <div class="centerItems spaceBetween">
+    <h2 class="header"><a draggable="false"> Genres <phcaretdoubleright class="moreIcon" size="18" weight="regular"></phcaretdoubleright></a></h2>
+    <div class="centerItems"><a class="mobileOnly link" draggable="false"> See all </a></div>
+  </div>
+  <div class="mBL carouselSwiper">
+    <swiper-container>
+      <swiper-slide data-test-id="random-genre-item" style="order: 0; margin-right: 15px;" role="group" aria-label="1 / 2" class="swiper-slide-active"><a aria-label="View all albums with Rock genre" class="centerAll genreLink" draggable="false">Rock</a></swiper-slide>
+      <swiper-slide data-test-id="random-genre-item" style="order: 1; margin-right: 15px;" role="group" aria-label="2 / 2" class="swiper-slide-next"><a aria-label="View all albums with Rock genre" class="centerAll genreLink" draggable="false">Rock</a></swiper-slide>
+    </swiper-container><button class="centerItems buttonLink previous previous" draggable="false" type="button" title="Previous slide">
+      <phcaretdoubleleft aria-hidden="true" class="icon" size="24" weight="regular"></phcaretdoubleleft><span class="clamp text visuallyHidden"> Previous slide </span>
+    </button><button class="centerItems buttonLink next next" draggable="false" type="button" title="Next slide">
+      <phcaretdoubleright aria-hidden="true" class="icon" size="24" weight="regular"></phcaretdoubleright><span class="clamp text visuallyHidden"> Next slide </span>
+    </button>
+  </div>
+  <div class="centerItems spaceBetween">
+    <h2 class="header"><a draggable="false"> Playlist <phcaretdoubleright class="moreIcon" size="18" weight="regular"></phcaretdoubleright></a></h2>
+    <div class="centerItems"><a class="mobileOnly link" draggable="false"> See all </a></div>
+  </div>
+  <playlist-list-stub playlists="[object Object],[object Object]"></playlist-list-stub>
+</div>"
+`;
+
+exports[`library > when data returns a value > when genres is an empty array > matches the snapshot 1`] = `
+"<div class="column centerAll loadingData" style="display: none;"><span class="mainLoader"><span class="headphones"><svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.25" viewBox="0 0 24 24" width="75" xmlns="http://www.w3.org/2000/svg"><path d="M4 13.5V13c0-4.97 3.582-9 8-9s8 4.03 8 9v.5"></path><path d="M2 17.439v-1.877a2 2 0 0 1 1.515-1.94L4 13.5l1.254-.314a.6.6 0 0 1 .746.582v5.464a.6.6 0 0 1-.746.582l-1.74-.435A2 2 0 0 1 2 17.439ZM22 17.439v-1.877a2 2 0 0 0-1.515-1.94L20 13.5l-1.255-.314a.6.6 0 0 0-.745.582v5.464a.6.6 0 0 0 .745.582l1.74-.435A2 2 0 0 0 22 17.439Z"></path></svg></span><span class="centerItems loader"><span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span></span><output class="visuallyHidden">Loading data</output></span></div>
+<div class="mainContent">
+  <h1 class="visuallyHidden">Library</h1>
+  <div class="centerItems spaceBetween">
+    <h2 class="header"><a draggable="false"> Albums <phcaretdoubleright class="moreIcon" size="18" weight="regular"></phcaretdoubleright></a></h2>
+    <div class="centerItems"><a class="mobileOnly link" draggable="false"> See all </a></div>
+  </div>
+  <div class="mBL carouselSwiper">
+    <swiper-container>
+      <swiper-slide data-test-id="random-album-item" style="margin-right: 15px;" role="group" aria-label="1 / 2" class="swiper-slide-active">
+        <article class="interactionWrapper layoutItem" draggable="false">
+          <div class="layoutImage layoutItemImageWrapper">
+            <figure><a class="interactionWrapperLink" draggable="false" title="Go to album album-0">
+                <div class="centerAll preloadImage"><span class="skeletonLoader"><span class="visuallyHidden">Loading image</span></span><img alt="Go to album album-0" class="image" draggable="false" src="image"></div>
+              </a></figure>
+            <div class="hideOnListLayout layoutItemActions layoutItemHoverActions">
+              <div class="centerItems actionsLeft"><button class="centerItems buttonLink themeHoverButton themeHoverButton" draggable="false" type="button" title="Play album album-0">
+                  <phplay aria-hidden="true" class="icon" size="24" weight="regular"></phplay><span class="clamp text visuallyHidden">Play album album-0</span>
+                </button><button class="centerItems buttonLink" draggable="false" type="button" title="Add album to queue">
+                  <phpluscircle aria-hidden="true" class="icon" size="24" weight="regular"></phpluscircle><span class="clamp text visuallyHidden"> Add album to queue </span>
+                </button></div><button class="centerItems buttonLink alignRight" draggable="false" type="button" title="Unlike album">
+                <phheart aria-hidden="true" class="icon" color="var(--error-color)" size="24" weight="fill"></phheart><span class="clamp text visuallyHidden">Unlike album</span>
+              </button>
+            </div>
+          </div>
+          <div class="layoutContent">
+            <p class="mBXS strong smallFont clamp2"><a aria-label="Go to album album-0" class="layoutLink" draggable="false">album-0</a></p>
+            <ul class="commaList smallFont clamp2">
+              <li data-test-id="artist-list-item"><a aria-label="Go to artist name" class="link">name</a></li>
+              <li data-test-id="artist-list-item"><a aria-label="Go to artist name1" class="link">name1</a></li>
+            </ul>
+          </div>
+          <div class="layoutDropdownMenu layoutItemHoverActions">
+            <div class="centerItems dropdownWrapper"><button class="centerItems buttonLink alignRight buttonLink buttonLink" draggable="false" type="button" aria-expanded="false" aria-haspopup="menu" title="More">
+                <phdotsthreevertical aria-hidden="true" class="icon" size="24" weight="regular"></phdotsthreevertical><span class="clamp text visuallyHidden"> More</span>
+              </button>
+              <teleport-stub disabled="false" to="#teleports">
+                <!--v-if-->
+              </teleport-stub>
+            </div>
+          </div>
+        </article>
+      </swiper-slide>
+      <swiper-slide data-test-id="random-album-item" style="margin-right: 15px;" role="group" aria-label="2 / 2" class="swiper-slide-next">
+        <article class="interactionWrapper layoutItem" draggable="false">
+          <div class="layoutImage layoutItemImageWrapper">
+            <figure><a class="interactionWrapperLink" draggable="false" title="Go to album album-1">
+                <div class="centerAll preloadImage"><span class="skeletonLoader"><span class="visuallyHidden">Loading image</span></span><img alt="Go to album album-1" class="image" draggable="false" src="image"></div>
+              </a></figure>
+            <div class="hideOnListLayout layoutItemActions layoutItemHoverActions">
+              <div class="centerItems actionsLeft"><button class="centerItems buttonLink themeHoverButton themeHoverButton" draggable="false" type="button" title="Play album album-1">
+                  <phplay aria-hidden="true" class="icon" size="24" weight="regular"></phplay><span class="clamp text visuallyHidden">Play album album-1</span>
+                </button><button class="centerItems buttonLink" draggable="false" type="button" title="Add album to queue">
+                  <phpluscircle aria-hidden="true" class="icon" size="24" weight="regular"></phpluscircle><span class="clamp text visuallyHidden"> Add album to queue </span>
+                </button></div><button class="centerItems buttonLink alignRight" draggable="false" type="button" title="Unlike album">
+                <phheart aria-hidden="true" class="icon" color="var(--error-color)" size="24" weight="fill"></phheart><span class="clamp text visuallyHidden">Unlike album</span>
+              </button>
+            </div>
+          </div>
+          <div class="layoutContent">
+            <p class="mBXS strong smallFont clamp2"><a aria-label="Go to album album-1" class="layoutLink" draggable="false">album-1</a></p>
+            <ul class="commaList smallFont clamp2">
+              <li data-test-id="artist-list-item"><a aria-label="Go to artist name" class="link">name</a></li>
+              <li data-test-id="artist-list-item"><a aria-label="Go to artist name1" class="link">name1</a></li>
+            </ul>
+          </div>
+          <div class="layoutDropdownMenu layoutItemHoverActions">
+            <div class="centerItems dropdownWrapper"><button class="centerItems buttonLink alignRight buttonLink buttonLink" draggable="false" type="button" aria-expanded="false" aria-haspopup="menu" title="More">
+                <phdotsthreevertical aria-hidden="true" class="icon" size="24" weight="regular"></phdotsthreevertical><span class="clamp text visuallyHidden"> More</span>
+              </button>
+              <teleport-stub disabled="false" to="#teleports">
+                <!--v-if-->
+              </teleport-stub>
+            </div>
+          </div>
+        </article>
+      </swiper-slide>
+    </swiper-container><button class="centerItems buttonLink previous previous" draggable="false" type="button" title="Previous slide">
+      <phcaretdoubleleft aria-hidden="true" class="icon" size="24" weight="regular"></phcaretdoubleleft><span class="clamp text visuallyHidden"> Previous slide </span>
+    </button><button class="centerItems buttonLink next next" draggable="false" type="button" title="Next slide">
+      <phcaretdoubleright aria-hidden="true" class="icon" size="24" weight="regular"></phcaretdoubleright><span class="clamp text visuallyHidden"> Next slide </span>
+    </button>
+  </div>
+  <div class="centerItems spaceBetween">
+    <h2 class="header"><a draggable="false"> Artists <phcaretdoubleright class="moreIcon" size="18" weight="regular"></phcaretdoubleright></a></h2>
+    <div class="centerItems"><a class="mobileOnly link" draggable="false"> See all </a></div>
+  </div>
+  <div class="mBL carouselSwiper">
+    <swiper-container>
+      <swiper-slide data-test-id="random-artist-item" style="margin-right: 15px;" role="group" aria-label="1 / 3" class="swiper-slide-active">
+        <article class="interactionWrapper layoutItem" draggable="false">
+          <div class="layoutImage layoutItemImageWrapper">
+            <figure><a class="interactionWrapperLink" draggable="false" title="Go to artist artist-0">
+                <div class="centerAll preloadImage"><span class="skeletonLoader"><span class="visuallyHidden">Loading image</span></span><img alt="Go to artist artist-0" class="image" draggable="false" src="image"></div>
+              </a></figure>
+            <div class="hideOnListLayout layoutItemActions layoutItemActionsEnd layoutItemHoverActions"><button class="centerItems buttonLink alignRight" draggable="false" type="button" title="Unlike artist">
+                <phheart aria-hidden="true" class="icon" color="var(--error-color)" size="24" weight="fill"></phheart><span class="clamp text visuallyHidden">Unlike artist</span>
+              </button></div>
+          </div>
+          <div class="layoutContent">
+            <p class="strong smallFont clamp2"><a aria-label="Go to artist artist-0" class="layoutLink" draggable="false">artist-0</a></p>
+          </div>
+          <div class="layoutDropdownMenu layoutItemHoverActions">
+            <div class="centerItems dropdownWrapper"><button class="centerItems buttonLink alignRight buttonLink buttonLink" draggable="false" type="button" aria-expanded="false" aria-haspopup="menu" title="More">
+                <phdotsthreevertical aria-hidden="true" class="icon" size="24" weight="regular"></phdotsthreevertical><span class="clamp text visuallyHidden"> More</span>
+              </button>
+              <teleport-stub disabled="false" to="#teleports">
+                <!--v-if-->
+              </teleport-stub>
+            </div>
+          </div>
+        </article>
+      </swiper-slide>
+      <swiper-slide data-test-id="random-artist-item" style="margin-right: 15px;" role="group" aria-label="2 / 3" class="swiper-slide-next">
+        <article class="interactionWrapper layoutItem" draggable="false">
+          <div class="layoutImage layoutItemImageWrapper">
+            <figure><a class="interactionWrapperLink" draggable="false" title="Go to artist artist-1">
+                <div class="centerAll preloadImage"><span class="skeletonLoader"><span class="visuallyHidden">Loading image</span></span><img alt="Go to artist artist-1" class="image" draggable="false" src="image"></div>
+              </a></figure>
+            <div class="hideOnListLayout layoutItemActions layoutItemActionsEnd layoutItemHoverActions"><button class="centerItems buttonLink alignRight" draggable="false" type="button" title="Unlike artist">
+                <phheart aria-hidden="true" class="icon" color="var(--error-color)" size="24" weight="fill"></phheart><span class="clamp text visuallyHidden">Unlike artist</span>
+              </button></div>
+          </div>
+          <div class="layoutContent">
+            <p class="strong smallFont clamp2"><a aria-label="Go to artist artist-1" class="layoutLink" draggable="false">artist-1</a></p>
+          </div>
+          <div class="layoutDropdownMenu layoutItemHoverActions">
+            <div class="centerItems dropdownWrapper"><button class="centerItems buttonLink alignRight buttonLink buttonLink" draggable="false" type="button" aria-expanded="false" aria-haspopup="menu" title="More">
+                <phdotsthreevertical aria-hidden="true" class="icon" size="24" weight="regular"></phdotsthreevertical><span class="clamp text visuallyHidden"> More</span>
+              </button>
+              <teleport-stub disabled="false" to="#teleports">
+                <!--v-if-->
+              </teleport-stub>
+            </div>
+          </div>
+        </article>
+      </swiper-slide>
+      <swiper-slide data-test-id="random-artist-item" style="margin-right: 15px;" role="group" aria-label="3 / 3">
+        <article class="interactionWrapper layoutItem" draggable="false">
+          <div class="layoutImage layoutItemImageWrapper">
+            <figure><a class="interactionWrapperLink" draggable="false" title="Go to artist artist-2">
+                <div class="centerAll preloadImage"><span class="skeletonLoader"><span class="visuallyHidden">Loading image</span></span><img alt="Go to artist artist-2" class="image" draggable="false" src="image"></div>
+              </a></figure>
+            <div class="hideOnListLayout layoutItemActions layoutItemActionsEnd layoutItemHoverActions"><button class="centerItems buttonLink alignRight" draggable="false" type="button" title="Unlike artist">
+                <phheart aria-hidden="true" class="icon" color="var(--error-color)" size="24" weight="fill"></phheart><span class="clamp text visuallyHidden">Unlike artist</span>
+              </button></div>
+          </div>
+          <div class="layoutContent">
+            <p class="strong smallFont clamp2"><a aria-label="Go to artist artist-2" class="layoutLink" draggable="false">artist-2</a></p>
+          </div>
+          <div class="layoutDropdownMenu layoutItemHoverActions">
+            <div class="centerItems dropdownWrapper"><button class="centerItems buttonLink alignRight buttonLink buttonLink" draggable="false" type="button" aria-expanded="false" aria-haspopup="menu" title="More">
+                <phdotsthreevertical aria-hidden="true" class="icon" size="24" weight="regular"></phdotsthreevertical><span class="clamp text visuallyHidden"> More</span>
+              </button>
+              <teleport-stub disabled="false" to="#teleports">
+                <!--v-if-->
+              </teleport-stub>
+            </div>
+          </div>
+        </article>
+      </swiper-slide>
+    </swiper-container><button class="centerItems buttonLink previous previous" draggable="false" type="button" title="Previous slide">
+      <phcaretdoubleleft aria-hidden="true" class="icon" size="24" weight="regular"></phcaretdoubleleft><span class="clamp text visuallyHidden"> Previous slide </span>
+    </button><button class="centerItems buttonLink next next" draggable="false" type="button" title="Next slide">
+      <phcaretdoubleright aria-hidden="true" class="icon" size="24" weight="regular"></phcaretdoubleright><span class="clamp text visuallyHidden"> Next slide </span>
+    </button>
+  </div>
+  <!--v-if-->
+  <div class="centerItems spaceBetween">
+    <h2 class="header"><a draggable="false"> Playlist <phcaretdoubleright class="moreIcon" size="18" weight="regular"></phcaretdoubleright></a></h2>
+    <div class="centerItems"><a class="mobileOnly link" draggable="false"> See all </a></div>
+  </div>
+  <playlist-list-stub playlists="[object Object],[object Object]"></playlist-list-stub>
+</div>"
+`;
+
+exports[`library > when data returns a value > when playlists is an empty array > matches the snapshot 1`] = `
+"<div class="column centerAll loadingData" style="display: none;"><span class="mainLoader"><span class="headphones"><svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.25" viewBox="0 0 24 24" width="75" xmlns="http://www.w3.org/2000/svg"><path d="M4 13.5V13c0-4.97 3.582-9 8-9s8 4.03 8 9v.5"></path><path d="M2 17.439v-1.877a2 2 0 0 1 1.515-1.94L4 13.5l1.254-.314a.6.6 0 0 1 .746.582v5.464a.6.6 0 0 1-.746.582l-1.74-.435A2 2 0 0 1 2 17.439ZM22 17.439v-1.877a2 2 0 0 0-1.515-1.94L20 13.5l-1.255-.314a.6.6 0 0 0-.745.582v5.464a.6.6 0 0 0 .745.582l1.74-.435A2 2 0 0 0 22 17.439Z"></path></svg></span><span class="centerItems loader"><span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span></span><output class="visuallyHidden">Loading data</output></span></div>
+<div class="mainContent">
+  <h1 class="visuallyHidden">Library</h1>
+  <div class="centerItems spaceBetween">
+    <h2 class="header"><a draggable="false"> Albums <phcaretdoubleright class="moreIcon" size="18" weight="regular"></phcaretdoubleright></a></h2>
+    <div class="centerItems"><a class="mobileOnly link" draggable="false"> See all </a></div>
+  </div>
+  <div class="mBL carouselSwiper">
+    <swiper-container>
+      <swiper-slide data-test-id="random-album-item" style="margin-right: 15px;" role="group" aria-label="1 / 2" class="swiper-slide-active">
+        <article class="interactionWrapper layoutItem" draggable="false">
+          <div class="layoutImage layoutItemImageWrapper">
+            <figure><a class="interactionWrapperLink" draggable="false" title="Go to album album-0">
+                <div class="centerAll preloadImage"><span class="skeletonLoader"><span class="visuallyHidden">Loading image</span></span><img alt="Go to album album-0" class="image" draggable="false" src="image"></div>
+              </a></figure>
+            <div class="hideOnListLayout layoutItemActions layoutItemHoverActions">
+              <div class="centerItems actionsLeft"><button class="centerItems buttonLink themeHoverButton themeHoverButton" draggable="false" type="button" title="Play album album-0">
+                  <phplay aria-hidden="true" class="icon" size="24" weight="regular"></phplay><span class="clamp text visuallyHidden">Play album album-0</span>
+                </button><button class="centerItems buttonLink" draggable="false" type="button" title="Add album to queue">
+                  <phpluscircle aria-hidden="true" class="icon" size="24" weight="regular"></phpluscircle><span class="clamp text visuallyHidden"> Add album to queue </span>
+                </button></div><button class="centerItems buttonLink alignRight" draggable="false" type="button" title="Unlike album">
+                <phheart aria-hidden="true" class="icon" color="var(--error-color)" size="24" weight="fill"></phheart><span class="clamp text visuallyHidden">Unlike album</span>
+              </button>
+            </div>
+          </div>
+          <div class="layoutContent">
+            <p class="mBXS strong smallFont clamp2"><a aria-label="Go to album album-0" class="layoutLink" draggable="false">album-0</a></p>
+            <ul class="commaList smallFont clamp2">
+              <li data-test-id="artist-list-item"><a aria-label="Go to artist name" class="link">name</a></li>
+              <li data-test-id="artist-list-item"><a aria-label="Go to artist name1" class="link">name1</a></li>
+            </ul>
+          </div>
+          <div class="layoutDropdownMenu layoutItemHoverActions">
+            <div class="centerItems dropdownWrapper"><button class="centerItems buttonLink alignRight buttonLink buttonLink" draggable="false" type="button" aria-expanded="false" aria-haspopup="menu" title="More">
+                <phdotsthreevertical aria-hidden="true" class="icon" size="24" weight="regular"></phdotsthreevertical><span class="clamp text visuallyHidden"> More</span>
+              </button>
+              <teleport-stub disabled="false" to="#teleports">
+                <!--v-if-->
+              </teleport-stub>
+            </div>
+          </div>
+        </article>
+      </swiper-slide>
+      <swiper-slide data-test-id="random-album-item" style="margin-right: 15px;" role="group" aria-label="2 / 2" class="swiper-slide-next">
+        <article class="interactionWrapper layoutItem" draggable="false">
+          <div class="layoutImage layoutItemImageWrapper">
+            <figure><a class="interactionWrapperLink" draggable="false" title="Go to album album-1">
+                <div class="centerAll preloadImage"><span class="skeletonLoader"><span class="visuallyHidden">Loading image</span></span><img alt="Go to album album-1" class="image" draggable="false" src="image"></div>
+              </a></figure>
+            <div class="hideOnListLayout layoutItemActions layoutItemHoverActions">
+              <div class="centerItems actionsLeft"><button class="centerItems buttonLink themeHoverButton themeHoverButton" draggable="false" type="button" title="Play album album-1">
+                  <phplay aria-hidden="true" class="icon" size="24" weight="regular"></phplay><span class="clamp text visuallyHidden">Play album album-1</span>
+                </button><button class="centerItems buttonLink" draggable="false" type="button" title="Add album to queue">
+                  <phpluscircle aria-hidden="true" class="icon" size="24" weight="regular"></phpluscircle><span class="clamp text visuallyHidden"> Add album to queue </span>
+                </button></div><button class="centerItems buttonLink alignRight" draggable="false" type="button" title="Unlike album">
+                <phheart aria-hidden="true" class="icon" color="var(--error-color)" size="24" weight="fill"></phheart><span class="clamp text visuallyHidden">Unlike album</span>
+              </button>
+            </div>
+          </div>
+          <div class="layoutContent">
+            <p class="mBXS strong smallFont clamp2"><a aria-label="Go to album album-1" class="layoutLink" draggable="false">album-1</a></p>
+            <ul class="commaList smallFont clamp2">
+              <li data-test-id="artist-list-item"><a aria-label="Go to artist name" class="link">name</a></li>
+              <li data-test-id="artist-list-item"><a aria-label="Go to artist name1" class="link">name1</a></li>
+            </ul>
+          </div>
+          <div class="layoutDropdownMenu layoutItemHoverActions">
+            <div class="centerItems dropdownWrapper"><button class="centerItems buttonLink alignRight buttonLink buttonLink" draggable="false" type="button" aria-expanded="false" aria-haspopup="menu" title="More">
+                <phdotsthreevertical aria-hidden="true" class="icon" size="24" weight="regular"></phdotsthreevertical><span class="clamp text visuallyHidden"> More</span>
+              </button>
+              <teleport-stub disabled="false" to="#teleports">
+                <!--v-if-->
+              </teleport-stub>
+            </div>
+          </div>
+        </article>
+      </swiper-slide>
+    </swiper-container><button class="centerItems buttonLink previous previous" draggable="false" type="button" title="Previous slide">
+      <phcaretdoubleleft aria-hidden="true" class="icon" size="24" weight="regular"></phcaretdoubleleft><span class="clamp text visuallyHidden"> Previous slide </span>
+    </button><button class="centerItems buttonLink next next" draggable="false" type="button" title="Next slide">
+      <phcaretdoubleright aria-hidden="true" class="icon" size="24" weight="regular"></phcaretdoubleright><span class="clamp text visuallyHidden"> Next slide </span>
+    </button>
+  </div>
+  <div class="centerItems spaceBetween">
+    <h2 class="header"><a draggable="false"> Artists <phcaretdoubleright class="moreIcon" size="18" weight="regular"></phcaretdoubleright></a></h2>
+    <div class="centerItems"><a class="mobileOnly link" draggable="false"> See all </a></div>
+  </div>
+  <div class="mBL carouselSwiper">
+    <swiper-container>
+      <swiper-slide data-test-id="random-artist-item" style="margin-right: 15px;" role="group" aria-label="1 / 3" class="swiper-slide-active">
+        <article class="interactionWrapper layoutItem" draggable="false">
+          <div class="layoutImage layoutItemImageWrapper">
+            <figure><a class="interactionWrapperLink" draggable="false" title="Go to artist artist-0">
+                <div class="centerAll preloadImage"><span class="skeletonLoader"><span class="visuallyHidden">Loading image</span></span><img alt="Go to artist artist-0" class="image" draggable="false" src="image"></div>
+              </a></figure>
+            <div class="hideOnListLayout layoutItemActions layoutItemActionsEnd layoutItemHoverActions"><button class="centerItems buttonLink alignRight" draggable="false" type="button" title="Unlike artist">
+                <phheart aria-hidden="true" class="icon" color="var(--error-color)" size="24" weight="fill"></phheart><span class="clamp text visuallyHidden">Unlike artist</span>
+              </button></div>
+          </div>
+          <div class="layoutContent">
+            <p class="strong smallFont clamp2"><a aria-label="Go to artist artist-0" class="layoutLink" draggable="false">artist-0</a></p>
+          </div>
+          <div class="layoutDropdownMenu layoutItemHoverActions">
+            <div class="centerItems dropdownWrapper"><button class="centerItems buttonLink alignRight buttonLink buttonLink" draggable="false" type="button" aria-expanded="false" aria-haspopup="menu" title="More">
+                <phdotsthreevertical aria-hidden="true" class="icon" size="24" weight="regular"></phdotsthreevertical><span class="clamp text visuallyHidden"> More</span>
+              </button>
+              <teleport-stub disabled="false" to="#teleports">
+                <!--v-if-->
+              </teleport-stub>
+            </div>
+          </div>
+        </article>
+      </swiper-slide>
+      <swiper-slide data-test-id="random-artist-item" style="margin-right: 15px;" role="group" aria-label="2 / 3" class="swiper-slide-next">
+        <article class="interactionWrapper layoutItem" draggable="false">
+          <div class="layoutImage layoutItemImageWrapper">
+            <figure><a class="interactionWrapperLink" draggable="false" title="Go to artist artist-1">
+                <div class="centerAll preloadImage"><span class="skeletonLoader"><span class="visuallyHidden">Loading image</span></span><img alt="Go to artist artist-1" class="image" draggable="false" src="image"></div>
+              </a></figure>
+            <div class="hideOnListLayout layoutItemActions layoutItemActionsEnd layoutItemHoverActions"><button class="centerItems buttonLink alignRight" draggable="false" type="button" title="Unlike artist">
+                <phheart aria-hidden="true" class="icon" color="var(--error-color)" size="24" weight="fill"></phheart><span class="clamp text visuallyHidden">Unlike artist</span>
+              </button></div>
+          </div>
+          <div class="layoutContent">
+            <p class="strong smallFont clamp2"><a aria-label="Go to artist artist-1" class="layoutLink" draggable="false">artist-1</a></p>
+          </div>
+          <div class="layoutDropdownMenu layoutItemHoverActions">
+            <div class="centerItems dropdownWrapper"><button class="centerItems buttonLink alignRight buttonLink buttonLink" draggable="false" type="button" aria-expanded="false" aria-haspopup="menu" title="More">
+                <phdotsthreevertical aria-hidden="true" class="icon" size="24" weight="regular"></phdotsthreevertical><span class="clamp text visuallyHidden"> More</span>
+              </button>
+              <teleport-stub disabled="false" to="#teleports">
+                <!--v-if-->
+              </teleport-stub>
+            </div>
+          </div>
+        </article>
+      </swiper-slide>
+      <swiper-slide data-test-id="random-artist-item" style="margin-right: 15px;" role="group" aria-label="3 / 3">
+        <article class="interactionWrapper layoutItem" draggable="false">
+          <div class="layoutImage layoutItemImageWrapper">
+            <figure><a class="interactionWrapperLink" draggable="false" title="Go to artist artist-2">
+                <div class="centerAll preloadImage"><span class="skeletonLoader"><span class="visuallyHidden">Loading image</span></span><img alt="Go to artist artist-2" class="image" draggable="false" src="image"></div>
+              </a></figure>
+            <div class="hideOnListLayout layoutItemActions layoutItemActionsEnd layoutItemHoverActions"><button class="centerItems buttonLink alignRight" draggable="false" type="button" title="Unlike artist">
+                <phheart aria-hidden="true" class="icon" color="var(--error-color)" size="24" weight="fill"></phheart><span class="clamp text visuallyHidden">Unlike artist</span>
+              </button></div>
+          </div>
+          <div class="layoutContent">
+            <p class="strong smallFont clamp2"><a aria-label="Go to artist artist-2" class="layoutLink" draggable="false">artist-2</a></p>
+          </div>
+          <div class="layoutDropdownMenu layoutItemHoverActions">
+            <div class="centerItems dropdownWrapper"><button class="centerItems buttonLink alignRight buttonLink buttonLink" draggable="false" type="button" aria-expanded="false" aria-haspopup="menu" title="More">
+                <phdotsthreevertical aria-hidden="true" class="icon" size="24" weight="regular"></phdotsthreevertical><span class="clamp text visuallyHidden"> More</span>
+              </button>
+              <teleport-stub disabled="false" to="#teleports">
+                <!--v-if-->
+              </teleport-stub>
+            </div>
+          </div>
+        </article>
+      </swiper-slide>
+    </swiper-container><button class="centerItems buttonLink previous previous" draggable="false" type="button" title="Previous slide">
+      <phcaretdoubleleft aria-hidden="true" class="icon" size="24" weight="regular"></phcaretdoubleleft><span class="clamp text visuallyHidden"> Previous slide </span>
+    </button><button class="centerItems buttonLink next next" draggable="false" type="button" title="Next slide">
+      <phcaretdoubleright aria-hidden="true" class="icon" size="24" weight="regular"></phcaretdoubleright><span class="clamp text visuallyHidden"> Next slide </span>
+    </button>
+  </div>
+  <div class="centerItems spaceBetween">
+    <h2 class="header"><a draggable="false"> Genres <phcaretdoubleright class="moreIcon" size="18" weight="regular"></phcaretdoubleright></a></h2>
+    <div class="centerItems"><a class="mobileOnly link" draggable="false"> See all </a></div>
+  </div>
+  <div class="mBL carouselSwiper">
+    <swiper-container>
+      <swiper-slide data-test-id="random-genre-item" style="order: 0; margin-right: 15px;" role="group" aria-label="1 / 2" class="swiper-slide-active"><a aria-label="View all albums with Rock genre" class="centerAll genreLink" draggable="false">Rock</a></swiper-slide>
+      <swiper-slide data-test-id="random-genre-item" style="order: 1; margin-right: 15px;" role="group" aria-label="2 / 2" class="swiper-slide-next"><a aria-label="View all albums with Rock genre" class="centerAll genreLink" draggable="false">Rock</a></swiper-slide>
+    </swiper-container><button class="centerItems buttonLink previous previous" draggable="false" type="button" title="Previous slide">
+      <phcaretdoubleleft aria-hidden="true" class="icon" size="24" weight="regular"></phcaretdoubleleft><span class="clamp text visuallyHidden"> Previous slide </span>
+    </button><button class="centerItems buttonLink next next" draggable="false" type="button" title="Next slide">
+      <phcaretdoubleright aria-hidden="true" class="icon" size="24" weight="regular"></phcaretdoubleright><span class="clamp text visuallyHidden"> Next slide </span>
+    </button>
+  </div>
+  <!--v-if-->
+</div>"
+`;
+
+exports[`library > when data returns a value > when playlists is not an empty array > when playlists has more than 8 items > matches the snapshot 1`] = `
+"<div class="column centerAll loadingData" style="display: none;"><span class="mainLoader"><span class="headphones"><svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.25" viewBox="0 0 24 24" width="75" xmlns="http://www.w3.org/2000/svg"><path d="M4 13.5V13c0-4.97 3.582-9 8-9s8 4.03 8 9v.5"></path><path d="M2 17.439v-1.877a2 2 0 0 1 1.515-1.94L4 13.5l1.254-.314a.6.6 0 0 1 .746.582v5.464a.6.6 0 0 1-.746.582l-1.74-.435A2 2 0 0 1 2 17.439ZM22 17.439v-1.877a2 2 0 0 0-1.515-1.94L20 13.5l-1.255-.314a.6.6 0 0 0-.745.582v5.464a.6.6 0 0 0 .745.582l1.74-.435A2 2 0 0 0 22 17.439Z"></path></svg></span><span class="centerItems loader"><span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span></span><output class="visuallyHidden">Loading data</output></span></div>
+<div class="mainContent">
+  <h1 class="visuallyHidden">Library</h1>
+  <div class="centerItems spaceBetween">
+    <h2 class="header"><a draggable="false"> Albums <phcaretdoubleright class="moreIcon" size="18" weight="regular"></phcaretdoubleright></a></h2>
+    <div class="centerItems"><a class="mobileOnly link" draggable="false"> See all </a></div>
+  </div>
+  <div class="mBL carouselSwiper">
+    <swiper-container>
+      <swiper-slide data-test-id="random-album-item" style="margin-right: 15px;" role="group" aria-label="1 / 2" class="swiper-slide-active">
+        <article class="interactionWrapper layoutItem" draggable="false">
+          <div class="layoutImage layoutItemImageWrapper">
+            <figure><a class="interactionWrapperLink" draggable="false" title="Go to album album-0">
+                <div class="centerAll preloadImage"><span class="skeletonLoader"><span class="visuallyHidden">Loading image</span></span><img alt="Go to album album-0" class="image" draggable="false" src="image"></div>
+              </a></figure>
+            <div class="hideOnListLayout layoutItemActions layoutItemHoverActions">
+              <div class="centerItems actionsLeft"><button class="centerItems buttonLink themeHoverButton themeHoverButton" draggable="false" type="button" title="Play album album-0">
+                  <phplay aria-hidden="true" class="icon" size="24" weight="regular"></phplay><span class="clamp text visuallyHidden">Play album album-0</span>
+                </button><button class="centerItems buttonLink" draggable="false" type="button" title="Add album to queue">
+                  <phpluscircle aria-hidden="true" class="icon" size="24" weight="regular"></phpluscircle><span class="clamp text visuallyHidden"> Add album to queue </span>
+                </button></div><button class="centerItems buttonLink alignRight" draggable="false" type="button" title="Unlike album">
+                <phheart aria-hidden="true" class="icon" color="var(--error-color)" size="24" weight="fill"></phheart><span class="clamp text visuallyHidden">Unlike album</span>
+              </button>
+            </div>
+          </div>
+          <div class="layoutContent">
+            <p class="mBXS strong smallFont clamp2"><a aria-label="Go to album album-0" class="layoutLink" draggable="false">album-0</a></p>
+            <ul class="commaList smallFont clamp2">
+              <li data-test-id="artist-list-item"><a aria-label="Go to artist name" class="link">name</a></li>
+              <li data-test-id="artist-list-item"><a aria-label="Go to artist name1" class="link">name1</a></li>
+            </ul>
+          </div>
+          <div class="layoutDropdownMenu layoutItemHoverActions">
+            <div class="centerItems dropdownWrapper"><button class="centerItems buttonLink alignRight buttonLink buttonLink" draggable="false" type="button" aria-expanded="false" aria-haspopup="menu" title="More">
+                <phdotsthreevertical aria-hidden="true" class="icon" size="24" weight="regular"></phdotsthreevertical><span class="clamp text visuallyHidden"> More</span>
+              </button>
+              <teleport-stub disabled="false" to="#teleports">
+                <!--v-if-->
+              </teleport-stub>
+            </div>
+          </div>
+        </article>
+      </swiper-slide>
+      <swiper-slide data-test-id="random-album-item" style="margin-right: 15px;" role="group" aria-label="2 / 2" class="swiper-slide-next">
+        <article class="interactionWrapper layoutItem" draggable="false">
+          <div class="layoutImage layoutItemImageWrapper">
+            <figure><a class="interactionWrapperLink" draggable="false" title="Go to album album-1">
+                <div class="centerAll preloadImage"><span class="skeletonLoader"><span class="visuallyHidden">Loading image</span></span><img alt="Go to album album-1" class="image" draggable="false" src="image"></div>
+              </a></figure>
+            <div class="hideOnListLayout layoutItemActions layoutItemHoverActions">
+              <div class="centerItems actionsLeft"><button class="centerItems buttonLink themeHoverButton themeHoverButton" draggable="false" type="button" title="Play album album-1">
+                  <phplay aria-hidden="true" class="icon" size="24" weight="regular"></phplay><span class="clamp text visuallyHidden">Play album album-1</span>
+                </button><button class="centerItems buttonLink" draggable="false" type="button" title="Add album to queue">
+                  <phpluscircle aria-hidden="true" class="icon" size="24" weight="regular"></phpluscircle><span class="clamp text visuallyHidden"> Add album to queue </span>
+                </button></div><button class="centerItems buttonLink alignRight" draggable="false" type="button" title="Unlike album">
+                <phheart aria-hidden="true" class="icon" color="var(--error-color)" size="24" weight="fill"></phheart><span class="clamp text visuallyHidden">Unlike album</span>
+              </button>
+            </div>
+          </div>
+          <div class="layoutContent">
+            <p class="mBXS strong smallFont clamp2"><a aria-label="Go to album album-1" class="layoutLink" draggable="false">album-1</a></p>
+            <ul class="commaList smallFont clamp2">
+              <li data-test-id="artist-list-item"><a aria-label="Go to artist name" class="link">name</a></li>
+              <li data-test-id="artist-list-item"><a aria-label="Go to artist name1" class="link">name1</a></li>
+            </ul>
+          </div>
+          <div class="layoutDropdownMenu layoutItemHoverActions">
+            <div class="centerItems dropdownWrapper"><button class="centerItems buttonLink alignRight buttonLink buttonLink" draggable="false" type="button" aria-expanded="false" aria-haspopup="menu" title="More">
+                <phdotsthreevertical aria-hidden="true" class="icon" size="24" weight="regular"></phdotsthreevertical><span class="clamp text visuallyHidden"> More</span>
+              </button>
+              <teleport-stub disabled="false" to="#teleports">
+                <!--v-if-->
+              </teleport-stub>
+            </div>
+          </div>
+        </article>
+      </swiper-slide>
+    </swiper-container><button class="centerItems buttonLink previous previous" draggable="false" type="button" title="Previous slide">
+      <phcaretdoubleleft aria-hidden="true" class="icon" size="24" weight="regular"></phcaretdoubleleft><span class="clamp text visuallyHidden"> Previous slide </span>
+    </button><button class="centerItems buttonLink next next" draggable="false" type="button" title="Next slide">
+      <phcaretdoubleright aria-hidden="true" class="icon" size="24" weight="regular"></phcaretdoubleright><span class="clamp text visuallyHidden"> Next slide </span>
+    </button>
+  </div>
+  <div class="centerItems spaceBetween">
+    <h2 class="header"><a draggable="false"> Artists <phcaretdoubleright class="moreIcon" size="18" weight="regular"></phcaretdoubleright></a></h2>
+    <div class="centerItems"><a class="mobileOnly link" draggable="false"> See all </a></div>
+  </div>
+  <div class="mBL carouselSwiper">
+    <swiper-container>
+      <swiper-slide data-test-id="random-artist-item" style="margin-right: 15px;" role="group" aria-label="1 / 3" class="swiper-slide-active">
+        <article class="interactionWrapper layoutItem" draggable="false">
+          <div class="layoutImage layoutItemImageWrapper">
+            <figure><a class="interactionWrapperLink" draggable="false" title="Go to artist artist-0">
+                <div class="centerAll preloadImage"><span class="skeletonLoader"><span class="visuallyHidden">Loading image</span></span><img alt="Go to artist artist-0" class="image" draggable="false" src="image"></div>
+              </a></figure>
+            <div class="hideOnListLayout layoutItemActions layoutItemActionsEnd layoutItemHoverActions"><button class="centerItems buttonLink alignRight" draggable="false" type="button" title="Unlike artist">
+                <phheart aria-hidden="true" class="icon" color="var(--error-color)" size="24" weight="fill"></phheart><span class="clamp text visuallyHidden">Unlike artist</span>
+              </button></div>
+          </div>
+          <div class="layoutContent">
+            <p class="strong smallFont clamp2"><a aria-label="Go to artist artist-0" class="layoutLink" draggable="false">artist-0</a></p>
+          </div>
+          <div class="layoutDropdownMenu layoutItemHoverActions">
+            <div class="centerItems dropdownWrapper"><button class="centerItems buttonLink alignRight buttonLink buttonLink" draggable="false" type="button" aria-expanded="false" aria-haspopup="menu" title="More">
+                <phdotsthreevertical aria-hidden="true" class="icon" size="24" weight="regular"></phdotsthreevertical><span class="clamp text visuallyHidden"> More</span>
+              </button>
+              <teleport-stub disabled="false" to="#teleports">
+                <!--v-if-->
+              </teleport-stub>
+            </div>
+          </div>
+        </article>
+      </swiper-slide>
+      <swiper-slide data-test-id="random-artist-item" style="margin-right: 15px;" role="group" aria-label="2 / 3" class="swiper-slide-next">
+        <article class="interactionWrapper layoutItem" draggable="false">
+          <div class="layoutImage layoutItemImageWrapper">
+            <figure><a class="interactionWrapperLink" draggable="false" title="Go to artist artist-1">
+                <div class="centerAll preloadImage"><span class="skeletonLoader"><span class="visuallyHidden">Loading image</span></span><img alt="Go to artist artist-1" class="image" draggable="false" src="image"></div>
+              </a></figure>
+            <div class="hideOnListLayout layoutItemActions layoutItemActionsEnd layoutItemHoverActions"><button class="centerItems buttonLink alignRight" draggable="false" type="button" title="Unlike artist">
+                <phheart aria-hidden="true" class="icon" color="var(--error-color)" size="24" weight="fill"></phheart><span class="clamp text visuallyHidden">Unlike artist</span>
+              </button></div>
+          </div>
+          <div class="layoutContent">
+            <p class="strong smallFont clamp2"><a aria-label="Go to artist artist-1" class="layoutLink" draggable="false">artist-1</a></p>
+          </div>
+          <div class="layoutDropdownMenu layoutItemHoverActions">
+            <div class="centerItems dropdownWrapper"><button class="centerItems buttonLink alignRight buttonLink buttonLink" draggable="false" type="button" aria-expanded="false" aria-haspopup="menu" title="More">
+                <phdotsthreevertical aria-hidden="true" class="icon" size="24" weight="regular"></phdotsthreevertical><span class="clamp text visuallyHidden"> More</span>
+              </button>
+              <teleport-stub disabled="false" to="#teleports">
+                <!--v-if-->
+              </teleport-stub>
+            </div>
+          </div>
+        </article>
+      </swiper-slide>
+      <swiper-slide data-test-id="random-artist-item" style="margin-right: 15px;" role="group" aria-label="3 / 3">
+        <article class="interactionWrapper layoutItem" draggable="false">
+          <div class="layoutImage layoutItemImageWrapper">
+            <figure><a class="interactionWrapperLink" draggable="false" title="Go to artist artist-2">
+                <div class="centerAll preloadImage"><span class="skeletonLoader"><span class="visuallyHidden">Loading image</span></span><img alt="Go to artist artist-2" class="image" draggable="false" src="image"></div>
+              </a></figure>
+            <div class="hideOnListLayout layoutItemActions layoutItemActionsEnd layoutItemHoverActions"><button class="centerItems buttonLink alignRight" draggable="false" type="button" title="Unlike artist">
+                <phheart aria-hidden="true" class="icon" color="var(--error-color)" size="24" weight="fill"></phheart><span class="clamp text visuallyHidden">Unlike artist</span>
+              </button></div>
+          </div>
+          <div class="layoutContent">
+            <p class="strong smallFont clamp2"><a aria-label="Go to artist artist-2" class="layoutLink" draggable="false">artist-2</a></p>
+          </div>
+          <div class="layoutDropdownMenu layoutItemHoverActions">
+            <div class="centerItems dropdownWrapper"><button class="centerItems buttonLink alignRight buttonLink buttonLink" draggable="false" type="button" aria-expanded="false" aria-haspopup="menu" title="More">
+                <phdotsthreevertical aria-hidden="true" class="icon" size="24" weight="regular"></phdotsthreevertical><span class="clamp text visuallyHidden"> More</span>
+              </button>
+              <teleport-stub disabled="false" to="#teleports">
+                <!--v-if-->
+              </teleport-stub>
+            </div>
+          </div>
+        </article>
+      </swiper-slide>
+    </swiper-container><button class="centerItems buttonLink previous previous" draggable="false" type="button" title="Previous slide">
+      <phcaretdoubleleft aria-hidden="true" class="icon" size="24" weight="regular"></phcaretdoubleleft><span class="clamp text visuallyHidden"> Previous slide </span>
+    </button><button class="centerItems buttonLink next next" draggable="false" type="button" title="Next slide">
+      <phcaretdoubleright aria-hidden="true" class="icon" size="24" weight="regular"></phcaretdoubleright><span class="clamp text visuallyHidden"> Next slide </span>
+    </button>
+  </div>
+  <div class="centerItems spaceBetween">
+    <h2 class="header"><a draggable="false"> Genres <phcaretdoubleright class="moreIcon" size="18" weight="regular"></phcaretdoubleright></a></h2>
+    <div class="centerItems"><a class="mobileOnly link" draggable="false"> See all </a></div>
+  </div>
+  <div class="mBL carouselSwiper">
+    <swiper-container>
+      <swiper-slide data-test-id="random-genre-item" style="order: 0; margin-right: 15px;" role="group" aria-label="1 / 2" class="swiper-slide-active"><a aria-label="View all albums with Rock genre" class="centerAll genreLink" draggable="false">Rock</a></swiper-slide>
+      <swiper-slide data-test-id="random-genre-item" style="order: 1; margin-right: 15px;" role="group" aria-label="2 / 2" class="swiper-slide-next"><a aria-label="View all albums with Rock genre" class="centerAll genreLink" draggable="false">Rock</a></swiper-slide>
+    </swiper-container><button class="centerItems buttonLink previous previous" draggable="false" type="button" title="Previous slide">
+      <phcaretdoubleleft aria-hidden="true" class="icon" size="24" weight="regular"></phcaretdoubleleft><span class="clamp text visuallyHidden"> Previous slide </span>
+    </button><button class="centerItems buttonLink next next" draggable="false" type="button" title="Next slide">
+      <phcaretdoubleright aria-hidden="true" class="icon" size="24" weight="regular"></phcaretdoubleright><span class="clamp text visuallyHidden"> Next slide </span>
+    </button>
+  </div>
+  <div class="centerItems spaceBetween">
+    <h2 class="header"><a draggable="false"> Playlist <phcaretdoubleright class="moreIcon" size="18" weight="regular"></phcaretdoubleright></a></h2>
+    <div class="centerItems"><a class="mobileOnly link" draggable="false"> See all </a></div>
+  </div>
+  <playlist-list-stub playlists="[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object]"></playlist-list-stub>
+</div>"
+`;
+
+exports[`library > when data returns a value > when randomAlbums is an empty array > matches the snapshot 1`] = `
+"<div class="column centerAll loadingData" style="display: none;"><span class="mainLoader"><span class="headphones"><svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.25" viewBox="0 0 24 24" width="75" xmlns="http://www.w3.org/2000/svg"><path d="M4 13.5V13c0-4.97 3.582-9 8-9s8 4.03 8 9v.5"></path><path d="M2 17.439v-1.877a2 2 0 0 1 1.515-1.94L4 13.5l1.254-.314a.6.6 0 0 1 .746.582v5.464a.6.6 0 0 1-.746.582l-1.74-.435A2 2 0 0 1 2 17.439ZM22 17.439v-1.877a2 2 0 0 0-1.515-1.94L20 13.5l-1.255-.314a.6.6 0 0 0-.745.582v5.464a.6.6 0 0 0 .745.582l1.74-.435A2 2 0 0 0 22 17.439Z"></path></svg></span><span class="centerItems loader"><span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span></span><output class="visuallyHidden">Loading data</output></span></div>
+<div class="mainContent">
+  <h1 class="visuallyHidden">Library</h1>
+  <!--v-if-->
+  <div class="centerItems spaceBetween">
+    <h2 class="header"><a draggable="false"> Artists <phcaretdoubleright class="moreIcon" size="18" weight="regular"></phcaretdoubleright></a></h2>
+    <div class="centerItems"><a class="mobileOnly link" draggable="false"> See all </a></div>
+  </div>
+  <div class="mBL carouselSwiper">
+    <swiper-container>
+      <swiper-slide data-test-id="random-artist-item" style="margin-right: 15px;" role="group" aria-label="1 / 3" class="swiper-slide-active">
+        <article class="interactionWrapper layoutItem" draggable="false">
+          <div class="layoutImage layoutItemImageWrapper">
+            <figure><a class="interactionWrapperLink" draggable="false" title="Go to artist artist-0">
+                <div class="centerAll preloadImage"><span class="skeletonLoader"><span class="visuallyHidden">Loading image</span></span><img alt="Go to artist artist-0" class="image" draggable="false" src="image"></div>
+              </a></figure>
+            <div class="hideOnListLayout layoutItemActions layoutItemActionsEnd layoutItemHoverActions"><button class="centerItems buttonLink alignRight" draggable="false" type="button" title="Unlike artist">
+                <phheart aria-hidden="true" class="icon" color="var(--error-color)" size="24" weight="fill"></phheart><span class="clamp text visuallyHidden">Unlike artist</span>
+              </button></div>
+          </div>
+          <div class="layoutContent">
+            <p class="strong smallFont clamp2"><a aria-label="Go to artist artist-0" class="layoutLink" draggable="false">artist-0</a></p>
+          </div>
+          <div class="layoutDropdownMenu layoutItemHoverActions">
+            <div class="centerItems dropdownWrapper"><button class="centerItems buttonLink alignRight buttonLink buttonLink" draggable="false" type="button" aria-expanded="false" aria-haspopup="menu" title="More">
+                <phdotsthreevertical aria-hidden="true" class="icon" size="24" weight="regular"></phdotsthreevertical><span class="clamp text visuallyHidden"> More</span>
+              </button>
+              <teleport-stub disabled="false" to="#teleports">
+                <!--v-if-->
+              </teleport-stub>
+            </div>
+          </div>
+        </article>
+      </swiper-slide>
+      <swiper-slide data-test-id="random-artist-item" style="margin-right: 15px;" role="group" aria-label="2 / 3" class="swiper-slide-next">
+        <article class="interactionWrapper layoutItem" draggable="false">
+          <div class="layoutImage layoutItemImageWrapper">
+            <figure><a class="interactionWrapperLink" draggable="false" title="Go to artist artist-1">
+                <div class="centerAll preloadImage"><span class="skeletonLoader"><span class="visuallyHidden">Loading image</span></span><img alt="Go to artist artist-1" class="image" draggable="false" src="image"></div>
+              </a></figure>
+            <div class="hideOnListLayout layoutItemActions layoutItemActionsEnd layoutItemHoverActions"><button class="centerItems buttonLink alignRight" draggable="false" type="button" title="Unlike artist">
+                <phheart aria-hidden="true" class="icon" color="var(--error-color)" size="24" weight="fill"></phheart><span class="clamp text visuallyHidden">Unlike artist</span>
+              </button></div>
+          </div>
+          <div class="layoutContent">
+            <p class="strong smallFont clamp2"><a aria-label="Go to artist artist-1" class="layoutLink" draggable="false">artist-1</a></p>
+          </div>
+          <div class="layoutDropdownMenu layoutItemHoverActions">
+            <div class="centerItems dropdownWrapper"><button class="centerItems buttonLink alignRight buttonLink buttonLink" draggable="false" type="button" aria-expanded="false" aria-haspopup="menu" title="More">
+                <phdotsthreevertical aria-hidden="true" class="icon" size="24" weight="regular"></phdotsthreevertical><span class="clamp text visuallyHidden"> More</span>
+              </button>
+              <teleport-stub disabled="false" to="#teleports">
+                <!--v-if-->
+              </teleport-stub>
+            </div>
+          </div>
+        </article>
+      </swiper-slide>
+      <swiper-slide data-test-id="random-artist-item" style="margin-right: 15px;" role="group" aria-label="3 / 3">
+        <article class="interactionWrapper layoutItem" draggable="false">
+          <div class="layoutImage layoutItemImageWrapper">
+            <figure><a class="interactionWrapperLink" draggable="false" title="Go to artist artist-2">
+                <div class="centerAll preloadImage"><span class="skeletonLoader"><span class="visuallyHidden">Loading image</span></span><img alt="Go to artist artist-2" class="image" draggable="false" src="image"></div>
+              </a></figure>
+            <div class="hideOnListLayout layoutItemActions layoutItemActionsEnd layoutItemHoverActions"><button class="centerItems buttonLink alignRight" draggable="false" type="button" title="Unlike artist">
+                <phheart aria-hidden="true" class="icon" color="var(--error-color)" size="24" weight="fill"></phheart><span class="clamp text visuallyHidden">Unlike artist</span>
+              </button></div>
+          </div>
+          <div class="layoutContent">
+            <p class="strong smallFont clamp2"><a aria-label="Go to artist artist-2" class="layoutLink" draggable="false">artist-2</a></p>
+          </div>
+          <div class="layoutDropdownMenu layoutItemHoverActions">
+            <div class="centerItems dropdownWrapper"><button class="centerItems buttonLink alignRight buttonLink buttonLink" draggable="false" type="button" aria-expanded="false" aria-haspopup="menu" title="More">
+                <phdotsthreevertical aria-hidden="true" class="icon" size="24" weight="regular"></phdotsthreevertical><span class="clamp text visuallyHidden"> More</span>
+              </button>
+              <teleport-stub disabled="false" to="#teleports">
+                <!--v-if-->
+              </teleport-stub>
+            </div>
+          </div>
+        </article>
+      </swiper-slide>
+    </swiper-container><button class="centerItems buttonLink previous previous" draggable="false" type="button" title="Previous slide">
+      <phcaretdoubleleft aria-hidden="true" class="icon" size="24" weight="regular"></phcaretdoubleleft><span class="clamp text visuallyHidden"> Previous slide </span>
+    </button><button class="centerItems buttonLink next next" draggable="false" type="button" title="Next slide">
+      <phcaretdoubleright aria-hidden="true" class="icon" size="24" weight="regular"></phcaretdoubleright><span class="clamp text visuallyHidden"> Next slide </span>
+    </button>
+  </div>
+  <div class="centerItems spaceBetween">
+    <h2 class="header"><a draggable="false"> Genres <phcaretdoubleright class="moreIcon" size="18" weight="regular"></phcaretdoubleright></a></h2>
+    <div class="centerItems"><a class="mobileOnly link" draggable="false"> See all </a></div>
+  </div>
+  <div class="mBL carouselSwiper">
+    <swiper-container>
+      <swiper-slide data-test-id="random-genre-item" style="order: 0; margin-right: 15px;" role="group" aria-label="1 / 2" class="swiper-slide-active"><a aria-label="View all albums with Rock genre" class="centerAll genreLink" draggable="false">Rock</a></swiper-slide>
+      <swiper-slide data-test-id="random-genre-item" style="order: 1; margin-right: 15px;" role="group" aria-label="2 / 2" class="swiper-slide-next"><a aria-label="View all albums with Rock genre" class="centerAll genreLink" draggable="false">Rock</a></swiper-slide>
+    </swiper-container><button class="centerItems buttonLink previous previous" draggable="false" type="button" title="Previous slide">
+      <phcaretdoubleleft aria-hidden="true" class="icon" size="24" weight="regular"></phcaretdoubleleft><span class="clamp text visuallyHidden"> Previous slide </span>
+    </button><button class="centerItems buttonLink next next" draggable="false" type="button" title="Next slide">
+      <phcaretdoubleright aria-hidden="true" class="icon" size="24" weight="regular"></phcaretdoubleright><span class="clamp text visuallyHidden"> Next slide </span>
+    </button>
+  </div>
+  <div class="centerItems spaceBetween">
+    <h2 class="header"><a draggable="false"> Playlist <phcaretdoubleright class="moreIcon" size="18" weight="regular"></phcaretdoubleright></a></h2>
+    <div class="centerItems"><a class="mobileOnly link" draggable="false"> See all </a></div>
+  </div>
+  <playlist-list-stub playlists="[object Object],[object Object]"></playlist-list-stub>
+</div>"
+`;

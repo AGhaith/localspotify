@@ -22,7 +22,10 @@ services:
       - ./navidrome-data:/data
       - ./my-music:/music:ro
   subsonic-player:
-    image: vd39/subsonic-player:latest
+    build:
+      context: ./subsonic-player
+      dockerfile: Dockerfile
+      network: host
     container_name: subsonic-player
     restart: unless-stopped
     ports:

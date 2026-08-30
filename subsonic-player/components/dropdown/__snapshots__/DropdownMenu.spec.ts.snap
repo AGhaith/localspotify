@@ -1,0 +1,79 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`DropdownMenu > matches the snapshot 1`] = `
+"<div class="centerItems dropdownWrapper"><button class="centerItems buttonLink alignRight buttonLink buttonLink" draggable="false" type="button" aria-expanded="false" aria-haspopup="menu" title="More">
+    <phdotsthreevertical aria-hidden="true" class="icon" size="24" weight="regular"></phdotsthreevertical><span class="clamp text visuallyHidden"> More</span>
+  </button>
+  <teleport-stub disabled="false" to="#teleports">
+    <!--v-if-->
+  </teleport-stub>
+</div>"
+`;
+
+exports[`DropdownMenu > when the icon slot is provided > matches the snapshot 1`] = `
+"<div class="centerItems dropdownWrapper"><button class="centerItems buttonLink alignRight buttonLink buttonLink" draggable="false" type="button" aria-expanded="true" aria-haspopup="menu" title="More"><span data-test="custom-icon">Custom icon</span><span class="clamp text visuallyHidden"> More</span></button>
+  <teleport-stub disabled="false" to="#teleports">
+    <div class="dropdownOverlay backdrop dropdown" style="left: 20px; top: 10px;">
+      <ul class="hasPointerEvents dropdownContent dropdownContent">Default slot content.</ul>
+    </div>
+  </teleport-stub>
+</div>"
+`;
+
+exports[`DropdownMenu > when the isOpen value changes to true > matches the snapshot 1`] = `
+"<div class="centerItems dropdownWrapper"><button class="centerItems buttonLink alignRight buttonLink buttonLink" draggable="false" type="button" aria-expanded="true" aria-haspopup="menu" title="More">
+    <phdotsthreevertical aria-hidden="true" class="icon" size="24" weight="regular"></phdotsthreevertical><span class="clamp text visuallyHidden"> More</span>
+  </button>
+  <teleport-stub disabled="false" to="#teleports">
+    <div class="dropdownOverlay backdrop dropdown">
+      <ul class="hasPointerEvents dropdownContent dropdownContent">Default slot content.</ul>
+    </div>
+  </teleport-stub>
+</div>"
+`;
+
+exports[`DropdownMenu > when the isOpen value changes to true > when the isOpen value changes to false > matches the snapshot 1`] = `
+"<div class="centerItems dropdownWrapper"><button class="centerItems buttonLink alignRight buttonLink buttonLink" draggable="false" type="button" aria-expanded="false" aria-haspopup="menu" title="More">
+    <phdotsthreevertical aria-hidden="true" class="icon" size="24" weight="regular"></phdotsthreevertical><span class="clamp text visuallyHidden"> More</span>
+  </button>
+  <teleport-stub disabled="false" to="#teleports">
+    <!--v-if-->
+  </teleport-stub>
+</div>"
+`;
+
+exports[`DropdownMenu > when the isStatic prop is true > matches the snapshot 1`] = `
+"<div class="centerItems dropdownWrapper"><button class="centerItems buttonLink alignRight buttonLink buttonLink" draggable="false" type="button" aria-expanded="true" aria-haspopup="menu" title="More">
+    <phdotsthreevertical aria-hidden="true" class="icon" size="24" weight="regular"></phdotsthreevertical><span class="clamp text visuallyHidden"> More</span>
+  </button>
+  <teleport-stub disabled="true" to="#teleports">
+    <div class="dropdownOverlay backdrop" style="left: 20px; top: 10px;">
+      <ul class="hasPointerEvents dropdownContent dropdownContent">Default slot content.</ul>
+    </div>
+  </teleport-stub>
+</div>"
+`;
+
+exports[`DropdownMenu > when the menuStyle has no values > matches the snapshot 1`] = `
+"<div class="centerItems dropdownWrapper"><button class="centerItems buttonLink alignRight buttonLink buttonLink" draggable="false" type="button" aria-expanded="true" aria-haspopup="menu" title="More">
+    <phdotsthreevertical aria-hidden="true" class="icon" size="24" weight="regular"></phdotsthreevertical><span class="clamp text visuallyHidden"> More</span>
+  </button>
+  <teleport-stub disabled="false" to="#teleports">
+    <div class="dropdownOverlay backdrop dropdown">
+      <ul class="hasPointerEvents dropdownContent dropdownContent">Default slot content.</ul>
+    </div>
+  </teleport-stub>
+</div>"
+`;
+
+exports[`DropdownMenu > when the menuStyle has values > matches the snapshot 1`] = `
+"<div class="centerItems dropdownWrapper"><button class="centerItems buttonLink alignRight buttonLink buttonLink" draggable="false" type="button" aria-expanded="true" aria-haspopup="menu" title="More">
+    <phdotsthreevertical aria-hidden="true" class="icon" size="24" weight="regular"></phdotsthreevertical><span class="clamp text visuallyHidden"> More</span>
+  </button>
+  <teleport-stub disabled="false" to="#teleports">
+    <div class="dropdownOverlay backdrop dropdown" style="left: 20px; top: 10px;">
+      <ul class="hasPointerEvents dropdownContent dropdownContent">Default slot content.</ul>
+    </div>
+  </teleport-stub>
+</div>"
+`;

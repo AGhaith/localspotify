@@ -1,0 +1,243 @@
+import { mockNuxtImport } from '@nuxt/test-utils/runtime';
+
+import { useSnack } from './index';
+
+vi.useFakeTimers();
+
+const generateRandomStringMock = vi.hoisted(() => vi.fn(() => 'randomString'));
+
+mockNuxtImport('generateRandomString', () => generateRandomStringMock);
+
+describe('useSnack', () => {
+  let composable: ReturnType<typeof useSnack>;
+
+  beforeAll(() => {
+    composable = useSnack();
+  });
+
+  it('sets the default snacks value', () => {
+    expect(composable.snacks.value).toEqual([]);
+  });
+
+  describe('when addErrorSnack function is called', () => {
+    describe('when message is not set', () => {
+      beforeAll(() => {
+        composable.addErrorSnack();
+      });
+
+      it('adds to the snacks value with correct values', () => {
+        expect(composable.snacks.value).toEqual(
+          expect.arrayContaining([
+            {
+              content: DEFAULT_ERROR_MESSAGE,
+              id: 'randomString',
+              timer: null,
+              type: 'error',
+            },
+          ]),
+        );
+      });
+    });
+
+    describe('when message is set', () => {
+      beforeAll(() => {
+        composable.addErrorSnack('Content');
+      });
+
+      it('adds to the snacks value with correct values', () => {
+        expect(composable.snacks.value).toEqual(
+          expect.arrayContaining([
+            {
+              content: 'Content',
+              id: 'randomString',
+              timer: null,
+              type: 'error',
+            },
+          ]),
+        );
+      });
+    });
+  });
+
+  describe('when addInfoSnack function is called', () => {
+    beforeAll(() => {
+      generateRandomStringMock.mockReturnValue('randomString1');
+      composable.addInfoSnack('Content');
+    });
+
+    it('adds to the snacks value', () => {
+      expect(composable.snacks.value).toEqual(
+        expect.arrayContaining([
+          {
+            content: 'Content',
+            id: 'randomString1',
+            timer: expect.any(Object),
+            type: 'info',
+          },
+        ]),
+      );
+    });
+  });
+
+  describe('when addSuccessSnack function is called', () => {
+    beforeAll(() => {
+      generateRandomStringMock.mockReturnValue('randomString2');
+      composable.addSuccessSnack('Content');
+    });
+
+    it('adds to the snacks value', () => {
+      expect(composable.snacks.value).toEqual(
+        expect.arrayContaining([
+          {
+            content: 'Content',
+            id: 'randomString2',
+            timer: expect.any(Object),
+            type: 'success',
+          },
+        ]),
+      );
+    });
+  });
+
+  describe('when removeSnack function is called', () => {
+    beforeEach(() => {
+      composable.removeSnack('randomString1');
+    });
+
+    it('removes from snack from the snacks value', () => {
+      expect(composable.snacks.value).toEqual([
+        {
+          content: DEFAULT_ERROR_MESSAGE,
+          id: 'randomString',
+          timer: null,
+          type: 'error',
+        },
+        {
+          content: 'Content',
+          id: 'randomString',
+          timer: null,
+          type: 'error',
+        },
+        {
+          content: 'Content',
+          id: 'randomString2',
+          timer: expect.any(Object),
+          type: 'success',
+        },
+      ]);
+    });
+  });
+
+  describe('when clearAllSnacks function is called', () => {
+    beforeEach(() => {
+      composable.clearAllSnacks();
+    });
+
+    it('clears the snacks value', () => {
+      expect(composable.snacks.value).toEqual([]);
+    });
+  });
+
+  describe('when auto is set to true on a add snack functions', () => {
+    beforeAll(() => {
+      composable.addErrorSnack('Content', true);
+    });
+
+    it('adds to the snacks value', () => {
+      expect(composable.snacks.value).toEqual([
+        {
+          content: 'Content',
+          id: 'randomString2',
+          timer: expect.any(Object),
+          type: 'error',
+        },
+      ]);
+    });
+
+    describe(`when more than ${SNACK_ALIVE_DURATION}ms have passed`, () => {
+      beforeEach(() => {
+        vi.advanceTimersByTime(SNACK_ALIVE_DURATION + 1);
+      });
+
+      it('clears the snacks value', () => {
+        expect(composable.snacks.value).toEqual([]);
+      });
+    });
+  });
+
+  describe('when auto is set to false on a add snack functions', () => {
+    beforeAll(() => {
+      composable.addErrorSnack('Content', false);
+    });
+
+    it('adds to the snacks value', () => {
+      expect(composable.snacks.value).toEqual([
+        {
+          content: 'Content',
+          id: 'randomString2',
+          timer: expect.any(Object),
+          type: 'error',
+        },
+      ]);
+    });
+
+    describe(`when less than ${SNACK_ALIVE_DURATION}ms have passed`, () => {
+      beforeEach(() => {
+        vi.advanceTimersByTime(SNACK_ALIVE_DURATION - 1);
+      });
+
+      it('does not clears the snacks value', () => {
+        expect(composable.snacks.value).toEqual([
+          {
+            content: 'Content',
+            id: 'randomString2',
+            timer: null,
+            type: 'error',
+          },
+        ]);
+      });
+    });
+  });
+
+  describe('when a snack with the same content and type is added', () => {
+    beforeAll(() => {
+      generateRandomStringMock.mockReturnValue('deduplicated');
+      composable.addErrorSnack('Content');
+    });
+
+    it('replaces the existing snack', () => {
+      expect(composable.snacks.value).toEqual([
+        {
+          content: 'Content',
+          id: 'deduplicated',
+          timer: null,
+          type: 'error',
+        },
+      ]);
+    });
+  });
+
+  describe('when a snack with the same content but a different type is added', () => {
+    beforeAll(() => {
+      generateRandomStringMock.mockReturnValue('differentType');
+      composable.addInfoSnack('Content');
+    });
+
+    it('adds the snack to the snacks value', () => {
+      expect(composable.snacks.value).toEqual([
+        {
+          content: 'Content',
+          id: 'deduplicated',
+          timer: null,
+          type: 'error',
+        },
+        {
+          content: 'Content',
+          id: 'differentType',
+          timer: expect.any(Object),
+          type: 'info',
+        },
+      ]);
+    });
+  });
+});

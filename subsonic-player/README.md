@@ -1,0 +1,248 @@
+# 🎵 Subsonic Player: A Modern Subsonic Client
+
+![GitHub Actions Workflow Status][action-workflow]
+[![Docker Pulls][docker-pulls]][docker-hub]
+[![GitHub License][github-license]][license]
+
+## 📝 Overview
+
+Subsonic player is a responsive, modern web-based client designed for [Subsonic music servers][subsonic].
+
+Built with [Nuxt 4][nuxt], a modern [Vue 3][vue] framework, this open-source application provides a seamless and enjoyable music listening experience across all devices.
+
+**Compatible Servers:**
+
+- [Gonic][gonic] (This application is primarily optimized for use with [Gonic][gonic]).
+- [Airsonic Advanced][airsonic].
+- [Navidrome][navidrome].
+- [Subsonic servers][subsonic].
+
+## ✨ Features
+
+1. Fully Responsive UI (Further design improvements are ongoing.)
+   - Optimized for desktop and mobile devices.
+   - Adaptive design.
+
+2. Comprehensive Library Browsing
+   - Browse by album, artist, genre, and folder/files.
+   - Explore podcasts and favourites.
+   - Access internet radio stations.
+
+3. Advanced Functionality
+   - Bookmarking podcast episode to keep track of the listening position across multiple sessions.
+   - MediaSession Integration.
+   - Advanced Search capabilities.
+   - Dark/Light Mode support.
+   - Keyboard shortcut (Press `h` to see menu).
+   - Context menu access via right-click (desktop) or long press (mobile) for quick actions on tracks, albums, playlists, and more.
+   - Easily drag and drop your favorite tracks, albums, and podcast episodes right into the queue or your playlist in the sidebar (available only on desktop).
+
+4. Progressive Web App (PWA) Feature
+   - Seamlessly download the app icon to the home screen, providing the convenience of launching the app just like a traditional native application.
+   - Benefit from a web-based app that reduces storage space on devices compared to traditional downloadable applications, while still providing robust functionality.
+
+5. Settings
+   - The app includes settings for theme, layout, crossfade, replay gain, scrobbling, and more. See the [environment variables](#-environment-variables) section for which can be pre-configured across all devices.
+
+## 📷 Previews
+
+Click on the images to see video of the app in action.
+
+### Dark theme
+
+| Desktop                                             | Mobile                                           |
+| --------------------------------------------------- | ------------------------------------------------ |
+| [![Desktop Dark][desktop-dark]][desktop-dark-video] | [![Mobile Dark][mobile-dark]][mobile-dark-video] |
+
+### Light theme
+
+| Desktop                                                | Mobile                                              |
+| ------------------------------------------------------ | --------------------------------------------------- |
+| [![Desktop Light][desktop-light]][desktop-light-video] | [![Mobile Light][mobile-light]][mobile-light-video] |
+
+## 🚀 Installation Methods
+
+**Prerequisites:**
+
+- [Docker][docker] (recommended).
+- [Node.js][nodejs] 20+.
+- [npm][npm].
+
+### Method 1: Docker Deployment
+
+### Docker Compose Configuration
+
+The simplest way to run the application is via Docker Compose. This method automatically handles dependencies and configuration.
+
+The [environment variables][env-vars] are optional and can be customized as needed.
+
+Create a file named `docker-compose.yml` with the following content.
+
+```yml
+services:
+  subsonic-player:
+    container_name: subsonic-player
+    image: vd39/subsonic-player:latest
+    ports:
+      - '3000:3000'
+    restart: unless-stopped
+```
+
+Execute the following command in your terminal:
+
+```bash
+docker compose up -d
+```
+
+The application will be accessible at `http://localhost:3000`.
+
+#### Preview Version
+
+A preview version (`vd39/subsonic-player:preview`) is available for those who want to try the latest changes early. Note that this version contains changes that are still undergoing internal testing and may contain bugs or stability issues. Use at your own risk.
+
+```yml
+image: vd39/subsonic-player:preview
+```
+
+### Docker Run Command (Alternative)
+
+This method offers more granular control.
+
+```bash
+docker run -d \
+  --name subsonic-player \
+  -p 3000:3000 \
+  --restart unless-stopped \
+  vd39/subsonic-player:latest
+```
+
+The application will be accessible at `http://localhost:3000`.
+
+### Method 2: Static SPA Export
+
+Pre-built static SPA archives are published as [GitHub Releases][github-releases]. Each release contains a `.tar.gz` tarball that can be served by any static file host (Nginx, Caddy, Apache, S3, etc.).
+
+1. Download the latest tarball from the [Releases][github-releases] page.
+
+2. Extract the archive:
+
+   ```bash
+   tar -xzvf subsonic-player-static-*.tar.gz -C /var/www/subsonic-player
+   ```
+
+3. Serve the extracted directory with your preferred static file server.
+
+### Method 3: Local Development
+
+This method skips Docker and runs the application directly using Node.js and npm.
+
+1. Clone the repository:
+
+   ```bash
+   git clone https://github.com/VD39/subsonic-player.git
+   ```
+
+2. Navigate to the project directory:
+
+   ```bash
+   cd subsonic-player
+   ```
+
+3. Install dependencies:
+
+   ```bash
+   npm install
+   ```
+
+4. **(Optional)** Create a `.env` file: Create a file named `.env` in the project's root directory. This file will hold your [environment variables][env-vars].
+
+5. Start the development server:
+
+   ```bash
+   npm run dev
+   ```
+
+The development server will start at `http://localhost:3000`.
+
+Changes you make to the code will automatically trigger a rebuild and refresh of the browser.
+
+## 🔧 Environment Variables
+
+Settings in this application can be configured at two levels. Environment variables establish default values that apply to all users across all devices (ideal for Docker deployments sharing a single server). These defaults can be overridden at an individual user level via localStorage when a setting is changed in the UI; the environment variable then acts as the fallback value.
+
+All environment variables are optional. `NUXT_PUBLIC_SERVER_URL` pre-fills the server URL so users can bypass entry at the login screen. Every other variable defines an app default that users can subsequently override in the UI.
+
+### Connection & Build
+
+| Variable                        | Default     | Description                               |
+| ------------------------------- | ----------- | ----------------------------------------- |
+| `NUXT_PUBLIC_SERVER_URL`        | `''`        | Subsonic server URL                       |
+| `NUXT_PUBLIC_MAIN_APP_TITLE`    | `Music App` | Browser tab title                         |
+| `NUXT_PUBLIC_LOAD_SIZE`         | `50`        | Items loaded per scroll                   |
+| `NUXT_PUBLIC_IMAGE_SIZE`        | `500`       | Album art image size (in pixels)          |
+| `NUXT_PUBLIC_ENABLE_QUEUE_SYNC` | `false`     | Enable server queue sync via Subsonic API |
+| `NUXT_PUBLIC_BITRATE`           | `0`         | Max streaming bitrate (`0` = no limit)    |
+
+### Settings
+
+| Variable                            | Default      | Description                                   |
+| ----------------------------------- | ------------ | --------------------------------------------- |
+| `NUXT_PUBLIC_THEME`                 | `auto`       | Theme preference (`auto`, `light`, `dark`)    |
+| `NUXT_PUBLIC_LAYOUT`                | `gridLayout` | Default view layout                           |
+| `NUXT_PUBLIC_SCROBBLE_ENABLED`      | `true`       | Enable scrobbling to Subsonic server          |
+| `NUXT_PUBLIC_SHOW_PODCASTS`         | `true`       | Show podcasts in the library                  |
+| `NUXT_PUBLIC_SHOW_RADIO_STATIONS`   | `true`       | Show radio stations in the library            |
+| `NUXT_PUBLIC_DELETE_PODCAST_ON_END` | `false`      | Auto-delete podcast episode when finished     |
+| `NUXT_PUBLIC_CROSSFADE_ENABLED`     | `false`      | Enable crossfade between tracks               |
+| `NUXT_PUBLIC_CROSSFADE_DURATION`    | `1`          | Crossfade duration in seconds (range 1–12)    |
+| `NUXT_PUBLIC_REPLAY_GAIN_MODE`      | `off`        | Replay gain mode (`off`, `track`, or `album`) |
+
+## 🤝 Contributing
+
+Contributions are always welcome! Feel free to contribute, provide feedback, or raise issues on GitHub!
+
+## 📄 License
+
+This project is licensed under the GPL-3.0 license. Full license details available in the [LICENSE][license] file for details.
+
+## 🌐 Project Resources
+
+- [GitHub Repository][github]
+- [Docker Hub][docker-hub]
+
+<!-- Links -->
+
+[nuxt]: https://nuxt.com/
+[vue]: https://vuejs.org/
+[gonic]: https://github.com/sentriz/gonic/
+[airsonic]: https://github.com/airsonic-advanced/airsonic-advanced/
+[navidrome]: https://github.com/navidrome/navidrome/
+[subsonic]: https://github.com/topics/subsonic/
+[docker]: https://www.docker.com/
+[nodejs]: https://nodejs.org/
+[npm]: https://www.npmjs.com/
+[env-vars]: #-environment-variables
+[license]: LICENSE
+[github]: https://github.com/VD39/subsonic-player
+[github-releases]: https://github.com/VD39/subsonic-player/releases
+[docker-hub]: https://hub.docker.com/r/vd39/subsonic-player
+
+<!-- Badges -->
+
+[action-workflow]: https://img.shields.io/github/actions/workflow/status/VD39/subsonic-player/ci.yml?logo=githubactions&style=flat-square
+[docker-pulls]: https://img.shields.io/docker/pulls/vd39/subsonic-player?logo=githubactions&style=flat-square
+[github-license]: https://img.shields.io/github/license/VD39/subsonic-player?logo=githubactions&style=flat-square
+
+<!-- Images -->
+
+[desktop-dark]: https://vd39.github.io/subsonic-player/images/desktop-dark.png
+[mobile-dark]: https://vd39.github.io/subsonic-player/images/mobile-dark.png
+[desktop-light]: https://vd39.github.io/subsonic-player/images/desktop-light.png
+[mobile-light]: https://vd39.github.io/subsonic-player/images/mobile-light.png
+
+<!-- Videos -->
+
+[desktop-dark-video]: https://vd39.github.io/subsonic-player/videos/desktop-dark.mp4
+[mobile-dark-video]: https://vd39.github.io/subsonic-player/videos/mobile-dark.mp4
+[desktop-light-video]: https://vd39.github.io/subsonic-player/videos/desktop-light.mp4
+[mobile-light-video]: https://vd39.github.io/subsonic-player/videos/mobile-light.mp4

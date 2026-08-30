@@ -1,0 +1,161 @@
+import type { VueWrapper } from '@vue/test-utils';
+
+import { mount } from '@vue/test-utils';
+
+import InputField from './InputField.vue';
+
+function factory(props = {}) {
+  return mount(InputField, {
+    props: {
+      id: 'id',
+      label: 'label',
+      type: 'text',
+      ...props,
+    },
+  });
+}
+
+describe('InputField', () => {
+  let wrapper: VueWrapper;
+
+  beforeEach(() => {
+    wrapper = factory();
+  });
+
+  describe('when the hideLabel prop is not set', () => {
+    it('does not add the visuallyHidden class', () => {
+      expect(wrapper.find({ ref: 'label' }).classes()).not.toContain(
+        'visuallyHidden',
+      );
+    });
+  });
+
+  describe('when the hideLabel prop is set to true', () => {
+    beforeEach(() => {
+      wrapper = factory({
+        hideLabel: true,
+      });
+    });
+
+    it('matches the snapshot', () => {
+      expect(wrapper.html()).toMatchSnapshot();
+    });
+
+    it('adds the visuallyHidden class', () => {
+      expect(wrapper.find({ ref: 'label' }).classes()).toContain(
+        'visuallyHidden',
+      );
+    });
+  });
+
+  describe('when the error prop is not set', () => {
+    it('does not add the error class to wrapper element', () => {
+      expect(wrapper.classes()).not.toContain('error');
+    });
+
+    it('does not show the error element', () => {
+      expect(wrapper.find({ ref: 'error' }).exists()).toBe(false);
+    });
+
+    it('does not add the aria-describedby attribute to the input element', () => {
+      expect(
+        wrapper.find({ ref: 'input' }).attributes('aria-describedby'),
+      ).toBeUndefined();
+    });
+
+    it('does not set the aria-invalid attribute on the input element', () => {
+      expect(
+        wrapper.find({ ref: 'input' }).attributes('aria-invalid'),
+      ).toBeUndefined();
+    });
+  });
+
+  describe('when the error prop is set', () => {
+    beforeEach(() => {
+      wrapper = factory({
+        error: 'Error message.',
+      });
+    });
+
+    it('matches the snapshot', () => {
+      expect(wrapper.html()).toMatchSnapshot();
+    });
+
+    it('adds the error class to the wrapper element', () => {
+      expect(wrapper.classes()).toContain('error');
+    });
+
+    it('shows the error element', () => {
+      expect(wrapper.find({ ref: 'error' }).exists()).toBe(true);
+    });
+
+    it('sets the correct id attribute on the error element', () => {
+      expect(wrapper.find({ ref: 'error' }).attributes('id')).toBe('id-error');
+    });
+
+    it('sets the correct aria-describedby attribute on the input element', () => {
+      expect(
+        wrapper.find({ ref: 'input' }).attributes('aria-describedby'),
+      ).toBe('id-error');
+    });
+
+    it('sets the correct aria-invalid attribute on the input element', () => {
+      expect(wrapper.find({ ref: 'input' }).attributes('aria-invalid')).toBe(
+        'true',
+      );
+    });
+  });
+
+  describe('when the required prop is not set', () => {
+    it('does not show the required element', () => {
+      expect(wrapper.find({ ref: 'required' }).exists()).toBe(false);
+    });
+  });
+
+  describe('when the required prop is set to true', () => {
+    beforeEach(() => {
+      wrapper = factory({
+        required: true,
+      });
+    });
+
+    it('matches the snapshot', () => {
+      expect(wrapper.html()).toMatchSnapshot();
+    });
+
+    it('shows the required element', () => {
+      expect(wrapper.find({ ref: 'required' }).exists()).toBe(true);
+    });
+  });
+
+  describe('when an attribute is passed to the component', () => {
+    beforeEach(() => {
+      wrapper = factory({
+        placeholder: 'Placeholder',
+      });
+    });
+
+    it('matches the snapshot', () => {
+      expect(wrapper.html()).toMatchSnapshot();
+    });
+
+    it('sets the correct placeholder attribute on the input element', () => {
+      expect(wrapper.find({ ref: 'input' }).attributes('placeholder')).toBe(
+        'Placeholder',
+      );
+    });
+  });
+
+  describe('when input is triggered', () => {
+    beforeEach(async () => {
+      const input = wrapper.find({ ref: 'input' });
+
+      (input.element as HTMLInputElement).value = 'Input value.';
+      await input.trigger('input');
+    });
+
+    it('emits exactly one input event', () => {
+      expect(wrapper.emitted('update:modelValue')).toEqual([['Input value.']]);
+    });
+  });
+});

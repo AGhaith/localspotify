@@ -1,0 +1,24 @@
+:root {
+  /* Header height. */
+  --header-height: 65px;
+
+  /* Media player. */
+  --media-player-height: 62px;
+
+  /* 100% width/heights. */
+  --width-height-100: 100%;
+
+  /* Track play/pause. */
+  --track-width-height-default: 40px;
+  --track-width-height-large: 95px;
+
+  /* Track table. */
+  --track-table-header-row-height: 55px;
+}
+
+@media (--tablet-up) {
+  :root {
+    /* Media player. */
+    --media-player-height: 85px;
+  }
+}

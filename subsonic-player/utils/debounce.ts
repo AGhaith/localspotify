@@ -1,0 +1,29 @@
+export function debounce<T extends (...args: Parameters<T>) => ReturnType<T>>(
+  callback: T,
+  delay = 200,
+) {
+  let timer: ReturnType<typeof setTimeout>;
+
+  function debounced(...args: Parameters<T>) {
+    clearTimeout(timer);
+
+    return new Promise<Error | ReturnType<T>>((resolve, reject) => {
+      timer = setTimeout(() => {
+        try {
+          resolve(callback(...args));
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error ? error : new Error(error as string);
+
+          reject(errorMessage);
+        }
+      }, delay);
+    });
+  }
+
+  debounced.cancel = () => {
+    clearTimeout(timer);
+  };
+
+  return debounced;
+}

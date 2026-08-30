@@ -1,0 +1,34 @@
+.sortableListContainer {
+  position: relative;
+}
+
+.sortableItem {
+  will-change: transform;
+  user-select: none;
+}
+
+.sortableItemIdle {
+  transition: transform 0.28s cubic-bezier(0.2, 0.9, 0.3, 1), background-color 0.15s ease !important;
+}
+
+.sortableDragHandle {
+  cursor: grab;
+  touch-action: none;
+}
+
+.sortableItemDraggable {
+  z-index: 50 !important;
+  cursor: grabbing !important;
+  background-color: #1a1a1a !important;
+  border-radius: 6px !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.95) !important;
+  transform: scale(1.015);
+  opacity: 0.98;
+  pointer-events: none;
+  transition: none !important;
+
+  .sortableDragHandle {
+    cursor: grabbing !important;
+    color: #22c55e !important;
+  }
+}
