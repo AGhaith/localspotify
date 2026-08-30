@@ -13,11 +13,9 @@ export function useSettings() {
     THEME,
   } = config.public;
 
-  const themePreference = useState(STATE_KEYS.themePreference, () =>
-    toTheme(THEME as Theme),
-  );
+  const themePreference = useState(STATE_KEYS.themePreference, () => 'dark' as Theme);
 
-  const isDarkTheme = useState(STATE_KEYS.theme, () => resolveDarkTheme(THEME));
+  const isDarkTheme = useState(STATE_KEYS.theme, () => true);
 
   const viewLayout = useState(STATE_KEYS.layout, () =>
     toLayout(LAYOUT as Layout),
@@ -150,15 +148,14 @@ export function useSettings() {
     restoreSettingsState();
   }
 
-  function setThemeMode(mode: Theme) {
-    themePreference.value = toTheme(mode);
+  function setThemeMode(_mode: Theme) {
+    themePreference.value = 'dark' as Theme;
     applyThemePreference();
     saveSettingsState();
   }
 
   function toggleTheme() {
-    const theme = themePreference.value === 'dark' ? 'light' : 'dark';
-    setThemeMode(theme);
+    setThemeMode('dark' as Theme);
   }
 
   function setViewLayout(value: Layout = LAYOUTS[0]) {

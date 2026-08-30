@@ -47,6 +47,13 @@ const {
     default: () => ({
       albums: [],
     }),
+    getCachedData: (key, nuxtApp, ctx) => {
+      if (ctx.cause === 'refresh:manual') {
+        return undefined;
+      }
+
+      return nuxtApp.payload.data[key] || nuxtApp.static.data[key];
+    },
   },
 );
 
@@ -83,7 +90,7 @@ useHead({
 
   <PageNavigation :navigation="ALBUMS_NAVIGATION" />
 
-  <LoadingData :class="viewLayout" :status="loadingStatus">
+  <LoadingData :class="viewLayout" variant="grid" :status="loadingStatus">
     <AlbumList
       :albums="albumsData.albums"
       @addToQueue="addAlbumToQueue"

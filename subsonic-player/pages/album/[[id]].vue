@@ -85,7 +85,7 @@ useHead({
 </script>
 
 <template>
-  <LoadingData :status>
+  <LoadingData variant="list" :status>
     <div v-if="albumData.album" ref="albumContent">
       <EntryHeader
         :images="[albumData.album.image]"

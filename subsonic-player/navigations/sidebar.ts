@@ -69,12 +69,12 @@ export const SIDEBAR_DESKTOP_NAVIGATION: NavigationGroup[] = [
       },
       {
         icon: ICONS.favourite,
-        title: 'Favourites',
+        title: 'Liked Songs',
         to: {
           name: ROUTE_NAMES.favourites,
           params: {
             [ROUTE_PARAM_KEYS.favourites.mediaType]:
-              ROUTE_MEDIA_TYPE_PARAMS.Albums,
+              ROUTE_MEDIA_TYPE_PARAMS.Tracks,
           },
         },
       },

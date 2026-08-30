@@ -61,37 +61,42 @@ const buttonProps = computed(() => ({
 
 <style module>
 .playPauseBtn {
+  --btn-size: var(--play-pause-size, 38px);
+
   position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 52px !important;
-  height: 52px !important;
-  min-width: 52px !important;
-  min-height: 52px !important;
-  max-width: 52px !important;
-  max-height: 52px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: var(--btn-size) !important;
+  height: var(--btn-size) !important;
+  min-width: var(--btn-size) !important;
+  min-height: var(--btn-size) !important;
+  max-width: var(--btn-size) !important;
+  max-height: var(--btn-size) !important;
   padding: 0 !important;
+  margin: 0 !important;
+  gap: 0 !important;
   color: #000000 !important;
   cursor: pointer;
   background-color: #ffffff !important;
   border: none !important;
   border-radius: 50% !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.7), 0 0 16px rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.5), 0 0 14px rgba(255, 255, 255, 0.15) !important;
   transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1),
     box-shadow 0.15s ease,
     background-color 0.15s ease !important;
   overflow: hidden;
   user-select: none;
+  flex-shrink: 0;
 
   &:hover {
     background-color: #f4f4f5 !important;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.8), 0 0 22px rgba(255, 255, 255, 0.3) !important;
+    box-shadow: 0 5px 18px rgba(0, 0, 0, 0.7), 0 0 20px rgba(255, 255, 255, 0.28) !important;
     transform: scale(1.06);
   }
 
   &:active {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.9) !important;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.9) !important;
     transform: scale(0.94);
   }
 }
@@ -101,24 +106,28 @@ const buttonProps = computed(() => ({
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 100%;
+  height: 100%;
 }
 
 .icon {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 24px !important;
-  height: 24px !important;
+  width: calc(var(--play-pause-size, 38px) * 0.48) !important;
+  height: calc(var(--play-pause-size, 38px) * 0.48) !important;
+  min-width: 16px;
+  min-height: 16px;
+  max-width: 26px;
+  max-height: 26px;
   color: #000000 !important;
-  transition: opacity 0.22s cubic-bezier(0.4, 0, 0.2, 1),
-    transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   pointer-events: none;
 }
 
 .playIcon {
-  transform: translate(calc(-50% + 1.5px), -50%) scale(1) rotate(0deg);
+  transform: translate(calc(-50% + 1px), -50%) scale(1) rotate(0deg);
 }
 
 .pauseIcon {
@@ -127,7 +136,7 @@ const buttonProps = computed(() => ({
 
 .playIcon.iconHidden {
   opacity: 0;
-  transform: translate(calc(-50% + 1.5px), -50%) scale(0.5) rotate(45deg);
+  transform: translate(calc(-50% + 1px), -50%) scale(0.5) rotate(45deg);
 }
 
 .pauseIcon.iconHidden {
@@ -140,8 +149,16 @@ const buttonProps = computed(() => ({
 }
 
 .loaderWrapper {
-  width: 52px;
-  height: 52px;
+  --btn-size: var(--play-pause-size, 38px);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--btn-size);
+  height: var(--btn-size);
+  min-width: var(--btn-size);
+  min-height: var(--btn-size);
+  flex-shrink: 0;
 }
 
 .spinningLoader {

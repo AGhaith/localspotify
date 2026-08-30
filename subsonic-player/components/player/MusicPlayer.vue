@@ -211,13 +211,18 @@ const { currentTrack } = useQueue();
 }
 
 .centerSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   width: 100%;
-  gap: 4px;
+  gap: 6px;
+  --play-pause-size: 40px;
 }
 
 .waveformContainer {
   width: 100%;
-  max-width: 420px;
+  max-width: 480px;
 }
 
 .playerOptions {
@@ -225,8 +230,11 @@ const { currentTrack } = useQueue();
 }
 
 .mobileControls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
-  gap: 8px;
+  --play-pause-size: 36px;
 }
 
 .mobileProgress {
@@ -235,7 +243,7 @@ const { currentTrack } = useQueue();
   bottom: 0;
   left: 0;
   z-index: 10;
-  height: 18px;
+  height: 14px;
   display: flex;
   align-items: flex-end;
   pointer-events: auto;

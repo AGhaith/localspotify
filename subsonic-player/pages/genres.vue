@@ -50,7 +50,7 @@ useHead({
 <template>
   <h1>Genres</h1>
 
-  <LoadingData :status>
+  <LoadingData variant="grid" :status>
     <SortControls v-bind="sortProps" />
 
     <GridWrapper v-if="sortedGenres.length">

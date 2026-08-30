@@ -8,7 +8,7 @@ export default defineNuxtRouteMiddleware((to) => {
     return navigateTo({
       name: ROUTE_NAMES.favourites,
       params: {
-        [ROUTE_PARAM_KEYS.favourites.mediaType]: ROUTE_MEDIA_TYPE_PARAMS.Albums,
+        [ROUTE_PARAM_KEYS.favourites.mediaType]: ROUTE_MEDIA_TYPE_PARAMS.Tracks,
       },
     });
   }

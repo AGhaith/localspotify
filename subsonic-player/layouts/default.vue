@@ -1,17 +1,13 @@
 <script setup lang="ts">
 import MobileNavigation from '@/components/navigation/MobileNavigation.vue';
-import MusicLogo from '@/components/navigation/MusicLogo.vue';
-import PageNavigation from '@/components/navigation/PageNavigation.vue';
 import SidebarNavigation from '@/components/navigation/SidebarNavigation.vue';
+import TopBarFilterPills from '@/components/navigation/TopBarFilterPills.vue';
 import UserMenu from '@/components/navigation/UserMenu.vue';
 import MusicPlayerAndQueue from '@/components/player/MusicPlayerAndQueue.vue';
-import SearchForm from '@/components/search/SearchForm.vue';
 import KeyboardShortcuts from '@/components/ui/KeyboardShortcuts.vue';
 
 const {
   mobileNavigation,
-  mobilePageNavigation,
-  showPageNavigation,
   sidebarNavigation,
 } = useNavigation();
 </script>
@@ -19,15 +15,11 @@ const {
 <template>
   <div :class="$style.mainLayout">
     <header :class="['centerItems', $style.header]">
-      <div class="spaceBetween inner centerItems">
-        <MusicLogo class="mobileOnly" />
-
-        <div :class="$style.search">
-          <SearchForm />
-        </div>
-
-        <div :class="['centerItems', $style.secondary]">
+      <div :class="['inner', $style.headerInner]">
+        <!-- User Avatar & Spotify-Style Filter Pills -->
+        <div :class="$style.leftNavSection">
           <UserMenu />
+          <TopBarFilterPills />
         </div>
       </div>
     </header>
@@ -39,21 +31,7 @@ const {
     </aside>
 
     <main :class="['main', $style.mainContent]" tabindex="-1">
-      <div
-        :class="[
-          'column',
-          $style.mainContentInner,
-          {
-            [$style.noPaddingTop]: showPageNavigation,
-          },
-        ]"
-      >
-        <PageNavigation
-          v-if="showPageNavigation"
-          class="mobileOnly mBL"
-          :navigation="mobilePageNavigation"
-        />
-
+      <div :class="['column', $style.mainContentInner]">
         <div class="column inner mBAllL">
           <slot />
         </div>
@@ -80,26 +58,26 @@ const {
   z-index: 15;
   min-height: var(--header-height);
   background-color: #000000;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.8);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.9);
 
   @media (--tablet-up) {
     margin-left: var(--sidebar-width);
   }
 }
 
-.search {
-  --search-width: 65%;
-
-  width: var(--search-width);
-
-  @media (--tablet-up) {
-    --search-width: 50%;
-  }
+.headerInner {
+  display: flex;
+  align-items: center;
+  width: 100%;
 }
 
-.secondary {
-  gap: var(--default-space);
+.leftNavSection {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
 }
 
 .mainContent {
@@ -127,12 +105,6 @@ const {
   @media (--tablet-up) {
     --main-width: calc(100vw - var(--sidebar-width));
     --main-padding-bottom: calc(var(--sidebar-bottom) + var(--space-40));
-  }
-}
-
-.noPaddingTop {
-  @media (--mobile-only) {
-    --main-padding-top: var(--header-height);
   }
 }
 </style>

@@ -490,7 +490,10 @@ const {
 }
 
 .heroPlayPause {
-  transform: scale(1.15);
+  --play-pause-size: 56px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Bottom utility bar */

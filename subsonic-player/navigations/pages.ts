@@ -18,10 +18,26 @@ export const ALBUMS_NAVIGATION = buildPageNavigation(
   ROUTE_ALBUMS_SORT_BY_PARAMS,
 );
 
-export const FAVOURITES_NAVIGATION = buildPageNavigation(
-  ROUTE_PARAM_KEYS.favourites.mediaType,
-  ROUTE_MEDIA_TYPE_PARAMS,
-);
+export const FAVOURITES_NAVIGATION: PageNavigationMap = {
+  'Liked Songs': {
+    name: ROUTE_NAMES.favourites,
+    params: {
+      [ROUTE_PARAM_KEYS.favourites.mediaType]: ROUTE_MEDIA_TYPE_PARAMS.Tracks,
+    },
+  },
+  'Liked Albums': {
+    name: ROUTE_NAMES.favourites,
+    params: {
+      [ROUTE_PARAM_KEYS.favourites.mediaType]: ROUTE_MEDIA_TYPE_PARAMS.Albums,
+    },
+  },
+  'Liked Artists': {
+    name: ROUTE_NAMES.favourites,
+    params: {
+      [ROUTE_PARAM_KEYS.favourites.mediaType]: ROUTE_MEDIA_TYPE_PARAMS.Artists,
+    },
+  },
+};
 
 export const GENRE_NAVIGATION = buildPageNavigation(
   ROUTE_PARAM_KEYS.genre.mediaType,

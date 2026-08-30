@@ -1,17 +1,5 @@
-export function resolveDarkTheme(theme?: unknown) {
-  if (theme === 'dark' || theme === 'true' || theme === true) {
-    return true;
-  }
-
-  if (theme === 'light' || theme === 'false' || theme === false) {
-    return false;
-  }
-
-  if (import.meta.client) {
-    return !!globalThis.matchMedia?.('(prefers-color-scheme: dark)').matches;
-  }
-
-  return false;
+export function resolveDarkTheme(_theme?: unknown) {
+  return true;
 }
 
 export function toBitrate(value: Bitrate) {

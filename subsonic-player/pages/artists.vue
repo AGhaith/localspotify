@@ -44,7 +44,7 @@ useHead({
 <template>
   <h1>Artists</h1>
 
-  <LoadingData :class="viewLayout" :status>
+  <LoadingData :class="viewLayout" variant="circle-grid" :status>
     <SortControls v-bind="sortProps" />
 
     <ArtistList :artists="sortedArtists" />

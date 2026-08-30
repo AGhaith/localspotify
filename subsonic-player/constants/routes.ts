@@ -11,6 +11,7 @@ export const ROUTE_NAMES = {
   files: 'files-id-slug',
   genre: 'genre-mediaType-genre',
   genres: 'genres',
+  home: 'index',
   index: 'index',
   library: 'library',
   login: 'login',
@@ -22,6 +23,18 @@ export const ROUTE_NAMES = {
   radioStations: 'radio-stations',
   search: 'search-mediaType-query',
   settings: 'settings',
+} as const;
+
+export const ROUTE_PATHS = {
+  downloads: '/downloads',
+  home: '/home',
+  index: '/',
+  library: '/library',
+  login: '/login',
+  podcasts: '/podcasts',
+  queue: '/queue',
+  radioStations: '/radio-stations',
+  settings: '/settings',
 } as const;
 
 export const ROUTE_PARAM_KEYS = {

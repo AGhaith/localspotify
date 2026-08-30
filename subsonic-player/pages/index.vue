@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import AlbumItem from '@/components/album/AlbumItem.vue';
 import ArtistItem from '@/components/artist/ArtistItem.vue';
+import RecentAccessGrid from '@/components/home/RecentAccessGrid.vue';
 import LoadingData from '@/components/notification/LoadingData.vue';
 import NoMediaMessage from '@/components/notification/NoMediaMessage.vue';
 import TracklistGeneric from '@/components/tracklist/TracklistGeneric.vue';
@@ -9,8 +10,12 @@ import HeaderSeeAllLink from '@/components/ui/HeaderSeeAllLink.vue';
 import HeaderWithAction from '@/components/ui/HeaderWithAction.vue';
 import RefreshButton from '@/components/ui/RefreshButton.vue';
 
+definePageMeta({
+  alias: ['/home'],
+});
+
 const { downloadTrack } = useMediaLibrary();
-const { addToPlaylistModal } = usePlaylist();
+const { addToPlaylistModal, getPlaylists, playlists } = usePlaylist();
 const { favourites, getFavourites } = useFavourite();
 const { openAlbumDetailsModal, openTrackDetailsModal } = useMediaInformation();
 const { addTracksToQueue, addTrackToQueue, playTracks } = useAudioPlayer();
@@ -26,12 +31,14 @@ const { refresh, status } = useAsyncData(
     const [, favourites] = await Promise.all([
       loadDashboardAlbums(),
       getFavourites(),
+      getPlaylists(),
     ]);
 
     return {
       favourites: favourites.value,
       frequentAlbums: frequentAlbums.value,
       newestAlbums: newestAlbums.value,
+      playlists: playlists.value,
       recentAlbums: recentAlbums.value,
     };
   },
@@ -40,6 +47,7 @@ const { refresh, status } = useAsyncData(
       favourites: [],
       frequentAlbums: [],
       newestAlbums: [],
+      playlists: [],
       recentAlbums: [],
     }),
     getCachedData: (key, nuxtApp, ctx) => {
@@ -77,27 +85,39 @@ const hasData = computed(
     frequentAlbums.value.length ||
     newestAlbums.value.length ||
     recentAlbums.value.length ||
+    playlists.value.length ||
     favourites.value.tracks.length ||
     favourites.value.albums.length ||
     favourites.value.artists.length,
 );
 
 useHead({
-  title: 'Discover',
+  title: 'Home',
 });
 </script>
 
 <template>
   <HeaderWithAction>
-    <h1>Discover</h1>
+    <h1>Good music</h1>
 
     <template #actions>
       <RefreshButton :status @refresh="refresh" />
     </template>
   </HeaderWithAction>
 
-  <LoadingData :status>
+  <LoadingData variant="grid" :status>
     <template v-if="hasData">
+      <!-- Spotify-Style Top Quick-Access Mix Grid (Liked Songs, Artists, Playlists, Albums) -->
+      <RecentAccessGrid
+        :favourites="favourites"
+        :frequentAlbums="frequentAlbums"
+        :newestAlbums="newestAlbums"
+        :playlists="playlists"
+        :recentAlbums="recentAlbums"
+        @playAlbum="onPlayAlbum"
+      />
+
+      <!-- Section: Picked for you (Newest Albums) -->
       <template v-if="newestAlbums.length">
         <HeaderSeeAllLink
           :to="{
@@ -108,7 +128,7 @@ useHead({
             },
           }"
         >
-          Newest albums
+          Picked for you
         </HeaderSeeAllLink>
 
         <CarouselSwiper ref="newestAlbumsCarouselSwiper">
@@ -128,6 +148,7 @@ useHead({
         </CarouselSwiper>
       </template>
 
+      <!-- Section: Jump back in (Recently Played) -->
       <template v-if="recentAlbums.length">
         <HeaderSeeAllLink
           :to="{
@@ -138,7 +159,7 @@ useHead({
             },
           }"
         >
-          Recently Played albums
+          Jump back in
         </HeaderSeeAllLink>
 
         <CarouselSwiper ref="recentAlbumsCarouselSwiper">
@@ -158,6 +179,7 @@ useHead({
         </CarouselSwiper>
       </template>
 
+      <!-- Section: Heavy Rotation (Most Played Albums) -->
       <template v-if="frequentAlbums.length">
         <HeaderSeeAllLink
           :to="{
@@ -168,7 +190,7 @@ useHead({
             },
           }"
         >
-          Most played albums
+          Heavy rotation
         </HeaderSeeAllLink>
 
         <CarouselSwiper ref="frequentAlbumsCarouselSwiper">
@@ -188,6 +210,32 @@ useHead({
         </CarouselSwiper>
       </template>
 
+      <!-- Section: Favourite Artists -->
+      <template v-if="favourites.artists.length">
+        <HeaderSeeAllLink
+          :to="{
+            name: ROUTE_NAMES.favourites,
+            params: {
+              [ROUTE_PARAM_KEYS.favourites.mediaType]:
+                ROUTE_MEDIA_TYPE_PARAMS.Artists,
+            },
+          }"
+        >
+          Favourite Artists
+        </HeaderSeeAllLink>
+
+        <CarouselSwiper ref="favouriteArtistsCarouselSwiper">
+          <swiper-slide
+            v-for="artist in favourites.artists.slice(0, PREVIEW_ARTIST_COUNT)"
+            :key="artist.name"
+            data-test-id="favourite-artist-item"
+          >
+            <ArtistItem :artist />
+          </swiper-slide>
+        </CarouselSwiper>
+      </template>
+
+      <!-- Section: Liked Songs Tracklist -->
       <template v-if="favourites.tracks.length">
         <HeaderSeeAllLink
           :to="{
@@ -198,7 +246,7 @@ useHead({
             },
           }"
         >
-          Favourite Tracks
+          Liked Songs
         </HeaderSeeAllLink>
 
         <TracklistGeneric
@@ -212,6 +260,7 @@ useHead({
         />
       </template>
 
+      <!-- Section: Favourite Albums -->
       <template v-if="favourites.albums.length">
         <HeaderSeeAllLink
           :to="{
@@ -238,30 +287,6 @@ useHead({
               @mediaInformation="openAlbumDetailsModal"
               @playAlbum="onPlayAlbum"
             />
-          </swiper-slide>
-        </CarouselSwiper>
-      </template>
-
-      <template v-if="favourites.artists.length">
-        <HeaderSeeAllLink
-          :to="{
-            name: ROUTE_NAMES.favourites,
-            params: {
-              [ROUTE_PARAM_KEYS.favourites.mediaType]:
-                ROUTE_MEDIA_TYPE_PARAMS.Artists,
-            },
-          }"
-        >
-          Favourite Artists
-        </HeaderSeeAllLink>
-
-        <CarouselSwiper ref="favouriteArtistsCarouselSwiper">
-          <swiper-slide
-            v-for="artist in favourites.artists.slice(0, PREVIEW_ARTIST_COUNT)"
-            :key="artist.name"
-            data-test-id="favourite-artist-item"
-          >
-            <ArtistItem :artist />
           </swiper-slide>
         </CarouselSwiper>
       </template>

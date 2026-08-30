@@ -88,22 +88,6 @@ onMounted(() => {
 
     <SettingsSection title="Appearance">
       <SettingsGroup
-        ref="themeGroup"
-        description="Switch between dark, light, or system-preferred appearance"
-        title="Theme"
-        variant="badge"
-      >
-        <SelectableBadge
-          v-for="opt in THEME_OPTIONS"
-          :key="opt.value"
-          :label="opt.label"
-          name="theme"
-          :selected="themePreference === opt.value"
-          @click="setThemeMode(opt.value)"
-        />
-      </SettingsGroup>
-
-      <SettingsGroup
         ref="layoutGroup"
         description="Choose between a compact grid or a detailed list"
         title="Layout"

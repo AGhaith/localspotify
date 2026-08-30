@@ -78,7 +78,7 @@ useHead({
 </script>
 
 <template>
-  <LoadingData :class="viewLayout" :status>
+  <LoadingData :class="viewLayout" variant="grid" :status>
     <div v-if="artistData" ref="artistContent">
       <EntryHeader :images="[artistData.image]" :title="artistData.name">
         <TextClamp

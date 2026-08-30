@@ -109,7 +109,7 @@ async function toggleDownloadPlaylist() {
 </script>
 
 <template>
-  <LoadingData :status>
+  <LoadingData variant="list" :status>
     <div v-if="playlist" ref="playlistContent">
       <EntryHeader
         :images="playlist.images"

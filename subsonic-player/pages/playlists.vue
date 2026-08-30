@@ -73,7 +73,7 @@ useHead({
     </template>
   </HeaderWithAction>
 
-  <LoadingData :status>
+  <LoadingData variant="grid" :status>
     <SortControls v-bind="sortProps" />
 
     <PlaylistList
