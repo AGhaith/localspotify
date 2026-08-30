@@ -1,11 +1,10 @@
-name: 📱 Build & Release Android APK
+name: 📱 Build & Release Android APK (Flutter Native 120 FPS)
 
 on:
   push:
     branches: [main]
     paths:
-      - 'subsonic-player/**'
-      - 'app/**'
+      - 'mobile_app/**'
       - '.github/workflows/build-apk.yml'
     tags:
       - 'v*'
@@ -14,133 +13,59 @@ on:
       build_type:
         description: 'Build Type'
         required: true
-        default: 'debug'
+        default: 'release'
         type: choice
         options:
-          - debug
           - release
-      target:
-        description: 'Target Architecture'
-        required: true
-        default: 'aarch64'
-        type: choice
-        options:
-          - aarch64
-          - armv7
-          - x86_64
-          - all
+          - debug
 
 permissions:
   contents: write
 
 jobs:
-  build-android:
+  build-flutter-apk:
+    name: 🚀 Build Flutter Native Android APK
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: 📥 Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Java 17
+      - name: ☕ Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Cache Android NDK
-        id: cache-ndk
-        uses: actions/cache@v4
+      - name: 🐦 Setup Flutter SDK
+        uses: subosito/flutter-action@v2
         with:
-          path: ${{ env.ANDROID_HOME }}/ndk/26.1.10909125
-          key: ndk-26.1.10909125-${{ runner.os }}
+          channel: 'stable'
+          cache: true
+          cache-key: "flutter-:os:-:channel:-:version:-:arch:-:hash:"
 
-      - name: Install Android NDK & Platforms
+      - name: 📦 Install Flutter Dependencies
         run: |
-          yes | sdkmanager --licenses > /dev/null 2>&1 || true
-          sdkmanager --install "build-tools;34.0.0" "platforms;android-34"
-          if [ "${{ steps.cache-ndk.outputs.cache-hit }}" != "true" ]; then
-            echo "Installing NDK..."
-            sdkmanager --install "ndk;26.1.10909125"
-          else
-            echo "NDK restored from cache!"
-          fi
-          NDK_PATH=$(find $ANDROID_HOME/ndk -maxdepth 1 -mindepth 1 | sort -V | tail -n 1)
-          echo "NDK_HOME=$NDK_PATH" >> $GITHUB_ENV
-          echo "Detected NDK at: $NDK_PATH"
+          cd mobile_app
+          flutter pub get
 
-      - name: Setup Gradle Cache
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          cache-read-only: false
-
-      - name: Setup Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
-
-      - name: Rust Cache
-        uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: app/src-tauri -> target
-
-      - name: Setup Node.js with NPM Cache
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: 'npm'
-          cache-dependency-path: |
-            subsonic-player/package-lock.json
-            app/package-lock.json
-
-      - name: Build Subsonic Player Nuxt Frontend (New UI)
-        env:
-          SPA_MODE: 'true'
+      - name: 🔨 Build Android APK
         run: |
-          cd subsonic-player
-          npm ci --include=dev --legacy-peer-deps --prefer-offline --no-audit --no-fund || npm install --include=dev --legacy-peer-deps
-          npm run generate
-          mkdir -p ../app/src
-          cp -r .output/public/* ../app/src/
-
-      - name: Install Tauri CLI Dependencies
-        run: |
-          cd app
-          npm ci --prefer-offline --no-audit --no-fund || npm install
-
-      - name: Initialize & Build Android APK
-        env:
-          ANDROID_HOME: ${{ env.ANDROID_HOME }}
-          NDK_HOME: ${{ env.NDK_HOME }}
-          CARGO_INCREMENTAL: "0"
-          GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.parallel=true -Dorg.gradle.jvmargs=-Xmx3584m -XX:MaxMetaspaceSize=512m -Dkotlin.compiler.execution.strategy=in-process"
-        run: |
-          cd app
-          npx tauri android init --ci
-          TARGET="${{ github.event.inputs.target || 'aarch64' }}"
-          BUILD_TYPE="${{ github.event.inputs.build_type || 'debug' }}"
-          
-          FLAGS="--apk"
+          cd mobile_app
+          BUILD_TYPE="${{ github.event.inputs.build_type || 'release' }}"
           if [ "$BUILD_TYPE" = "debug" ]; then
-            FLAGS="$FLAGS --debug"
+            flutter build apk --debug
+          else
+            flutter build apk --release
           fi
-          
-          if [ "$TARGET" != "all" ]; then
-            FLAGS="$FLAGS --target $TARGET"
-          fi
-          
-          echo "Executing: npx tauri android build $FLAGS"
-          npx tauri android build $FLAGS
 
-      - name: Upload APK Artifact
+      - name: 📤 Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: subsonic-player-android-apk
-          path: app/src-tauri/gen/android/app/build/outputs/apk/**/*.apk
+          name: localspotify-flutter-apk
+          path: mobile_app/build/app/outputs/flutter-apk/*.apk
           retention-days: 14
 
-      - name: Create / Update GitHub Release
+      - name: 🏷️ Create / Update GitHub Release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
@@ -148,5 +73,5 @@ jobs:
           tag_name: ${{ github.ref_name }}
           draft: false
           prerelease: false
-          files: app/src-tauri/gen/android/app/build/outputs/apk/**/*.apk
+          files: mobile_app/build/app/outputs/flutter-apk/*.apk
           generate_release_notes: true

@@ -1,0 +1,40 @@
+name: localspotify
+description: "High-Performance Native Flutter Music Player for Subsonic / Navidrome"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Audio Playback & Native Media Controls
+  just_audio: ^0.9.44
+  audio_service: ^0.18.18
+  audio_session: ^0.1.25
+
+  # Networking & Subsonic API
+  dio: ^5.8.0+1
+  crypto: ^3.0.6
+
+  # State Management & Local Storage
+  provider: ^6.1.2
+  shared_preferences: ^2.5.2
+  path_provider: ^2.1.5
+
+  # UI, Icons, Fonts & Micro-animations
+  google_fonts: ^6.2.1
+  cached_network_image: ^3.4.1
+  phosphor_flutter: ^2.1.0
+  flutter_animate: ^4.5.2
+  palette_generator: ^0.3.3+4
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
