@@ -49,35 +49,58 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Cache Android NDK
+        id: cache-ndk
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.ANDROID_HOME }}/ndk/26.1.10909125
+          key: ndk-26.1.10909125-${{ runner.os }}
+
       - name: Install Android NDK & Platforms
         run: |
           yes | sdkmanager --licenses > /dev/null 2>&1 || true
-          sdkmanager --install "ndk;26.1.10909125" "build-tools;34.0.0" "platforms;android-34"
+          sdkmanager --install "build-tools;34.0.0" "platforms;android-34"
+          if [ "${{ steps.cache-ndk.outputs.cache-hit }}" != "true" ]; then
+            echo "Installing NDK..."
+            sdkmanager --install "ndk;26.1.10909125"
+          else
+            echo "NDK restored from cache!"
+          fi
           NDK_PATH=$(find $ANDROID_HOME/ndk -maxdepth 1 -mindepth 1 | sort -V | tail -n 1)
           echo "NDK_HOME=$NDK_PATH" >> $GITHUB_ENV
           echo "Detected NDK at: $NDK_PATH"
 
+      - name: Setup Gradle Cache
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
+
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
+          targets: ${{ (github.event.inputs.target == 'all' && 'aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android') || (github.event.inputs.target && format('{0}-linux-android', github.event.inputs.target == 'armv7' && 'armv7-linux-androideabi' || github.event.inputs.target == 'x86_64' && 'x86_64' || 'aarch64') || 'aarch64-linux-android' }}
 
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: app/src-tauri -> target
 
-      - name: Setup Node.js
+      - name: Setup Node.js with NPM Cache
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: 'npm'
+          cache-dependency-path: |
+            subsonic-player/package-lock.json
+            app/package-lock.json
 
       - name: Build Subsonic Player Nuxt Frontend (New UI)
         env:
           SPA_MODE: 'true'
+          NODE_ENV: 'production'
         run: |
           cd subsonic-player
-          npm install --legacy-peer-deps
+          npm ci --legacy-peer-deps --prefer-offline --no-audit --no-fund --ignore-scripts || npm install --legacy-peer-deps
           npm run generate
           mkdir -p ../app/src
           cp -r .output/public/* ../app/src/
@@ -85,13 +108,14 @@ jobs:
       - name: Install Tauri CLI Dependencies
         run: |
           cd app
-          npm install
+          npm ci --prefer-offline --no-audit --no-fund || npm install
 
       - name: Initialize & Build Android APK
         env:
           ANDROID_HOME: ${{ env.ANDROID_HOME }}
           NDK_HOME: ${{ env.NDK_HOME }}
-          GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=512m"
+          CARGO_INCREMENTAL: "0"
+          GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.parallel=true -Dorg.gradle.jvmargs=-Xmx3584m -XX:MaxMetaspaceSize=512m -Dkotlin.compiler.execution.strategy=in-process"
         run: |
           cd app
           npx tauri android init --ci
