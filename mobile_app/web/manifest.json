@@ -1,0 +1,12 @@
+{
+    "name": "LocalSpotify",
+    "short_name": "LocalSpotify",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#000000",
+    "theme_color": "#22C55E",
+    "description": "High-Performance Music Player for Navidrome / Subsonic",
+    "orientation": "portrait-primary",
+    "prefer_related_applications": false,
+    "icons": []
+}
