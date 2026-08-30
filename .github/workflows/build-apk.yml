@@ -97,10 +97,9 @@ jobs:
       - name: Build Subsonic Player Nuxt Frontend (New UI)
         env:
           SPA_MODE: 'true'
-          NODE_ENV: 'production'
         run: |
           cd subsonic-player
-          npm ci --legacy-peer-deps --prefer-offline --no-audit --no-fund --ignore-scripts || npm install --legacy-peer-deps
+          npm ci --include=dev --legacy-peer-deps --prefer-offline --no-audit --no-fund || npm install --include=dev --legacy-peer-deps
           npm run generate
           mkdir -p ../app/src
           cp -r .output/public/* ../app/src/
