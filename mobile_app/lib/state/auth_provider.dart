@@ -13,7 +13,13 @@ class AuthProvider extends ChangeNotifier {
 
   AuthProvider({required AuthRepository authRepository})
       : _authRepository = authRepository {
-    checkSavedSession();
+    final saved = _authRepository.getSavedSession();
+    if (saved != null) {
+      _session = saved;
+      _status = AuthStatus.authenticated;
+    } else {
+      _status = AuthStatus.unauthenticated;
+    }
   }
 
   AuthStatus get status => _status;

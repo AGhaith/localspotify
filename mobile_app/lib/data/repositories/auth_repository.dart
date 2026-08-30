@@ -15,13 +15,17 @@ class AuthRepository {
 
   UserSession? get currentSession => _apiService.session;
 
-  Future<UserSession?> tryAutoLogin() async {
+  UserSession? getSavedSession() {
     final saved = _storageService.getSavedSession();
     if (saved != null && saved.serverUrl.isNotEmpty && saved.username.isNotEmpty) {
       _apiService.updateSession(saved);
       return saved;
     }
     return null;
+  }
+
+  Future<UserSession?> tryAutoLogin() async {
+    return getSavedSession();
   }
 
   Future<UserSession> login({

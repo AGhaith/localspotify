@@ -31,17 +31,22 @@ Future<void> main() async {
     ),
   );
 
-  // 1. Initialize Android MediaSession Audio Handler
-  _audioHandler = await AudioService.init(
-    builder: () => LocalSpotifyAudioHandler(),
-    config: const AudioServiceConfig(
-      androidNotificationChannelId: 'com.localspotify.app.channel.audio',
-      androidNotificationChannelName: 'LocalSpotify Music Playback',
-      androidNotificationOngoing: true,
-      androidStopForegroundOnPause: true,
-      androidNotificationIcon: 'mipmap/ic_launcher',
-    ),
-  );
+  // 1. Initialize Android MediaSession Audio Handler safely
+  try {
+    _audioHandler = await AudioService.init(
+      builder: () => LocalSpotifyAudioHandler(),
+      config: const AudioServiceConfig(
+        androidNotificationChannelId: 'com.localspotify.app.channel.audio',
+        androidNotificationChannelName: 'LocalSpotify Music Playback',
+        androidNotificationOngoing: true,
+        androidStopForegroundOnPause: true,
+        androidNotificationIcon: 'drawable/ic_stat_music',
+      ),
+    );
+  } catch (e) {
+    debugPrint('[AudioService] Init error, falling back to direct handler: $e');
+    _audioHandler = LocalSpotifyAudioHandler();
+  }
 
   // 2. Initialize Offline Storage & API Services
   final storageService = await OfflineStorageService.init();
