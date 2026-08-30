@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
@@ -62,7 +61,7 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   IconButton(
-                    icon: const Icon(PhosphorIconsRegular.caretDown, color: AppColors.textPrimary),
+                    icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textPrimary, size: 28),
                     onPressed: () => Navigator.pop(context),
                   ),
                   Column(
@@ -84,7 +83,7 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
                     ],
                   ),
                   IconButton(
-                    icon: const Icon(PhosphorIconsRegular.dotsThreeVertical, color: AppColors.textPrimary),
+                    icon: const Icon(Icons.more_vert_rounded, color: AppColors.textPrimary),
                     onPressed: () {},
                   ),
                 ],
@@ -145,7 +144,7 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
                   ),
                   IconButton(
                     icon: Icon(
-                      track.isStarred ? PhosphorIconsFill.heart : PhosphorIconsRegular.heart,
+                      track.isStarred ? Icons.favorite_rounded : Icons.favorite_border_rounded,
                       color: track.isStarred ? AppColors.primary : AppColors.textSecondary,
                       size: 26,
                     ),
@@ -212,7 +211,7 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
                 children: [
                   IconButton(
                     icon: Icon(
-                      PhosphorIconsRegular.shuffle,
+                      Icons.shuffle_rounded,
                       color: player.isShuffle ? AppColors.primary : AppColors.textMuted,
                       size: 22,
                     ),
@@ -223,9 +222,9 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
                   ),
                   IconButton(
                     icon: const Icon(
-                      PhosphorIconsFill.skipBack,
+                      Icons.skip_previous_rounded,
                       color: AppColors.textPrimary,
-                      size: 28,
+                      size: 32,
                     ),
                     onPressed: () {
                       HapticFeedback.lightImpact();
@@ -254,18 +253,18 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
                       ),
                       child: Center(
                         child: Icon(
-                          player.isPlaying ? PhosphorIconsFill.pause : PhosphorIconsFill.play,
+                          player.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
                           color: AppColors.textDark,
-                          size: 30,
+                          size: 36,
                         ),
                       ),
                     ),
                   ),
                   IconButton(
                     icon: const Icon(
-                      PhosphorIconsFill.skipForward,
+                      Icons.skip_next_rounded,
                       color: AppColors.textPrimary,
-                      size: 28,
+                      size: 32,
                     ),
                     onPressed: () {
                       HapticFeedback.lightImpact();
@@ -274,13 +273,13 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
                   ),
                   IconButton(
                     icon: Icon(
-                      player.repeatMode == RepeatMode.one
-                          ? PhosphorIconsFill.repeatOnce
-                          : PhosphorIconsRegular.repeat,
-                      color: player.repeatMode != RepeatMode.off
+                      player.repeatMode == AppRepeatMode.one
+                          ? Icons.repeat_one_rounded
+                          : Icons.repeat_rounded,
+                      color: player.repeatMode != AppRepeatMode.off
                           ? AppColors.primary
                           : AppColors.textMuted,
-                      size: 22,
+                      size: 24,
                     ),
                     onPressed: () {
                       HapticFeedback.lightImpact();

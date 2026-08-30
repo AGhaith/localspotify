@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
@@ -52,7 +51,7 @@ class TrackRow extends StatelessWidget {
               SizedBox(
                 width: 28,
                 child: isPlaying
-                    ? const Icon(PhosphorIconsFill.waveform, color: AppColors.primary, size: 16)
+                    ? const Icon(Icons.graphic_eq_rounded, color: AppColors.primary, size: 18)
                     : Text(
                         '$index',
                         style: AppTypography.bodyMedium.copyWith(
@@ -82,9 +81,9 @@ class TrackRow extends StatelessWidget {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Icon(
-                        PhosphorIconsFill.waveform,
+                        Icons.graphic_eq_rounded,
                         color: AppColors.primary,
-                        size: 20,
+                        size: 22,
                       ),
                     ),
                 ],
@@ -109,9 +108,9 @@ class TrackRow extends StatelessWidget {
                     children: [
                       if (isDownloaded) ...[
                         const Icon(
-                          PhosphorIconsFill.arrowCircleDown,
+                          Icons.arrow_circle_down_rounded,
                           color: AppColors.primary,
-                          size: 13,
+                          size: 14,
                         ),
                         const SizedBox(width: 4),
                       ],
@@ -132,7 +131,7 @@ class TrackRow extends StatelessWidget {
             // Like Heart Button
             IconButton(
               icon: Icon(
-                isStarred ? PhosphorIconsFill.heart : PhosphorIconsRegular.heart,
+                isStarred ? Icons.favorite_rounded : Icons.favorite_border_rounded,
                 color: isStarred ? AppColors.primary : AppColors.textMuted,
                 size: 20,
               ),
@@ -150,7 +149,7 @@ class TrackRow extends StatelessWidget {
             // More options popup
             IconButton(
               icon: const Icon(
-                PhosphorIconsRegular.dotsThreeVertical,
+                Icons.more_vert_rounded,
                 color: AppColors.textMuted,
                 size: 18,
               ),
@@ -200,7 +199,7 @@ class TrackRow extends StatelessWidget {
                 const Divider(),
                 ListTile(
                   leading: Icon(
-                    isDownloaded ? PhosphorIconsFill.trash : PhosphorIconsRegular.downloadSimple,
+                    isDownloaded ? Icons.delete_outline_rounded : Icons.download_rounded,
                     color: isDownloaded ? AppColors.error : AppColors.textPrimary,
                   ),
                   title: Text(
@@ -220,7 +219,7 @@ class TrackRow extends StatelessWidget {
                 ),
                 ListTile(
                   leading: Icon(
-                    track.isStarred ? PhosphorIconsFill.heartBreak : PhosphorIconsRegular.heart,
+                    track.isStarred ? Icons.heart_broken_rounded : Icons.favorite_border_rounded,
                     color: AppColors.textPrimary,
                   ),
                   title: Text(

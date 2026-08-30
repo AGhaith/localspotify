@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
@@ -145,7 +144,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                                 child: const Center(
                                   child: Icon(
-                                    PhosphorIconsFill.heart,
+                                    Icons.favorite_rounded,
                                     color: Colors.white,
                                     size: 24,
                                   ),
@@ -168,7 +167,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ],
                                 ),
                               ),
-                              const Icon(PhosphorIconsRegular.caretRight, color: Colors.white70),
+                              const Icon(Icons.chevron_right_rounded, color: Colors.white70),
                             ],
                           ),
                         ),
@@ -285,10 +284,10 @@ class _HomeScreenState extends State<HomeScreen> {
             color: active ? AppColors.primary : AppColors.border,
             width: 1.5,
           ),
-          boxShadow: [
+          boxShadow: const [
             BoxShadow(
               color: AppColors.shadow,
-              offset: const Offset(2, 2),
+              offset: Offset(2, 2),
               blurRadius: 0,
             ),
           ],
@@ -330,13 +329,13 @@ class _HomeScreenState extends State<HomeScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 ListTile(
-                  leading: const Icon(PhosphorIconsRegular.user, color: AppColors.primary),
+                  leading: const Icon(Icons.person_rounded, color: AppColors.primary),
                   title: Text(auth.session?.username ?? 'User', style: AppTypography.titleMedium),
                   subtitle: Text(auth.session?.serverUrl ?? '', style: AppTypography.bodySmall),
                 ),
                 const Divider(),
                 ListTile(
-                  leading: const Icon(PhosphorIconsRegular.signOut, color: AppColors.error),
+                  leading: const Icon(Icons.logout_rounded, color: AppColors.error),
                   title: Text('Log Out', style: AppTypography.bodyLarge.copyWith(color: AppColors.error)),
                   onTap: () {
                     Navigator.pop(ctx);

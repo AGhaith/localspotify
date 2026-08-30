@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
@@ -53,12 +52,12 @@ class _BottomNavShellState extends State<BottomNavShell> {
                 if (player.hasTrack) const MiniPlayerBar(),
                 Container(
                   padding: EdgeInsets.fromLTRB(16, 8, 16, bottomInset > 0 ? bottomInset : 10),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF08080C),
-                    border: const Border(
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF08080C),
+                    border: Border(
                       top: BorderSide(color: AppColors.border, width: 1),
                     ),
-                    boxShadow: const [
+                    boxShadow: [
                       BoxShadow(
                         color: AppColors.shadow,
                         offset: Offset(0, -4),
@@ -69,10 +68,10 @@ class _BottomNavShellState extends State<BottomNavShell> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _buildNavItem(0, 'Home', PhosphorIconsFill.house, PhosphorIconsRegular.house),
-                      _buildNavItem(1, 'Search', PhosphorIconsFill.magnifyingGlass, PhosphorIconsRegular.magnifyingGlass),
-                      _buildNavItem(2, 'Library', PhosphorIconsFill.books, PhosphorIconsRegular.books),
-                      _buildNavItem(3, 'Offline', PhosphorIconsFill.arrowCircleDown, PhosphorIconsRegular.arrowCircleDown),
+                      _buildNavItem(0, 'Home', Icons.home_rounded, Icons.home_outlined),
+                      _buildNavItem(1, 'Search', Icons.search_rounded, Icons.search_outlined),
+                      _buildNavItem(2, 'Library', Icons.library_music_rounded, Icons.library_music_outlined),
+                      _buildNavItem(3, 'Offline', Icons.download_for_offline_rounded, Icons.download_for_offline_outlined),
                     ],
                   ),
                 ),

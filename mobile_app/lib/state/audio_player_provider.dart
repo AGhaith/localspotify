@@ -6,7 +6,7 @@ import '../data/models/track.dart';
 import '../data/repositories/music_repository.dart';
 import '../data/services/audio_handler.dart';
 
-enum RepeatMode { off, all, one }
+enum AppRepeatMode { off, all, one }
 
 class AudioPlayerProvider extends ChangeNotifier {
   final LocalSpotifyAudioHandler _audioHandler;
@@ -21,7 +21,7 @@ class AudioPlayerProvider extends ChangeNotifier {
   Duration _duration = Duration.zero;
   Duration _bufferedPosition = Duration.zero;
   bool _isShuffle = false;
-  RepeatMode _repeatMode = RepeatMode.off;
+  AppRepeatMode _repeatMode = AppRepeatMode.off;
   bool _hasScrobbledCurrent = false;
 
   // Stream Subscriptions
@@ -49,7 +49,7 @@ class AudioPlayerProvider extends ChangeNotifier {
   Duration get duration => _duration;
   Duration get bufferedPosition => _bufferedPosition;
   bool get isShuffle => _isShuffle;
-  RepeatMode get repeatMode => _repeatMode;
+  AppRepeatMode get repeatMode => _repeatMode;
   bool get hasTrack => _currentTrack != null;
 
   double get progress {
@@ -189,16 +189,16 @@ class AudioPlayerProvider extends ChangeNotifier {
 
   Future<void> toggleRepeat() async {
     switch (_repeatMode) {
-      case RepeatMode.off:
-        _repeatMode = RepeatMode.all;
+      case AppRepeatMode.off:
+        _repeatMode = AppRepeatMode.all;
         await _audioHandler.setRepeatMode(AudioServiceRepeatMode.all);
         break;
-      case RepeatMode.all:
-        _repeatMode = RepeatMode.one;
+      case AppRepeatMode.all:
+        _repeatMode = AppRepeatMode.one;
         await _audioHandler.setRepeatMode(AudioServiceRepeatMode.one);
         break;
-      case RepeatMode.one:
-        _repeatMode = RepeatMode.off;
+      case AppRepeatMode.one:
+        _repeatMode = AppRepeatMode.off;
         await _audioHandler.setRepeatMode(AudioServiceRepeatMode.none);
         break;
     }

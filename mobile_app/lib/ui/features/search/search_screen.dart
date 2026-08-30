@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
@@ -45,10 +44,10 @@ class _SearchScreenState extends State<SearchScreen> {
                 style: AppTypography.bodyLarge,
                 decoration: InputDecoration(
                   hintText: 'What do you want to listen to?',
-                  prefixIcon: const Icon(PhosphorIconsRegular.magnifyingGlass, color: AppColors.textSecondary),
+                  prefixIcon: const Icon(Icons.search_rounded, color: AppColors.textSecondary),
                   suffixIcon: _searchController.text.isNotEmpty
                       ? IconButton(
-                          icon: const Icon(PhosphorIconsRegular.x, color: AppColors.textSecondary),
+                          icon: const Icon(Icons.close_rounded, color: AppColors.textSecondary),
                           onPressed: () {
                             _searchController.clear();
                             music.search('');
@@ -69,7 +68,7 @@ class _SearchScreenState extends State<SearchScreen> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               const Icon(
-                                PhosphorIconsRegular.magnifyingGlass,
+                                Icons.search_rounded,
                                 color: AppColors.textMuted,
                                 size: 54,
                               ),

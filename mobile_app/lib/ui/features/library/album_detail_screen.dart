@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
@@ -51,7 +50,7 @@ class AlbumDetailScreen extends StatelessWidget {
                 pinned: true,
                 backgroundColor: AppColors.card,
                 leading: IconButton(
-                  icon: const Icon(PhosphorIconsRegular.caretLeft, color: Colors.white),
+                  icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
                   onPressed: () => Navigator.pop(context),
                 ),
                 flexibleSpace: FlexibleSpaceBar(
@@ -103,7 +102,7 @@ class AlbumDetailScreen extends StatelessWidget {
                         children: [
                           NeoButton(
                             text: 'Play',
-                            icon: PhosphorIconsFill.play,
+                            icon: Icons.play_arrow_rounded,
                             onPressed: () {
                               HapticFeedback.heavyImpact();
                               player.playTracks(tracks: album.tracks, initialIndex: 0);
@@ -112,7 +111,7 @@ class AlbumDetailScreen extends StatelessWidget {
                           const SizedBox(width: 12),
                           NeoButton(
                             text: 'Shuffle',
-                            icon: PhosphorIconsRegular.shuffle,
+                            icon: Icons.shuffle_rounded,
                             backgroundColor: const Color(0xFF222430),
                             textColor: AppColors.textPrimary,
                             borderColor: AppColors.border,

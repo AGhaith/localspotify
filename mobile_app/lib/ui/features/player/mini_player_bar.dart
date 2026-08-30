@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
@@ -81,9 +80,9 @@ class MiniPlayerBar extends StatelessWidget {
                   // Like Button
                   IconButton(
                     icon: Icon(
-                      track.isStarred ? PhosphorIconsFill.heart : PhosphorIconsRegular.heart,
+                      track.isStarred ? Icons.favorite_rounded : Icons.favorite_border_rounded,
                       color: track.isStarred ? AppColors.primary : AppColors.textSecondary,
-                      size: 20,
+                      size: 22,
                     ),
                     onPressed: () {
                       HapticFeedback.lightImpact();
@@ -93,9 +92,9 @@ class MiniPlayerBar extends StatelessWidget {
                   // Play / Pause Button
                   IconButton(
                     icon: Icon(
-                      player.isPlaying ? PhosphorIconsFill.pause : PhosphorIconsFill.play,
+                      player.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
                       color: AppColors.textPrimary,
-                      size: 24,
+                      size: 28,
                     ),
                     onPressed: () {
                       HapticFeedback.lightImpact();

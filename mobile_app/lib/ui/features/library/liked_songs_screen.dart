@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
@@ -44,7 +43,7 @@ class _LikedSongsScreenState extends State<LikedSongsScreen> {
             pinned: true,
             backgroundColor: AppColors.card,
             leading: IconButton(
-              icon: const Icon(PhosphorIconsRegular.caretLeft, color: Colors.white),
+              icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
               onPressed: () => Navigator.pop(context),
             ),
             flexibleSpace: FlexibleSpaceBar(
@@ -72,7 +71,7 @@ class _LikedSongsScreenState extends State<LikedSongsScreen> {
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
-                      PhosphorIconsFill.heart,
+                      Icons.favorite_rounded,
                       color: Colors.white,
                       size: 48,
                     ),
@@ -99,7 +98,7 @@ class _LikedSongsScreenState extends State<LikedSongsScreen> {
                       if (tracks.isNotEmpty)
                         NeoButton(
                           text: 'Play All',
-                          icon: PhosphorIconsFill.play,
+                          icon: Icons.play_arrow_rounded,
                           onPressed: () {
                             HapticFeedback.heavyImpact();
                             player.playTracks(tracks: tracks, initialIndex: 0);
@@ -114,11 +113,11 @@ class _LikedSongsScreenState extends State<LikedSongsScreen> {
                     style: AppTypography.bodyLarge,
                     decoration: InputDecoration(
                       hintText: 'Search in liked songs...',
-                      prefixIcon: const Icon(PhosphorIconsRegular.magnifyingGlass, color: AppColors.textSecondary),
+                      prefixIcon: const Icon(Icons.search_rounded, color: AppColors.textSecondary),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                       suffixIcon: _searchQuery.isNotEmpty
                           ? IconButton(
-                              icon: const Icon(PhosphorIconsRegular.x, color: AppColors.textSecondary),
+                              icon: const Icon(Icons.close_rounded, color: AppColors.textSecondary),
                               onPressed: () => setState(() => _searchQuery = ''),
                             )
                           : null,

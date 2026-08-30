@@ -1,6 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../core/theme/app_colors.dart';
 
 class CachedCoverArt extends StatelessWidget {
@@ -16,7 +15,7 @@ class CachedCoverArt extends StatelessWidget {
     this.width,
     this.height,
     this.borderRadius = 8,
-    this.placeholderIcon = PhosphorIconsRegular.musicNote,
+    this.placeholderIcon = Icons.music_note_rounded,
   });
 
   @override
@@ -53,6 +52,8 @@ class CachedCoverArt extends StatelessWidget {
   }
 
   Widget _buildFallback() {
+    final computedSize = (width != null ? (width! * 0.4) : 24.0).clamp(16.0, 48.0);
+
     return Container(
       width: width,
       height: height,
@@ -65,7 +66,7 @@ class CachedCoverArt extends StatelessWidget {
         child: Icon(
           placeholderIcon,
           color: AppColors.textMuted,
-          size: (width != null ? width! * 0.4 : 24).clamp(16.0, 48.0),
+          size: computedSize,
         ),
       ),
     );

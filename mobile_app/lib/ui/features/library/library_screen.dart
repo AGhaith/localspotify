@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
@@ -66,11 +65,11 @@ class _LibraryScreenState extends State<LibraryScreen> {
                             ),
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: const Icon(PhosphorIconsFill.heart, color: Colors.white, size: 26),
+                          child: const Icon(Icons.favorite_rounded, color: Colors.white, size: 26),
                         ),
                         title: Text('Liked Songs', style: AppTypography.titleMedium),
                         subtitle: Text('${music.starredTracks.length} songs', style: AppTypography.bodySmall),
-                        trailing: const Icon(PhosphorIconsRegular.caretRight, color: AppColors.textMuted),
+                        trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted),
                         onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(builder: (_) => const LikedSongsScreen()),
@@ -87,11 +86,11 @@ class _LibraryScreenState extends State<LibraryScreen> {
                             color: const Color(0xFF1E293B),
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: const Icon(PhosphorIconsFill.arrowCircleDown, color: AppColors.primary, size: 26),
+                          child: const Icon(Icons.arrow_circle_down_rounded, color: AppColors.primary, size: 26),
                         ),
                         title: Text('Downloaded Music', style: AppTypography.titleMedium),
                         subtitle: Text('${music.offlineTracks.length} tracks available offline', style: AppTypography.bodySmall),
-                        trailing: const Icon(PhosphorIconsRegular.caretRight, color: AppColors.textMuted),
+                        trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted),
                         onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(builder: (_) => const OfflineScreen()),
@@ -132,7 +131,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                             width: 50,
                             height: 50,
                             borderRadius: 8,
-                            placeholderIcon: PhosphorIconsRegular.playlist,
+                            placeholderIcon: Icons.queue_music_rounded,
                           ),
                           title: Text(pl.name, style: AppTypography.titleMedium),
                           subtitle: Text('${pl.songCount} songs', style: AppTypography.bodySmall),
@@ -171,7 +170,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                               width: 76,
                               height: 76,
                               borderRadius: 99,
-                              placeholderIcon: PhosphorIconsRegular.user,
+                              placeholderIcon: Icons.person_rounded,
                             ),
                             const SizedBox(height: 6),
                             SizedBox(

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../data/models/album.dart';
@@ -77,9 +76,9 @@ class AlbumCard extends StatelessWidget {
                           ],
                         ),
                         child: const Icon(
-                          PhosphorIconsFill.play,
+                          Icons.play_arrow_rounded,
                           color: AppColors.textDark,
-                          size: 16,
+                          size: 18,
                         ),
                       ),
                     ),

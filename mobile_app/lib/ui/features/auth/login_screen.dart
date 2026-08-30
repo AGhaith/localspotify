@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
@@ -78,10 +77,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 Center(
                   child: Container(
                     padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       color: AppColors.primary,
                       shape: BoxShape.circle,
-                      boxShadow: const [
+                      boxShadow: [
                         BoxShadow(
                           color: AppColors.shadow,
                           offset: Offset(4, 4),
@@ -90,7 +89,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ],
                     ),
                     child: const Icon(
-                      PhosphorIconsFill.musicNotes,
+                      Icons.music_note_rounded,
                       color: AppColors.textDark,
                       size: 44,
                     ),
@@ -119,7 +118,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   style: AppTypography.bodyLarge,
                   decoration: const InputDecoration(
                     hintText: 'e.g. http://100.92.248.49:6767',
-                    prefixIcon: Icon(PhosphorIconsRegular.globe, color: AppColors.textSecondary),
+                    prefixIcon: Icon(Icons.language_rounded, color: AppColors.textSecondary),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -132,7 +131,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   style: AppTypography.bodyLarge,
                   decoration: const InputDecoration(
                     hintText: 'Enter your Subsonic username',
-                    prefixIcon: Icon(PhosphorIconsRegular.user, color: AppColors.textSecondary),
+                    prefixIcon: Icon(Icons.person_rounded, color: AppColors.textSecondary),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -146,10 +145,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   style: AppTypography.bodyLarge,
                   decoration: InputDecoration(
                     hintText: 'Enter your password',
-                    prefixIcon: const Icon(PhosphorIconsRegular.lock, color: AppColors.textSecondary),
+                    prefixIcon: const Icon(Icons.lock_rounded, color: AppColors.textSecondary),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscurePassword ? PhosphorIconsRegular.eyeClosed : PhosphorIconsRegular.eye,
+                        _obscurePassword ? Icons.visibility_off_rounded : Icons.visibility_rounded,
                         color: AppColors.textSecondary,
                       ),
                       onPressed: () {
@@ -163,7 +162,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 // Connect Button
                 NeoButton(
                   text: 'Connect to Server',
-                  icon: PhosphorIconsFill.signIn,
+                  icon: Icons.login_rounded,
                   isLoading: isLoading,
                   onPressed: isLoading ? null : _onLogin,
                 ),

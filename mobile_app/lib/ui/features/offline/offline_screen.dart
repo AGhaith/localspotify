@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
@@ -32,7 +31,7 @@ class OfflineScreen extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const Icon(
-                      PhosphorIconsRegular.arrowCircleDown,
+                      Icons.arrow_circle_down_rounded,
                       color: AppColors.textMuted,
                       size: 56,
                     ),
@@ -63,7 +62,7 @@ class OfflineScreen extends StatelessWidget {
                         ),
                         NeoButton(
                           text: 'Play All',
-                          icon: PhosphorIconsFill.play,
+                          icon: Icons.play_arrow_rounded,
                           onPressed: () {
                             HapticFeedback.heavyImpact();
                             player.playTracks(tracks: offlineTracks, initialIndex: 0);
