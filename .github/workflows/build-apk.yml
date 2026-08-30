@@ -78,7 +78,7 @@ jobs:
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ (github.event.inputs.target == 'all' && 'aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android') || (github.event.inputs.target && format('{0}-linux-android', github.event.inputs.target == 'armv7' && 'armv7-linux-androideabi' || github.event.inputs.target == 'x86_64' && 'x86_64' || 'aarch64') || 'aarch64-linux-android' }}
+          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
 
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
