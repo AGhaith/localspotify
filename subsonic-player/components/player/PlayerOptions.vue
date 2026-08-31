@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import FavouriteButton from '@/components/favourite/FavouriteButton.vue';
+import LyricsButton from '@/components/player/controls/LyricsButton.vue';
 import MediaInformation from '@/components/player/controls/MediaInformation.vue';
 import PlaybackRateButton from '@/components/player/controls/PlaybackRateButton.vue';
 import QueueButton from '@/components/player/controls/QueueButton.vue';
 import VolumeControl from '@/components/player/controls/VolumeControl.vue';
 
-const { currentTrack, isPodcastEpisode, isRadioStation } = useQueue();
+const { currentTrack, isPodcastEpisode, isRadioStation, isTrack } = useQueue();
 </script>
 
 <template>
@@ -13,6 +14,8 @@ const { currentTrack, isPodcastEpisode, isRadioStation } = useQueue();
     <VolumeControl />
 
     <PlaybackRateButton v-if="isPodcastEpisode" />
+
+    <LyricsButton v-if="isTrack" />
 
     <MediaInformation v-if="!isRadioStation" />
 

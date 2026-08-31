@@ -2,6 +2,7 @@
 import ArtistLinkList from '@/components/artist/ArtistLinkList.vue';
 import FavouriteButton from '@/components/favourite/FavouriteButton.vue';
 import PreloadImage from '@/components/media/PreloadImage.vue';
+import LyricsButton from '@/components/player/controls/LyricsButton.vue';
 import PlaybackRateButton from '@/components/player/controls/PlaybackRateButton.vue';
 import PlayPauseButton from '@/components/player/controls/PlayPauseButton.vue';
 import RepeatButton from '@/components/player/controls/RepeatButton.vue';
@@ -216,10 +217,11 @@ const {
             />
           </div>
 
-          <!-- 4. Bottom Utility Bar: Podcast Rate & Queue Button -->
+          <!-- 4. Bottom Utility Bar: Podcast Rate & Lyrics & Queue Button -->
           <div :class="['spaceBetween', 'centerItems', $style.bottomUtilityBar]">
             <div :class="$style.leftUtility">
               <PlaybackRateButton v-if="isPodcastEpisode" />
+              <LyricsButton v-if="isTrack" />
             </div>
 
             <!-- Sleek Queue Icon Button on the Bottom Right -->

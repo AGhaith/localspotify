@@ -25,6 +25,7 @@ export const ICONS = {
   listLayout: 'PhRows',
   logo: 'PhWaveSine',
   logOut: 'PhSignOut',
+  lyrics: 'PhMicrophone',
   more: 'PhCaretDoubleRight',
   music: 'PhMusicNotes',
   musicBrainz: 'PhVinylRecord',

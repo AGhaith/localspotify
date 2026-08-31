@@ -14,6 +14,7 @@ export const STATE_KEYS = {
   infinityItems: 'infinity-items',
   infinityOffset: 'infinity-offset',
   layout: 'layout',
+  lyricsOpened: 'lyrics-opened',
   modal: 'modal',
   newestAlbums: 'newest-albums',
   newestPodcastEpisodes: 'newest-podcast-episodes',
