@@ -97,34 +97,37 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
                     icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textPrimary, size: 28),
                     onPressed: () => Navigator.pop(context),
                   ),
-                  GestureDetector(
-                    onTap: () {
-                      if (track.albumId != null && track.albumId!.isNotEmpty) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => AlbumDetailScreen(albumId: track.albumId!),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        if (track.albumId != null && track.albumId!.isNotEmpty) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => AlbumDetailScreen(albumId: track.albumId!),
+                            ),
+                          );
+                        }
+                      },
+                      child: Column(
+                        children: [
+                          Text(
+                            'PLAYING FROM ALBUM',
+                            style: AppTypography.labelSmall.copyWith(
+                              color: AppColors.textMuted,
+                              letterSpacing: 1.2,
+                            ),
                           ),
-                        );
-                      }
-                    },
-                    child: Column(
-                      children: [
-                        Text(
-                          'PLAYING FROM ALBUM',
-                          style: AppTypography.labelSmall.copyWith(
-                            color: AppColors.textMuted,
-                            letterSpacing: 1.2,
+                          const SizedBox(height: 2),
+                          Text(
+                            track.album,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                            style: AppTypography.titleMedium.copyWith(fontSize: 13),
                           ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          track.album,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: AppTypography.titleMedium.copyWith(fontSize: 13),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                   Row(

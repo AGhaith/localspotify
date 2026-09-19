@@ -305,6 +305,13 @@ class MusicProvider extends ChangeNotifier {
     return ok;
   }
 
+  Future<Playlist> syncPlaylistWithVault(String playlistId) async {
+    final updated = await _musicRepository.syncPlaylistTracksWithVault(playlistId);
+    _playlistCache[playlistId] = updated;
+    notifyListeners();
+    return updated;
+  }
+
   // ================= Spotify Playlist Import =================
   Future<SpotifyPlaylistInfo> fetchSpotifyPlaylist(String urlOrId) {
     return _musicRepository.fetchSpotifyPlaylist(urlOrId);

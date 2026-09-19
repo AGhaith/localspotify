@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -5,6 +6,8 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/duration_formatter.dart';
 import '../../../data/models/playlist.dart';
+import '../../../data/models/track.dart';
+import '../../../data/services/spotify_service.dart';
 import '../../../state/audio_player_provider.dart';
 import '../../../state/music_provider.dart';
 import '../../core_widgets/cached_cover_art.dart';
@@ -24,16 +27,66 @@ class PlaylistDetailScreen extends StatefulWidget {
 
 class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
   late Future<Playlist> _playlistFuture;
+  Timer? _autoSyncTimer;
+  bool _isAutoSyncing = false;
 
   @override
   void initState() {
     super.initState();
-    _playlistFuture = context.read<MusicProvider>().getPlaylistDetails(widget.playlistId);
+    _loadPlaylist();
+  }
+
+  @override
+  void dispose() {
+    _autoSyncTimer?.cancel();
+    super.dispose();
+  }
+
+  void _loadPlaylist({bool force = false}) {
+    _playlistFuture = context.read<MusicProvider>().getPlaylistDetails(
+      widget.playlistId,
+      forceRefresh: force,
+    );
   }
 
   void _retry() {
     setState(() {
-      _playlistFuture = context.read<MusicProvider>().getPlaylistDetails(widget.playlistId, forceRefresh: true);
+      _loadPlaylist(force: true);
+    });
+  }
+
+  void _setupAutoSync(Playlist currentPlaylist, int totalExpected) {
+    if (currentPlaylist.tracks.length >= totalExpected || totalExpected == 0) {
+      _autoSyncTimer?.cancel();
+      _autoSyncTimer = null;
+      return;
+    }
+
+    if (_autoSyncTimer != null) return;
+
+    _autoSyncTimer = Timer.periodic(const Duration(seconds: 4), (timer) async {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      if (_isAutoSyncing) return;
+      _isAutoSyncing = true;
+      try {
+        final music = context.read<MusicProvider>();
+        final updated = await music.syncPlaylistWithVault(widget.playlistId);
+        if (mounted) {
+          setState(() {
+            _playlistFuture = Future.value(updated);
+          });
+          if (updated.tracks.length >= totalExpected) {
+            timer.cancel();
+            _autoSyncTimer = null;
+          }
+        }
+      } catch (_) {
+      } finally {
+        _isAutoSyncing = false;
+      }
     });
   }
 
@@ -106,6 +159,18 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
         final importedTracks = music.getImportedPlaylistTracks(playlist.id).isNotEmpty
             ? music.getImportedPlaylistTracks(playlist.id)
             : music.getImportedPlaylistTracks(playlist.name);
+
+        final hasImported = importedTracks.isNotEmpty;
+        final totalExpected = hasImported ? importedTracks.length : playlist.tracks.length;
+        final isFullySynced = playlist.tracks.isNotEmpty && playlist.tracks.length >= totalExpected;
+        final syncProgress = totalExpected > 0 ? (playlist.tracks.length / totalExpected) : 0.0;
+        final syncPercent = (syncProgress * 100).toInt();
+
+        // Register background sync poller if syncing is needed
+        if (hasImported && !isFullySynced) {
+          _setupAutoSync(playlist, totalExpected);
+        }
+
         final isDownloaded = playlist.tracks.isNotEmpty &&
             playlist.tracks.every((t) => music.isDownloaded(t.id));
 
@@ -139,7 +204,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                 flexibleSpace: FlexibleSpaceBar(
                   title: Text(
                     playlist.name,
-                    style: AppTypography.titleLarge.copyWith(color: Colors.white),
+                    style: AppTypography.titleLarge.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
                   ),
                   background: Stack(
                     fit: StackFit.expand,
@@ -175,15 +240,16 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        playlist.tracks.isNotEmpty
+                        isFullySynced
                             ? '${playlist.tracks.length} songs • ${DurationFormatter.format(playlist.duration)}'
-                            : (importedTracks.isNotEmpty
-                                ? '${importedTracks.length} tracks • Downloading on server'
+                            : (hasImported
+                                ? '${playlist.tracks.length} of $totalExpected tracks ready • Syncing...'
                                 : '0 songs'),
                         style: AppTypography.bodySmall.copyWith(
-                          color: playlist.tracks.isEmpty && importedTracks.isNotEmpty
+                          color: !isFullySynced && hasImported
                               ? AppColors.primary
                               : AppColors.textSecondary,
+                          fontWeight: !isFullySynced && hasImported ? FontWeight.w600 : FontWeight.normal,
                         ),
                       ),
                       if (playlist.comment != null && playlist.comment!.isNotEmpty) ...[
@@ -219,7 +285,6 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                               },
                             ),
                             const SizedBox(width: 14),
-                            // Spotify-grade circular download button with spinner and checkmark
                             DownloadActionButton(
                               isDownloaded: isDownloaded,
                               isDownloading: isDownloading,
@@ -237,91 +302,186 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                 ),
               ),
 
-              // Tracks List
-              if (playlist.tracks.isEmpty && importedTracks.isNotEmpty) ...[
-                // Syncing Banner
+              // Syncing / Processing Banner with actual progress bar
+              if (hasImported && !isFullySynced)
                 SliverToBoxAdapter(
                   child: Container(
                     margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    padding: const EdgeInsets.all(14),
+                    padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.primary.withValues(alpha: 0.4), width: 1.5),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: AppColors.primary.withValues(alpha: 0.35),
+                        width: 1.2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.25),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
-                    child: Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.2,
-                            color: AppColors.primary,
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(Icons.sync_rounded, color: AppColors.primary, size: 20),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Syncing Playlist',
+                                    style: AppTypography.titleMedium.copyWith(fontSize: 15, fontWeight: FontWeight.bold),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    '${playlist.tracks.length} of $totalExpected tracks ready in library',
+                                    style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary, fontSize: 12),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                              ),
+                              child: Text(
+                                '$syncPercent%',
+                                style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+
+                        // Actual Linear Progress Bar
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: LinearProgressIndicator(
+                            value: syncProgress > 0 ? syncProgress : 0.05,
+                            minHeight: 6,
+                            backgroundColor: Colors.white12,
+                            valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Downloading tracks on server',
-                                style: AppTypography.titleMedium.copyWith(fontSize: 14, color: Colors.white),
+                        const SizedBox(height: 12),
+
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Audio & metadata syncing in background',
+                              style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted, fontSize: 11),
+                            ),
+                            TextButton.icon(
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                visualDensity: VisualDensity.compact,
                               ),
-                              const SizedBox(height: 2),
-                              Text(
-                                'High-fidelity audio is being downloaded to your vault.',
-                                style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary, fontSize: 11),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        OutlinedButton(
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: AppColors.primary),
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          ),
-                          onPressed: _retry,
-                          child: Text('Refresh', style: AppTypography.labelSmall.copyWith(color: AppColors.primary)),
+                              icon: const Icon(Icons.refresh_rounded, size: 15, color: AppColors.primary),
+                              label: const Text('Refresh', style: TextStyle(color: AppColors.primary, fontSize: 12)),
+                              onPressed: _retry,
+                            ),
+                          ],
                         ),
                       ],
                     ),
                   ),
                 ),
 
-                // Imported Tracklist Preview
+              // Tracks List
+              if (hasImported && !isFullySynced)
                 SliverPadding(
                   padding: const EdgeInsets.only(bottom: 100),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (ctx, i) {
                         final t = importedTracks[i];
+                        final Track? matchedTrack = _findMatchedTrack(playlist.tracks, t);
+                        final isReady = matchedTrack != null;
+
                         return ListTile(
                           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                           leading: SizedBox(
                             width: 32,
                             child: Center(
-                              child: Text('${i + 1}', style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted)),
+                              child: isReady
+                                  ? const Icon(Icons.check_circle_rounded, color: AppColors.primary, size: 18)
+                                  : Text(
+                                      '${i + 1}',
+                                      style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
+                                    ),
                             ),
                           ),
-                          title: Text(t.title, style: AppTypography.titleMedium, maxLines: 1, overflow: TextOverflow.ellipsis),
-                          subtitle: Text(t.artist, style: AppTypography.bodySmall, maxLines: 1, overflow: TextOverflow.ellipsis),
+                          title: Text(
+                            t.title,
+                            style: AppTypography.titleMedium.copyWith(
+                              color: isReady ? Colors.white : Colors.white70,
+                              fontWeight: isReady ? FontWeight.w600 : FontWeight.normal,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          subtitle: Text(
+                            t.artist,
+                            style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(t.durationFormatted, style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted)),
+                              Text(
+                                t.durationFormatted,
+                                style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
+                              ),
                               const SizedBox(width: 8),
-                              const Icon(Icons.cloud_download_rounded, size: 16, color: AppColors.primary),
+                              Icon(
+                                isReady ? Icons.play_arrow_rounded : Icons.sync_rounded,
+                                size: 18,
+                                color: isReady ? AppColors.primary : AppColors.textMuted,
+                              ),
                             ],
                           ),
+                          onTap: isReady
+                              ? () {
+                                  final index = playlist.tracks.indexOf(matchedTrack);
+                                  if (index >= 0) {
+                                    player.playTracks(tracks: playlist.tracks, initialIndex: index);
+                                  }
+                                }
+                              : () {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Syncing "${t.title}" into library vault...'),
+                                      duration: const Duration(seconds: 2),
+                                      behavior: SnackBarBehavior.floating,
+                                      backgroundColor: AppColors.surface,
+                                    ),
+                                  );
+                                },
                         );
                       },
                       childCount: importedTracks.length,
                     ),
                   ),
-                ),
-              ] else if (playlist.tracks.isEmpty)
+                )
+              else if (playlist.tracks.isEmpty)
                 SliverFillRemaining(
                   hasScrollBody: false,
                   child: Center(
@@ -366,6 +526,14 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
     );
   }
 
+  Track? _findMatchedTrack(List<Track> tracks, SpotifyTrackItem imported) {
+    final cleanTitle = imported.title.toLowerCase().trim();
+    for (final t in tracks) {
+      if (t.title.toLowerCase().trim() == cleanTitle) return t;
+    }
+    return null;
+  }
+
   void _confirmDelete(BuildContext context, MusicProvider music, Playlist playlist) {
     showDialog(
       context: context,
@@ -380,9 +548,9 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
           ),
           TextButton(
             onPressed: () async {
-              Navigator.maybePop(ctx); // Close dialog
+              Navigator.maybePop(ctx);
               await music.deletePlaylist(playlist.id);
-              if (mounted) Navigator.maybePop(context); // Close screen
+              if (mounted) Navigator.maybePop(context);
             },
             child: const Text('Delete', style: TextStyle(color: AppColors.error)),
           ),

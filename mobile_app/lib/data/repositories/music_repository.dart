@@ -183,6 +183,47 @@ class MusicRepository {
     return _apiService.deletePlaylist(playlistId);
   }
 
+  Future<Playlist> syncPlaylistTracksWithVault(String playlistId) async {
+    final playlist = await getPlaylist(playlistId);
+    final imported = getImportedPlaylistTracks(playlistId).isNotEmpty
+        ? getImportedPlaylistTracks(playlistId)
+        : getImportedPlaylistTracks(playlist.name);
+
+    if (imported.isEmpty) return playlist;
+
+    final existingTitles = playlist.tracks.map((t) => t.title.toLowerCase().trim()).toSet();
+    final songIdsToAdd = <String>[];
+
+    for (final imp in imported) {
+      if (imp.title.isEmpty || existingTitles.contains(imp.title.toLowerCase().trim())) continue;
+
+      try {
+        final searchRes = await search(imp.title);
+        final songs = searchRes['songs'];
+        if (songs is List<Track> && songs.isNotEmpty) {
+          final cleanArtist = imp.artist.toLowerCase();
+          final matched = songs.firstWhere(
+            (s) {
+              final sArtist = s.artist.toLowerCase();
+              return sArtist.contains(cleanArtist) || cleanArtist.contains(sArtist);
+            },
+            orElse: () => songs.first,
+          );
+          if (!playlist.tracks.any((t) => t.id == matched.id) && !songIdsToAdd.contains(matched.id)) {
+            songIdsToAdd.add(matched.id);
+          }
+        }
+      } catch (_) {}
+    }
+
+    if (songIdsToAdd.isNotEmpty) {
+      await updatePlaylist(playlistId, songIdsToAdd: songIdsToAdd);
+      return getPlaylist(playlistId);
+    }
+
+    return playlist;
+  }
+
   Future<List<Track>> getStarredTracks() {
     return _apiService.getStarredTracks();
   }

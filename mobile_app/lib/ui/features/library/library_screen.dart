@@ -273,7 +273,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    'Download tracks to server & add to your account',
+                                    'Sync Spotify tracks into your library vault',
                                     style: AppTypography.bodySmall.copyWith(color: Colors.white60, fontSize: 11),
                                   ),
                                 ],
