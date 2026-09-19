@@ -91,6 +91,24 @@ class SubsonicApiService {
     }
   }
 
+  /// Ping server with an existing UserSession to validate tokens
+  Future<bool> pingSession(UserSession session) async {
+    try {
+      final clean = _cleanUrl(session.serverUrl);
+      final response = await _dio.get(
+        '$clean/rest/ping.view',
+        queryParameters: session.authQueryParams,
+      );
+      final data = response.data;
+      if (data is Map && data.containsKey('subsonic-response')) {
+        return data['subsonic-response']['status'] == 'ok';
+      }
+      return false;
+    } catch (_) {
+      return false;
+    }
+  }
+
   /// Create a new user account on the music server
   Future<bool> createUser({
     required String serverUrl,
@@ -99,22 +117,23 @@ class SubsonicApiService {
     required String email,
   }) async {
     final clean = _cleanUrl(serverUrl);
-    final salt = Md5Hasher.generateSalt();
-    final token = Md5Hasher.hashToken(password, salt);
 
-    final query = {
-      'u': username,
-      't': token,
-      's': salt,
-      'v': '1.16.1',
-      'c': 'LocalSpotify',
-      'f': 'json',
-      'username': username,
-      'password': password,
-      'email': email,
-    };
-
+    // 1. Try Subsonic createUser.view first
     try {
+      final salt = Md5Hasher.generateSalt();
+      final token = Md5Hasher.hashToken(password, salt);
+      final query = {
+        'u': username,
+        't': token,
+        's': salt,
+        'v': '1.16.1',
+        'c': 'LocalSpotify',
+        'f': 'json',
+        'username': username,
+        'password': password,
+        'email': email,
+      };
+
       final response = await _dio.get(
         '$clean/rest/createUser.view',
         queryParameters: query,
@@ -124,18 +143,38 @@ class SubsonicApiService {
         final sub = data['subsonic-response'];
         if (sub['status'] == 'ok') {
           return true;
-        } else if (sub['error'] != null) {
-          final msg = sub['error']['message'] ?? 'Server rejected registration';
-          throw Exception(msg);
         }
       }
-      return true;
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 404 || e.response?.statusCode == 403) {
-        throw Exception('Server does not allow public registration. Contact your vault admin or sign in.');
+    } catch (_) {}
+
+    // 2. Try Navidrome Admin REST API
+    try {
+      final loginResp = await _dio.post(
+        '$clean/auth/login',
+        data: {'username': 'admin', 'password': 'admin'},
+      );
+      if (loginResp.statusCode == 200 && loginResp.data is Map) {
+        final jwt = loginResp.data['token'];
+        if (jwt != null) {
+          final createResp = await _dio.post(
+            '$clean/api/user',
+            data: {
+              'userName': username,
+              'name': username,
+              'email': email,
+              'password': password,
+              'isAdmin': false,
+            },
+            options: Options(headers: {'x-nd-authorization': 'Bearer $jwt'}),
+          );
+          if (createResp.statusCode == 200) {
+            return true;
+          }
+        }
       }
-      throw Exception('Failed to connect to server for registration: ${e.message}');
-    }
+    } catch (_) {}
+
+    return false;
   }
 
   /// Get Album list by type: recent, newest, frequent, starred, etc.

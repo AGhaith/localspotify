@@ -53,9 +53,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final isDownloadedOnly = music.activeFilter == 'downloaded';
     final offlineAlbumIds = music.offlineTracks.map((t) => t.albumId).toSet();
+    final displayedNewestAlbums = isDownloadedOnly
+        ? music.newestAlbums.where((a) => offlineAlbumIds.contains(a.id)).toList()
+        : music.newestAlbums;
     final displayedRecentAlbums = isDownloadedOnly
         ? music.recentAlbums.where((a) => offlineAlbumIds.contains(a.id)).toList()
         : music.recentAlbums;
+    final albumsToDisplay = displayedNewestAlbums.isNotEmpty
+        ? displayedNewestAlbums
+        : displayedRecentAlbums;
     final displayedFrequentAlbums = isDownloadedOnly
         ? music.frequentAlbums.where((a) => offlineAlbumIds.contains(a.id)).toList()
         : music.frequentAlbums;
@@ -271,31 +277,56 @@ class _HomeScreenState extends State<HomeScreen> {
                       )
                     : SizedBox(
                         height: 200,
-                        child: music.isLoadingHome && displayedRecentAlbums.isEmpty
+                        child: music.isLoadingHome && albumsToDisplay.isEmpty
                             ? const Center(
                                 child: CircularProgressIndicator(color: AppColors.primary),
                               )
-                            : ListView.separated(
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
-                                scrollDirection: Axis.horizontal,
-                                physics: const BouncingScrollPhysics(),
-                                itemCount: displayedRecentAlbums.length,
-                                separatorBuilder: (_, __) => const SizedBox(width: 12),
-                                itemBuilder: (ctx, i) {
-                                  final album = displayedRecentAlbums[i];
-                                  return AlbumCard(
-                                    album: album,
-                                    coverUrl: music.getCoverArtUrl(album.coverArtId, size: 250),
-                                    onTap: () => _openAlbum(context, album.id),
-                                    onPlayTap: () async {
-                                      final detailed = await music.getAlbumDetails(album.id);
-                                      if (detailed.tracks.isNotEmpty) {
-                                        player.playTracks(tracks: detailed.tracks, initialIndex: 0);
-                                      }
+                            : albumsToDisplay.isEmpty
+                                ? Center(
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            music.homeError != null
+                                                ? 'Could not connect to music vault'
+                                                : 'No albums found in vault',
+                                            style: AppTypography.titleMedium.copyWith(
+                                              color: music.homeError != null ? AppColors.error : AppColors.textSecondary,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          OutlinedButton.icon(
+                                            icon: const Icon(Icons.refresh_rounded, size: 16),
+                                            label: const Text('Retry'),
+                                            onPressed: () => music.loadHomeFeed(showLoadingSkeleton: true),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  )
+                                : ListView.separated(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                                    scrollDirection: Axis.horizontal,
+                                    physics: const BouncingScrollPhysics(),
+                                    itemCount: albumsToDisplay.length,
+                                    separatorBuilder: (_, __) => const SizedBox(width: 12),
+                                    itemBuilder: (ctx, i) {
+                                      final album = albumsToDisplay[i];
+                                      return AlbumCard(
+                                        album: album,
+                                        coverUrl: music.getCoverArtUrl(album.coverArtId, size: 250),
+                                        onTap: () => _openAlbum(context, album.id),
+                                        onPlayTap: () async {
+                                          final detailed = await music.getAlbumDetails(album.id);
+                                          if (detailed.tracks.isNotEmpty) {
+                                            player.playTracks(tracks: detailed.tracks, initialIndex: 0);
+                                          }
+                                        },
+                                      );
                                     },
-                                  );
-                                },
-                              ),
+                                  ),
                       ),
               ),
 

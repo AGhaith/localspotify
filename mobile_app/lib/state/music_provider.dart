@@ -13,6 +13,7 @@ class MusicProvider extends ChangeNotifier {
   final MusicRepository _musicRepository;
 
   // Feeds
+  List<Album> _newestAlbums = [];
   List<Album> _recentAlbums = [];
   List<Album> _frequentAlbums = [];
   List<Artist> _artists = [];
@@ -47,6 +48,7 @@ class MusicProvider extends ChangeNotifier {
   }
 
   // Getters
+  List<Album> get newestAlbums => _newestAlbums;
   List<Album> get recentAlbums => _recentAlbums;
   List<Album> get frequentAlbums => _frequentAlbums;
   List<Artist> get artists => _artists;
@@ -76,20 +78,25 @@ class MusicProvider extends ChangeNotifier {
   }
 
   Future<void> loadHomeFeed({bool showLoadingSkeleton = false}) async {
-    if (showLoadingSkeleton || _recentAlbums.isEmpty) {
+    if (showLoadingSkeleton || (_newestAlbums.isEmpty && _recentAlbums.isEmpty)) {
       _isLoadingHome = true;
       _homeError = null;
       notifyListeners();
     }
 
     try {
+      final newest = await _musicRepository.getNewestAlbums(size: 30);
       final recent = await _musicRepository.getRecentAlbums(size: 20);
       final frequent = await _musicRepository.getFrequentAlbums(size: 20);
       final starred = await _musicRepository.getStarredTracks();
+      final artists = await _musicRepository.getArtists();
 
-      _recentAlbums = recent;
-      _frequentAlbums = frequent;
+      _newestAlbums = newest;
+      // Fallback: If user has no recent played albums yet, fallback to newest so Home is never empty!
+      _recentAlbums = recent.isNotEmpty ? recent : newest;
+      _frequentAlbums = frequent.isNotEmpty ? frequent : newest;
       _starredTracks = starred;
+      _artists = artists;
       _offlineTracks = _musicRepository.getDownloadedTracks();
     } catch (e) {
       _homeError = e.toString();
