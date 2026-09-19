@@ -224,7 +224,7 @@ class _LyricsViewState extends State<LyricsView> {
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 8),
                           child: Text(
-                            line.text.isEmpty ? '♪' : line.text,
+                            line.text.isEmpty ? '...' : line.text,
                             style: AppTypography.titleMedium.copyWith(
                               fontSize: isActive ? 20 : 16,
                               fontWeight: isActive ? FontWeight.w800 : FontWeight.w500,

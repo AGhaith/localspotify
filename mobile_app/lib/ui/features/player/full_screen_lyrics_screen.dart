@@ -99,7 +99,7 @@ class _FullScreenLyricsScreenState extends State<FullScreenLyricsScreen> {
     } else if (lyrics != null && lyrics.rawText.isNotEmpty) {
       quoteText = lyrics.rawText.split('\n').take(4).join('\n');
     } else {
-      quoteText = '♪ ${track.title} ♪';
+      quoteText = track.title;
     }
 
     showModalBottomSheet(
@@ -357,7 +357,7 @@ class _FullScreenLyricsScreenState extends State<FullScreenLyricsScreen> {
                             child: Padding(
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               child: Text(
-                                line.text.isEmpty ? '♪' : line.text,
+                                line.text.isEmpty ? '...' : line.text,
                                 style: TextStyle(
                                   fontFamily: 'Montserrat',
                                   fontSize: isActive ? 26 : 21,

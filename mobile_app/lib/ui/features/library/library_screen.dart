@@ -147,7 +147,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                         const SizedBox(width: 8),
                         _buildFilterPill('Artists', 'Artists'),
                         const SizedBox(width: 8),
-                        _buildFilterPill('Downloaded', '💾 Downloaded'),
+                        _buildFilterPill('Downloaded', 'Downloaded'),
                       ],
                     ),
                   ),
