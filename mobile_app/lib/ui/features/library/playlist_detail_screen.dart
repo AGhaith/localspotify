@@ -8,6 +8,7 @@ import '../../../data/models/playlist.dart';
 import '../../../state/audio_player_provider.dart';
 import '../../../state/music_provider.dart';
 import '../../core_widgets/cached_cover_art.dart';
+import '../../core_widgets/download_action_button.dart';
 import '../../core_widgets/neo_button.dart';
 import '../../core_widgets/track_row.dart';
 
@@ -21,36 +22,80 @@ class PlaylistDetailScreen extends StatefulWidget {
 }
 
 class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
+  late Future<Playlist> _playlistFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _playlistFuture = context.read<MusicProvider>().getPlaylistDetails(widget.playlistId);
+  }
+
+  void _retry() {
+    setState(() {
+      _playlistFuture = context.read<MusicProvider>().getPlaylistDetails(widget.playlistId, forceRefresh: true);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final music = context.watch<MusicProvider>();
     final player = context.read<AudioPlayerProvider>();
-
     final isDownloading = music.downloadingEntityId == widget.playlistId;
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: FutureBuilder<Playlist>(
-        future: music.getPlaylistDetails(widget.playlistId),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(color: AppColors.primary));
-          }
-
-          if (snapshot.hasError || !snapshot.hasData) {
-            return Scaffold(
+    return FutureBuilder<Playlist>(
+      future: _playlistFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Scaffold(
+            backgroundColor: AppColors.background,
+            appBar: AppBar(
               backgroundColor: AppColors.background,
-              appBar: AppBar(leading: const BackButton()),
-              body: Center(
-                child: Text('Failed to load playlist', style: AppTypography.bodyMedium),
+              elevation: 0,
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+                onPressed: () => Navigator.maybePop(context),
               ),
-            );
-          }
+            ),
+            body: const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+          );
+        }
 
-          final playlist = snapshot.data!;
-          final coverUrl = music.getCoverArtUrl(playlist.coverArtId, size: 500);
+        if (snapshot.hasError || !snapshot.hasData) {
+          return Scaffold(
+            backgroundColor: AppColors.background,
+            appBar: AppBar(
+              backgroundColor: AppColors.background,
+              elevation: 0,
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+                onPressed: () => Navigator.maybePop(context),
+              ),
+            ),
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('Failed to load playlist', style: AppTypography.bodyMedium),
+                  const SizedBox(height: 12),
+                  NeoButton(
+                    text: 'Retry',
+                    icon: Icons.refresh_rounded,
+                    onPressed: _retry,
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
 
-          return CustomScrollView(
+        final playlist = snapshot.data!;
+        final coverUrl = music.getCoverArtUrl(playlist.coverArtId, size: 500);
+        final isDownloaded = playlist.tracks.isNotEmpty &&
+            playlist.tracks.every((t) => music.isDownloaded(t.id));
+
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          body: CustomScrollView(
             physics: const BouncingScrollPhysics(),
             slivers: [
               SliverAppBar(
@@ -59,7 +104,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                 backgroundColor: AppColors.card,
                 leading: IconButton(
                   icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () => Navigator.maybePop(context),
                 ),
                 actions: [
                   IconButton(
@@ -117,12 +162,9 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                         ),
                       ],
                       const SizedBox(height: 16),
-                      Wrap(
-                        spacing: 10,
-                        runSpacing: 10,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          if (playlist.tracks.isNotEmpty) ...[
+                      if (playlist.tracks.isNotEmpty)
+                        Row(
+                          children: [
                             NeoButton(
                               text: 'Play All',
                               icon: Icons.play_arrow_rounded,
@@ -131,6 +173,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                                 player.playTracks(tracks: playlist.tracks, initialIndex: 0);
                               },
                             ),
+                            const SizedBox(width: 10),
                             NeoButton(
                               text: 'Shuffle',
                               icon: Icons.shuffle_rounded,
@@ -143,29 +186,20 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                                 player.playTracks(tracks: shuffled, initialIndex: 0);
                               },
                             ),
-                            // Download Playlist Button
-                            NeoButton(
-                              text: isDownloading
-                                  ? '${(music.downloadingProgress * 100).toInt()}%'
-                                  : 'Download All',
-                              icon: isDownloading
-                                  ? Icons.hourglass_top_rounded
-                                  : Icons.download_rounded,
-                              backgroundColor: isDownloading
-                                  ? AppColors.primary.withValues(alpha: 0.2)
-                                  : const Color(0xFF1E293B),
-                              textColor: isDownloading ? AppColors.primary : AppColors.textPrimary,
-                              borderColor: isDownloading ? AppColors.primary : AppColors.border,
-                              onPressed: isDownloading
-                                  ? null
-                                  : () {
-                                      HapticFeedback.lightImpact();
-                                      music.downloadPlaylist(playlist);
-                                    },
+                            const SizedBox(width: 14),
+                            // Spotify-grade circular download button with spinner and checkmark
+                            DownloadActionButton(
+                              isDownloaded: isDownloaded,
+                              isDownloading: isDownloading,
+                              progress: music.downloadingProgress,
+                              size: 38,
+                              onDownload: () {
+                                HapticFeedback.lightImpact();
+                                music.downloadPlaylist(playlist);
+                              },
                             ),
                           ],
-                        ],
-                      ),
+                        ),
                     ],
                   ),
                 ),
@@ -211,9 +245,9 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                   ),
                 ),
             ],
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -226,14 +260,14 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
         content: Text('Are you sure you want to delete "${playlist.name}"?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx),
+            onPressed: () => Navigator.maybePop(ctx),
             child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
           ),
           TextButton(
             onPressed: () async {
-              Navigator.pop(ctx); // Close dialog
+              Navigator.maybePop(ctx); // Close dialog
               await music.deletePlaylist(playlist.id);
-              if (mounted) Navigator.pop(context); // Close screen
+              if (mounted) Navigator.maybePop(context); // Close screen
             },
             child: const Text('Delete', style: TextStyle(color: AppColors.error)),
           ),

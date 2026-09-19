@@ -25,6 +25,26 @@ class LyricsView extends StatefulWidget {
 class _LyricsViewState extends State<LyricsView> {
   final ScrollController _scrollController = ScrollController();
   int _lastActiveIndex = -1;
+  Future<Lyrics?>? _lyricsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLyrics();
+  }
+
+  @override
+  void didUpdateWidget(covariant LyricsView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.track.id != widget.track.id) {
+      _lastActiveIndex = -1;
+      _loadLyrics();
+    }
+  }
+
+  void _loadLyrics() {
+    _lyricsFuture = context.read<MusicProvider>().getLyrics(widget.track);
+  }
 
   @override
   void dispose() {
@@ -47,12 +67,11 @@ class _LyricsViewState extends State<LyricsView> {
 
   @override
   Widget build(BuildContext context) {
-    final music = context.watch<MusicProvider>();
     final player = context.watch<AudioPlayerProvider>();
     final currentPosition = player.position;
 
     return FutureBuilder<Lyrics?>(
-      future: music.getLyrics(widget.track),
+      future: _lyricsFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Container(

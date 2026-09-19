@@ -32,53 +32,62 @@ class _BottomNavShellState extends State<BottomNavShell> {
     final bottomInset = MediaQuery.of(context).padding.bottom;
     final player = context.watch<AudioPlayerProvider>();
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Stack(
-        children: [
-          IndexedStack(
-            index: _currentIndex,
-            children: _screens,
-          ),
-
-          // Docked Mini-Player + Custom Bottom Navigation Bar
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (player.hasTrack) const MiniPlayerBar(),
-                Container(
-                  padding: EdgeInsets.fromLTRB(16, 8, 16, bottomInset > 0 ? bottomInset : 10),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF08080C),
-                    border: Border(
-                      top: BorderSide(color: AppColors.border, width: 1),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.shadow,
-                        offset: Offset(0, -4),
-                        blurRadius: 20,
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _buildNavItem(0, 'Home', Icons.home_rounded, Icons.home_outlined),
-                      _buildNavItem(1, 'Search', Icons.search_rounded, Icons.search_outlined),
-                      _buildNavItem(2, 'Library', Icons.library_music_rounded, Icons.library_music_outlined),
-                      _buildNavItem(3, 'Offline', Icons.download_for_offline_rounded, Icons.download_for_offline_outlined),
-                    ],
-                  ),
-                ),
-              ],
+    return PopScope(
+      canPop: _currentIndex == 0,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop && _currentIndex != 0) {
+          HapticFeedback.selectionClick();
+          setState(() => _currentIndex = 0);
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        body: Stack(
+          children: [
+            IndexedStack(
+              index: _currentIndex,
+              children: _screens,
             ),
-          ),
-        ],
+
+            // Docked Mini-Player + Custom Bottom Navigation Bar
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (player.hasTrack) const MiniPlayerBar(),
+                  Container(
+                    padding: EdgeInsets.fromLTRB(16, 8, 16, bottomInset > 0 ? bottomInset : 10),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF08080C),
+                      border: Border(
+                        top: BorderSide(color: AppColors.border, width: 1),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.shadow,
+                          offset: Offset(0, -4),
+                          blurRadius: 20,
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _buildNavItem(0, 'Home', Icons.home_rounded, Icons.home_outlined),
+                        _buildNavItem(1, 'Search', Icons.search_rounded, Icons.search_outlined),
+                        _buildNavItem(2, 'Library', Icons.library_music_rounded, Icons.library_music_outlined),
+                        _buildNavItem(3, 'Offline', Icons.download_for_offline_rounded, Icons.download_for_offline_outlined),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -22,39 +22,81 @@ class ArtistDetailScreen extends StatefulWidget {
 }
 
 class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
+  late Future<Artist> _artistFuture;
   bool _isBioExpanded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _artistFuture = context.read<MusicProvider>().getArtistDetails(widget.artistId);
+  }
+
+  void _retry() {
+    setState(() {
+      _artistFuture = context.read<MusicProvider>().getArtistDetails(widget.artistId, forceRefresh: true);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final music = context.watch<MusicProvider>();
     final player = context.read<AudioPlayerProvider>();
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: FutureBuilder<Artist>(
-        future: music.getArtistDetails(widget.artistId),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(color: AppColors.primary),
-            );
-          }
-
-          if (snapshot.hasError || !snapshot.hasData) {
-            return Scaffold(
+    return FutureBuilder<Artist>(
+      future: _artistFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Scaffold(
+            backgroundColor: AppColors.background,
+            appBar: AppBar(
               backgroundColor: AppColors.background,
-              appBar: AppBar(leading: const BackButton()),
-              body: Center(
-                child: Text('Failed to load artist details', style: AppTypography.bodyMedium),
+              elevation: 0,
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+                onPressed: () => Navigator.maybePop(context),
               ),
-            );
-          }
+            ),
+            body: const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            ),
+          );
+        }
 
-          final artist = snapshot.data!;
-          final coverUrl = artist.artistImageUrl ??
-              music.getCoverArtUrl(artist.coverArtId, size: 600);
+        if (snapshot.hasError || !snapshot.hasData) {
+          return Scaffold(
+            backgroundColor: AppColors.background,
+            appBar: AppBar(
+              backgroundColor: AppColors.background,
+              elevation: 0,
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+                onPressed: () => Navigator.maybePop(context),
+              ),
+            ),
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('Failed to load artist details', style: AppTypography.bodyMedium),
+                  const SizedBox(height: 12),
+                  NeoButton(
+                    text: 'Retry',
+                    icon: Icons.refresh_rounded,
+                    onPressed: _retry,
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
 
-          return CustomScrollView(
+        final artist = snapshot.data!;
+        final coverUrl = artist.artistImageUrl ??
+            music.getCoverArtUrl(artist.coverArtId, size: 600);
+
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          body: CustomScrollView(
             physics: const BouncingScrollPhysics(),
             slivers: [
               // Hero AppBar
@@ -64,7 +106,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                 backgroundColor: AppColors.card,
                 leading: IconButton(
                   icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () => Navigator.maybePop(context),
                 ),
                 flexibleSpace: FlexibleSpaceBar(
                   title: Text(
@@ -316,9 +358,9 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
 
               const SliverToBoxAdapter(child: SizedBox(height: 100)),
             ],
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 

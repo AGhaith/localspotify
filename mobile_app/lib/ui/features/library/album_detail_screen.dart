@@ -8,45 +8,96 @@ import '../../../data/models/album.dart';
 import '../../../state/audio_player_provider.dart';
 import '../../../state/music_provider.dart';
 import '../../core_widgets/cached_cover_art.dart';
+import '../../core_widgets/download_action_button.dart';
 import '../../core_widgets/neo_button.dart';
 import '../../core_widgets/track_row.dart';
 
 import 'artist_detail_screen.dart';
 
-class AlbumDetailScreen extends StatelessWidget {
+class AlbumDetailScreen extends StatefulWidget {
   final String albumId;
 
   const AlbumDetailScreen({super.key, required this.albumId});
 
   @override
+  State<AlbumDetailScreen> createState() => _AlbumDetailScreenState();
+}
+
+class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
+  late Future<Album> _albumFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _albumFuture = context.read<MusicProvider>().getAlbumDetails(widget.albumId);
+  }
+
+  void _retry() {
+    setState(() {
+      _albumFuture = context.read<MusicProvider>().getAlbumDetails(widget.albumId, forceRefresh: true);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final music = context.watch<MusicProvider>();
     final player = context.read<AudioPlayerProvider>();
-    final isDownloading = music.downloadingEntityId == albumId;
+    final isDownloading = music.downloadingEntityId == widget.albumId;
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: FutureBuilder<Album>(
-        future: music.getAlbumDetails(albumId),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(color: AppColors.primary));
-          }
-
-          if (snapshot.hasError || !snapshot.hasData) {
-            return Scaffold(
+    return FutureBuilder<Album>(
+      future: _albumFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Scaffold(
+            backgroundColor: AppColors.background,
+            appBar: AppBar(
               backgroundColor: AppColors.background,
-              appBar: AppBar(leading: const BackButton()),
-              body: Center(
-                child: Text('Failed to load album', style: AppTypography.bodyMedium),
+              elevation: 0,
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+                onPressed: () => Navigator.maybePop(context),
               ),
-            );
-          }
+            ),
+            body: const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+          );
+        }
 
-          final album = snapshot.data!;
-          final coverUrl = music.getCoverArtUrl(album.coverArtId, size: 500);
+        if (snapshot.hasError || !snapshot.hasData) {
+          return Scaffold(
+            backgroundColor: AppColors.background,
+            appBar: AppBar(
+              backgroundColor: AppColors.background,
+              elevation: 0,
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+                onPressed: () => Navigator.maybePop(context),
+              ),
+            ),
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('Failed to load album', style: AppTypography.bodyMedium),
+                  const SizedBox(height: 12),
+                  NeoButton(
+                    text: 'Retry',
+                    icon: Icons.refresh_rounded,
+                    onPressed: _retry,
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
 
-          return CustomScrollView(
+        final album = snapshot.data!;
+        final coverUrl = music.getCoverArtUrl(album.coverArtId, size: 500);
+        final isDownloaded = album.tracks.isNotEmpty &&
+            album.tracks.every((t) => music.isDownloaded(t.id));
+
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          body: CustomScrollView(
             physics: const BouncingScrollPhysics(),
             slivers: [
               SliverAppBar(
@@ -55,7 +106,7 @@ class AlbumDetailScreen extends StatelessWidget {
                 backgroundColor: AppColors.card,
                 leading: IconButton(
                   icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () => Navigator.maybePop(context),
                 ),
                 flexibleSpace: FlexibleSpaceBar(
                   background: Stack(
@@ -110,15 +161,14 @@ class AlbumDetailScreen extends StatelessWidget {
                             Text(
                               album.artist,
                               style: AppTypography.titleMedium.copyWith(
-                                color: AppColors.primary,
-                                decoration: (album.artistId != null && album.artistId!.isNotEmpty)
-                                    ? TextDecoration.underline
-                                    : TextDecoration.none,
+                                color: AppColors.textPrimary,
+                                fontWeight: FontWeight.w600,
+                                decoration: TextDecoration.none,
                               ),
                             ),
                             if (album.artistId != null && album.artistId!.isNotEmpty) ...[
                               const SizedBox(width: 4),
-                              const Icon(Icons.chevron_right_rounded, color: AppColors.primary, size: 18),
+                              const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary, size: 18),
                             ],
                           ],
                         ),
@@ -129,10 +179,7 @@ class AlbumDetailScreen extends StatelessWidget {
                         style: AppTypography.bodySmall,
                       ),
                       const SizedBox(height: 16),
-                      Wrap(
-                        spacing: 10,
-                        runSpacing: 10,
-                        crossAxisAlignment: WrapCrossAlignment.center,
+                      Row(
                         children: [
                           NeoButton(
                             text: 'Play',
@@ -142,6 +189,7 @@ class AlbumDetailScreen extends StatelessWidget {
                               player.playTracks(tracks: album.tracks, initialIndex: 0);
                             },
                           ),
+                          const SizedBox(width: 10),
                           NeoButton(
                             text: 'Shuffle',
                             icon: Icons.shuffle_rounded,
@@ -154,25 +202,17 @@ class AlbumDetailScreen extends StatelessWidget {
                               player.playTracks(tracks: shuffled, initialIndex: 0);
                             },
                           ),
-                          // 1-Tap Download Album Button
-                          NeoButton(
-                            text: isDownloading
-                                ? '${(music.downloadingProgress * 100).toInt()}%'
-                                : 'Download All',
-                            icon: isDownloading
-                                ? Icons.hourglass_top_rounded
-                                : Icons.download_rounded,
-                            backgroundColor: isDownloading
-                                ? AppColors.primary.withValues(alpha: 0.2)
-                                : const Color(0xFF1E293B),
-                            textColor: isDownloading ? AppColors.primary : AppColors.textPrimary,
-                            borderColor: isDownloading ? AppColors.primary : AppColors.border,
-                            onPressed: isDownloading
-                                ? null
-                                : () {
-                                    HapticFeedback.lightImpact();
-                                    music.downloadAlbum(album);
-                                  },
+                          const SizedBox(width: 14),
+                          // Spotify-grade circular download button with spinner and checkmark
+                          DownloadActionButton(
+                            isDownloaded: isDownloaded,
+                            isDownloading: isDownloading,
+                            progress: music.downloadingProgress,
+                            size: 38,
+                            onDownload: () {
+                              HapticFeedback.lightImpact();
+                              music.downloadAlbum(album);
+                            },
                           ),
                         ],
                       ),
@@ -202,9 +242,9 @@ class AlbumDetailScreen extends StatelessWidget {
                 ),
               ),
             ],
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 }

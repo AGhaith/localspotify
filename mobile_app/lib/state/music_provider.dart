@@ -73,10 +73,12 @@ class MusicProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> loadHomeFeed() async {
-    _isLoadingHome = true;
-    _homeError = null;
-    notifyListeners();
+  Future<void> loadHomeFeed({bool showLoadingSkeleton = false}) async {
+    if (showLoadingSkeleton || _recentAlbums.isEmpty) {
+      _isLoadingHome = true;
+      _homeError = null;
+      notifyListeners();
+    }
 
     try {
       final recent = await _musicRepository.getRecentAlbums(size: 20);
@@ -95,9 +97,11 @@ class MusicProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> loadLibrary() async {
-    _isLoadingLibrary = true;
-    notifyListeners();
+  Future<void> loadLibrary({bool showLoadingSkeleton = false}) async {
+    if (showLoadingSkeleton || (_playlists.isEmpty && _artists.isEmpty)) {
+      _isLoadingLibrary = true;
+      notifyListeners();
+    }
 
     try {
       final playlists = await _musicRepository.getPlaylists();
@@ -115,16 +119,37 @@ class MusicProvider extends ChangeNotifier {
     }
   }
 
-  Future<Album> getAlbumDetails(String albumId) {
-    return _musicRepository.getAlbum(albumId);
+  // In-memory detail caches to eliminate redundant network requests and UI flickering
+  final Map<String, Album> _albumCache = {};
+  final Map<String, Artist> _artistCache = {};
+  final Map<String, Playlist> _playlistCache = {};
+  final Map<String, Lyrics> _lyricsCache = {};
+
+  Future<Album> getAlbumDetails(String albumId, {bool forceRefresh = false}) async {
+    if (!forceRefresh && _albumCache.containsKey(albumId)) {
+      return _albumCache[albumId]!;
+    }
+    final album = await _musicRepository.getAlbum(albumId);
+    _albumCache[albumId] = album;
+    return album;
   }
 
-  Future<Artist> getArtistDetails(String artistId) {
-    return _musicRepository.getArtist(artistId);
+  Future<Artist> getArtistDetails(String artistId, {bool forceRefresh = false}) async {
+    if (!forceRefresh && _artistCache.containsKey(artistId)) {
+      return _artistCache[artistId]!;
+    }
+    final artist = await _musicRepository.getArtist(artistId);
+    _artistCache[artistId] = artist;
+    return artist;
   }
 
-  Future<Playlist> getPlaylistDetails(String playlistId) {
-    return _musicRepository.getPlaylist(playlistId);
+  Future<Playlist> getPlaylistDetails(String playlistId, {bool forceRefresh = false}) async {
+    if (!forceRefresh && _playlistCache.containsKey(playlistId)) {
+      return _playlistCache[playlistId]!;
+    }
+    final playlist = await _musicRepository.getPlaylist(playlistId);
+    _playlistCache[playlistId] = playlist;
+    return playlist;
   }
 
   // ================= Search =================
@@ -251,8 +276,15 @@ class MusicProvider extends ChangeNotifier {
   }
 
   // ================= Lyrics =================
-  Future<Lyrics?> getLyrics(Track track) {
-    return _musicRepository.getLyrics(track);
+  Future<Lyrics?> getLyrics(Track track) async {
+    if (_lyricsCache.containsKey(track.id)) {
+      return _lyricsCache[track.id];
+    }
+    final lyrics = await _musicRepository.getLyrics(track);
+    if (lyrics != null) {
+      _lyricsCache[track.id] = lyrics;
+    }
+    return lyrics;
   }
 
   // ================= Offline Downloads =================
