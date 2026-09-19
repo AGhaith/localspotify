@@ -236,6 +236,9 @@ if [ "$DO_BUILD" = true ]; then
   $DOCKER_COMPOSE build --pull
 fi
 
+# Ensure any stuck or failed redis container from prior failed port bind is cleanly recreated
+docker rm -f localspotify-redis >/dev/null 2>&1 || true
+
 log_info "Launching LocalSpotify container stack..."
 $DOCKER_COMPOSE up -d --remove-orphans
 
@@ -278,7 +281,7 @@ echo -e "${GREEN}${BOLD}LocalSpotify stack is up and running!${RESET}"
 echo ""
 echo -e "  ${BOLD}Navidrome Server:${RESET}      http://localhost:6767  (LAN: http://${HOST_IP}:6767)"
 echo -e "  ${BOLD}Subsonic Web Player:${RESET}    http://localhost:6969  (LAN: http://${HOST_IP}:6969)"
-echo -e "  ${BOLD}Redis Cache:${RESET}            localhost:6379"
+echo -e "  ${BOLD}Redis Cache:${RESET}            Internal Docker Network (redis:6379)"
 echo ""
 echo "Useful Commands:"
 echo "  View live logs:         ./launch.sh --logs"
