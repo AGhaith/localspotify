@@ -3,7 +3,7 @@ import 'package:localspotify/data/models/lyrics.dart';
 
 void main() {
   group('Lyrics Model & Parser Tests', () {
-    test('parses OpenSubsonic structured lyrics with millisecond offsets', () {
+    test('parses structured lyrics with millisecond offsets', () {
       final json = {
         'structuredLyrics': [
           {
@@ -28,7 +28,7 @@ void main() {
       expect(lyrics.lines[2].timestamp, equals(const Duration(milliseconds: 8000)));
     });
 
-    test('parses Subsonic LRC format lyrics with standard timestamps', () {
+    test('parses LRC format lyrics with standard timestamps', () {
       const lrcContent = '''
 [00:01.50]Hello from the other side
 [00:04.20]I must have called a thousand times

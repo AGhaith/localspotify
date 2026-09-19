@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../core/config/app_config.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../state/auth_provider.dart';
@@ -15,28 +16,25 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _serverUrlController = TextEditingController(text: 'http://100.92.248.49:6767');
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
 
   @override
   void dispose() {
-    _serverUrlController.dispose();
     _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
   void _onLogin() async {
-    final serverUrl = _serverUrlController.text.trim();
     final username = _usernameController.text.trim();
     final password = _passwordController.text;
 
-    if (serverUrl.isEmpty || username.isEmpty) {
+    if (username.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please enter server URL and username'),
+          content: Text('Please enter your username'),
           backgroundColor: AppColors.error,
         ),
       );
@@ -45,7 +43,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     final auth = context.read<AuthProvider>();
     final ok = await auth.login(
-      serverUrl: serverUrl,
+      serverUrl: AppConfig.serverUrl,
       username: username,
       password: password,
     );
@@ -53,7 +51,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!ok && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(auth.errorMessage ?? 'Login failed. Check server address.'),
+          content: Text(auth.errorMessage ?? 'Login failed. Check your credentials.'),
           backgroundColor: AppColors.error,
         ),
       );
@@ -61,13 +59,12 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _onGoogleLogin() {
-    GoogleAccountSelectorSheet.show(
+    GoogleOAuthSheet.show(
       context,
       onSelected: (email, displayName) async {
-        final serverUrl = _serverUrlController.text.trim();
         final auth = context.read<AuthProvider>();
         final ok = await auth.loginWithGoogle(
-          serverUrl: serverUrl.isNotEmpty ? serverUrl : 'http://100.92.248.49:6767',
+          serverUrl: AppConfig.serverUrl,
           email: email,
           displayName: displayName,
         );
@@ -75,7 +72,7 @@ class _LoginScreenState extends State<LoginScreen> {
         if (!ok && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(auth.errorMessage ?? 'Google login failed.'),
+              content: Text(auth.errorMessage ?? 'Google authentication failed.'),
               backgroundColor: AppColors.error,
             ),
           );
@@ -129,25 +126,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Connect to your Navidrome / Subsonic music vault',
+                  'Stream your personal music vault anywhere',
                   textAlign: TextAlign.center,
                   style: AppTypography.bodyMedium,
                 ),
-                const SizedBox(height: 36),
-
-                // Server Address Input
-                Text('SERVER ADDRESS', style: AppTypography.labelSmall),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: _serverUrlController,
-                  keyboardType: TextInputType.url,
-                  style: AppTypography.bodyLarge,
-                  decoration: const InputDecoration(
-                    hintText: 'e.g. http://100.92.248.49:6767',
-                    prefixIcon: Icon(Icons.language_rounded, color: AppColors.textSecondary),
-                  ),
-                ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 40),
 
                 // Username Input
                 Text('USERNAME', style: AppTypography.labelSmall),
@@ -156,7 +139,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   controller: _usernameController,
                   style: AppTypography.bodyLarge,
                   decoration: const InputDecoration(
-                    hintText: 'Enter your Subsonic username',
+                    hintText: 'Enter your username',
                     prefixIcon: Icon(Icons.person_rounded, color: AppColors.textSecondary),
                   ),
                 ),
@@ -187,13 +170,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 // Connect Button
                 NeoButton(
-                  text: 'Connect to Server',
+                  text: 'Sign In',
                   icon: Icons.login_rounded,
                   isLoading: isLoading,
                   onPressed: isLoading ? null : _onLogin,
                 ),
 
-                const SizedBox(height: 20),
+                const SizedBox(height: 22),
 
                 // OR Divider
                 Row(
@@ -207,16 +190,16 @@ class _LoginScreenState extends State<LoginScreen> {
                   ],
                 ),
 
-                const SizedBox(height: 20),
+                const SizedBox(height: 22),
 
-                // Google Login Button
+                // Google Login Button (OAuth 2.0)
                 GoogleAuthButton(
                   text: 'Continue with Google',
                   isLoading: isLoading,
                   onPressed: _onGoogleLogin,
                 ),
 
-                const SizedBox(height: 32),
+                const SizedBox(height: 36),
 
                 // Footer: Create Account Link
                 Row(
@@ -231,9 +214,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => CreateAccountScreen(
-                              initialServerUrl: _serverUrlController.text.trim(),
-                            ),
+                            builder: (_) => const CreateAccountScreen(),
                           ),
                         );
                       },

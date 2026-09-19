@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import '../../../core/config/app_config.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../state/auth_provider.dart';
@@ -8,16 +9,13 @@ import '../../core_widgets/google_auth_button.dart';
 import '../../core_widgets/neo_button.dart';
 
 class CreateAccountScreen extends StatefulWidget {
-  final String? initialServerUrl;
-
-  const CreateAccountScreen({super.key, this.initialServerUrl});
+  const CreateAccountScreen({super.key});
 
   @override
   State<CreateAccountScreen> createState() => _CreateAccountScreenState();
 }
 
 class _CreateAccountScreenState extends State<CreateAccountScreen> {
-  late final TextEditingController _serverUrlController;
   final _emailController = TextEditingController();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -27,16 +25,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   bool _obscureConfirmPassword = true;
 
   @override
-  void initState() {
-    super.initState();
-    _serverUrlController = TextEditingController(
-      text: widget.initialServerUrl ?? 'http://100.92.248.49:6767',
-    );
-  }
-
-  @override
   void dispose() {
-    _serverUrlController.dispose();
     _emailController.dispose();
     _usernameController.dispose();
     _passwordController.dispose();
@@ -45,13 +34,12 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   }
 
   void _onCreateAccount() async {
-    final serverUrl = _serverUrlController.text.trim();
     final email = _emailController.text.trim();
     final username = _usernameController.text.trim();
     final password = _passwordController.text;
     final confirmPassword = _confirmPasswordController.text;
 
-    if (serverUrl.isEmpty || email.isEmpty || username.isEmpty || password.isEmpty) {
+    if (email.isEmpty || username.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please fill in all required fields'),
@@ -93,7 +81,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
 
     final auth = context.read<AuthProvider>();
     final ok = await auth.createAccount(
-      serverUrl: serverUrl,
+      serverUrl: AppConfig.serverUrl,
       username: username,
       email: email,
       password: password,
@@ -105,7 +93,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(auth.errorMessage ?? 'Failed to create account. Check server settings.'),
+          content: Text(auth.errorMessage ?? 'Failed to create account.'),
           backgroundColor: AppColors.error,
         ),
       );
@@ -113,13 +101,12 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   }
 
   void _onGoogleSignUp() {
-    GoogleAccountSelectorSheet.show(
+    GoogleOAuthSheet.show(
       context,
       onSelected: (email, displayName) async {
-        final serverUrl = _serverUrlController.text.trim();
         final auth = context.read<AuthProvider>();
         final ok = await auth.loginWithGoogle(
-          serverUrl: serverUrl.isNotEmpty ? serverUrl : 'http://100.92.248.49:6767',
+          serverUrl: AppConfig.serverUrl,
           email: email,
           displayName: displayName,
         );
@@ -195,21 +182,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   textAlign: TextAlign.center,
                   style: AppTypography.bodySmall.copyWith(color: Colors.white70),
                 ),
-                const SizedBox(height: 28),
-
-                // Server Address Input
-                Text('SERVER ADDRESS', style: AppTypography.labelSmall),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: _serverUrlController,
-                  keyboardType: TextInputType.url,
-                  style: AppTypography.bodyLarge,
-                  decoration: const InputDecoration(
-                    hintText: 'e.g. http://100.92.248.49:6767',
-                    prefixIcon: Icon(Icons.dns_rounded, color: AppColors.textSecondary),
-                  ),
-                ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 32),
 
                 // Email Address Input
                 Text('EMAIL ADDRESS', style: AppTypography.labelSmall),
@@ -282,7 +255,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 28),
 
                 // Create Account Button
                 NeoButton(
@@ -308,7 +281,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
 
                 const SizedBox(height: 20),
 
-                // Google Sign-up Button
+                // Google Sign-up Button (OAuth 2.0)
                 GoogleAuthButton(
                   text: 'Sign up with Google',
                   isLoading: isLoading,

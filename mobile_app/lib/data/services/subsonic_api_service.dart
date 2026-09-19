@@ -53,7 +53,7 @@ class SubsonicApiService {
   }
 
   String _getEndpointUrl(String endpoint) {
-    if (_session == null) throw Exception('No active Subsonic session');
+    if (_session == null) throw Exception('No active session');
     final baseUrl = _cleanUrl(_session!.serverUrl);
     return '$baseUrl/rest/$endpoint.view';
   }
@@ -91,7 +91,7 @@ class SubsonicApiService {
     }
   }
 
-  /// Create a new user account on the Subsonic / Navidrome server
+  /// Create a new user account on the music server
   Future<bool> createUser({
     required String serverUrl,
     required String username,

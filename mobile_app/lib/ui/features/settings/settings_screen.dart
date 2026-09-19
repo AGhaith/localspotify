@@ -269,7 +269,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 40),
           Center(
             child: Text(
-              'LocalSpotify Mobile v1.0.0\nSubsonic REST API Compatible',
+              'LocalSpotify Mobile v1.0.0\nHigh-Fidelity Audio Streaming',
               textAlign: TextAlign.center,
               style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted, fontSize: 11),
             ),

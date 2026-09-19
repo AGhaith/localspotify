@@ -50,7 +50,7 @@ class LyricsService {
   /// 1. Local offline cached lyrics
   /// 2. LRCLIB Direct GET (high-accuracy synced LRC)
   /// 3. LRCLIB Search endpoint (fuzzy fallback)
-  /// 4. Subsonic getLyricsBySongId & getLyrics (server local files)
+  /// 4. Server getLyricsBySongId & getLyrics (server local files)
   Future<Lyrics?> getLyrics(Track track) async {
     final trackId = track.id;
 
@@ -146,7 +146,7 @@ class LyricsService {
       // LRCLIB search failed or offline
     }
 
-    // 4. Try Subsonic / Navidrome server endpoints
+    // 4. Try server endpoints
     try {
       final subsonicLyrics = await _subsonicService.getLyrics(
         songId: trackId,

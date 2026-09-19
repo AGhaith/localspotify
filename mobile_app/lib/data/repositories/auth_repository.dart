@@ -40,7 +40,7 @@ class AuthRepository {
     );
 
     if (!ok) {
-      throw Exception('Could not connect to Subsonic server. Check URL and credentials.');
+      throw Exception('Could not connect to server. Check your credentials.');
     }
 
     final salt = Md5Hasher.generateSalt();

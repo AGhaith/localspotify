@@ -19,7 +19,7 @@ void main() {
   });
 
   group('Track Model Tests', () {
-    test('parses Subsonic track JSON with localCoverArtPath support', () {
+    test('parses track JSON with localCoverArtPath support', () {
       final json = {
         'id': 'tr-100',
         'title': 'Midnight City',
@@ -85,7 +85,7 @@ void main() {
   });
 
   group('Album Model Tests', () {
-    test('parses Subsonic album JSON', () {
+    test('parses album JSON', () {
       final json = {
         'id': 'alb-300',
         'name': 'Hurry Up, We\'re Dreaming',

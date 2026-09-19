@@ -5,7 +5,7 @@
     "display": "standalone",
     "background_color": "#000000",
     "theme_color": "#22C55E",
-    "description": "High-Performance Music Player for Navidrome / Subsonic",
+    "description": "High-Performance Native Music Player",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": []

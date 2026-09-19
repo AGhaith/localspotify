@@ -6,7 +6,7 @@ import 'package:localspotify/ui/core_widgets/google_auth_button.dart';
 void main() {
   group('Auth & UserSession Tests', () {
     test('creates UserSession with clean authQueryParams', () {
-      final session = UserSession(
+      const session = UserSession(
         serverUrl: 'http://100.92.248.49:6767',
         username: 'ahmed',
         token: 'test_token',
@@ -23,7 +23,7 @@ void main() {
     });
 
     test('serializes and deserializes UserSession to/from JSON', () {
-      final session = UserSession(
+      const session = UserSession(
         serverUrl: 'https://vault.example.com',
         username: 'gaith',
         token: 'tok123',
