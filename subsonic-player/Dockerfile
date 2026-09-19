@@ -38,6 +38,10 @@ RUN npm run build
 # Create a new stage for the production image.
 FROM base
 
+# Install Python & download tools for Spotify playlist importing
+RUN apk add --no-cache python3 py3-pip ffmpeg && \
+    pip install --break-system-packages yt-dlp mutagen Pillow syncedlyrics
+
 # Define environment variables.
 ARG PORT=3000
 ENV PORT=${PORT}
@@ -47,6 +51,7 @@ ENV HOSTNAME=${HOSTNAME}
 
 # Copy the output from the build stage to the working directory.
 COPY --from=build /app/.output /app/.output
+COPY ./scripts /app/scripts
 
 # Expose the port the application will run on.
 EXPOSE 3000

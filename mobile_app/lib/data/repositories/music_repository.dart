@@ -34,10 +34,63 @@ class MusicRepository {
             SpotifyImporterService(
               apiService: apiService,
               spotifyService: spotifyService,
+              storageService: storageService,
             );
 
-  String getCoverArtUrl(String? coverArtId, {int size = 500}) {
+  String getCoverArtUrl(
+    String? coverArtId, {
+    int size = 500,
+    String? playlistId,
+    String? playlistName,
+    int? songCount,
+  }) {
+    if (playlistId != null) {
+      final custom = _storageService.getPlaylistCover(playlistId);
+      if (custom != null && custom.isNotEmpty) return custom;
+    }
+    if (playlistName != null) {
+      final custom = _storageService.getPlaylistCover(playlistName);
+      if (custom != null && custom.isNotEmpty) return custom;
+    }
+    // If it's a playlist with 0 songs, NEVER return Navidrome's default vinyl cover art!
+    if (songCount == 0 && (coverArtId?.startsWith('pl-') ?? false)) {
+      return '';
+    }
     return _apiService.getCoverArtUrl(coverArtId, size: size);
+  }
+
+  Future<void> savePlaylistCover(String idOrName, String url) {
+    return _storageService.savePlaylistCover(idOrName, url);
+  }
+
+  String? getPlaylistCover(String idOrName) {
+    return _storageService.getPlaylistCover(idOrName);
+  }
+
+  Future<void> saveImportedPlaylistTracks(String idOrName, List<SpotifyTrackItem> tracks) {
+    return _storageService.saveImportedPlaylistTracks(
+      idOrName,
+      tracks
+          .map((t) => {
+                'title': t.title,
+                'artist': t.artist,
+                'durationMs': t.durationMs,
+                'uri': t.uri,
+              })
+          .toList(),
+    );
+  }
+
+  List<SpotifyTrackItem> getImportedPlaylistTracks(String idOrName) {
+    final list = _storageService.getImportedPlaylistTracks(idOrName);
+    return list
+        .map((m) => SpotifyTrackItem(
+              title: m['title']?.toString() ?? '',
+              artist: m['artist']?.toString() ?? '',
+              durationMs: (m['durationMs'] as num?)?.toInt() ?? 0,
+              uri: m['uri']?.toString() ?? '',
+            ))
+        .toList();
   }
 
   String getStreamUrl(String trackId) {

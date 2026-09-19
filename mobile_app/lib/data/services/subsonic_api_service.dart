@@ -447,6 +447,9 @@ class SubsonicApiService {
   /// Get high-resolution cover art URL
   String getCoverArtUrl(String? coverArtId, {int size = 500}) {
     if (coverArtId == null || coverArtId.isEmpty || _session == null) return '';
+    if (coverArtId.startsWith('http://') || coverArtId.startsWith('https://')) {
+      return coverArtId;
+    }
     final baseUrl = _cleanUrl(_session!.serverUrl);
     final params = Map<String, String>.from(_session!.authQueryParams);
     params['id'] = coverArtId;

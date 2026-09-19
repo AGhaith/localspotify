@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
 
-  // Pure Black & Dark Obsidian Surfaces
-  static const Color background = Color(0xFF000000);
-  static const Color card = Color(0xFF0C0D12);
-  static const Color cardHover = Color(0xFF14151C);
-  static const Color surface = Color(0xFF161722);
-  static const Color inputBackground = Color(0xFF12131A);
+  // Spotify Dark Grey Surface Palette (No pure black)
+  static const Color background = Color(0xFF121212); // Exact Spotify charcoal dark grey
+  static const Color card = Color(0xFF181818);       // Spotify Elevated Surface
+  static const Color cardHover = Color(0xFF282828);  // Spotify Highlight Surface
+  static const Color surface = Color(0xFF242424);    // Spotify Elevated Container
+  static const Color inputBackground = Color(0xFF242424);
 
   // Vibrant Accents (Spotify Green + Neo Pop)
   static const Color primary = Color(0xFF22C55E);

@@ -302,17 +302,35 @@ class _LibraryScreenState extends State<LibraryScreen> {
                       delegate: SliverChildBuilderDelegate(
                         (ctx, i) {
                           final pl = music.playlists[i];
+                          final coverUrl = music.getCoverArtUrl(
+                            pl.coverArtId,
+                            size: 150,
+                            playlistId: pl.id,
+                            playlistName: pl.name,
+                            songCount: pl.songCount,
+                          );
+                          final importedTracks = music.getImportedPlaylistTracks(pl.id).isNotEmpty
+                              ? music.getImportedPlaylistTracks(pl.id)
+                              : music.getImportedPlaylistTracks(pl.name);
+                          final effectiveCount = pl.songCount > 0 ? pl.songCount : importedTracks.length;
                           return ListTile(
                             contentPadding: const EdgeInsets.symmetric(vertical: 4),
                             leading: CachedCoverArt(
-                              imageUrl: music.getCoverArtUrl(pl.coverArtId, size: 150),
+                              imageUrl: coverUrl,
                               width: 50,
                               height: 50,
                               borderRadius: 8,
                               placeholderIcon: Icons.queue_music_rounded,
                             ),
                             title: Text(pl.name, style: AppTypography.titleMedium),
-                            subtitle: Text('${pl.songCount} songs', style: AppTypography.bodySmall),
+                            subtitle: Text(
+                              effectiveCount > 0
+                                  ? (pl.songCount == 0 ? '$effectiveCount songs • Syncing...' : '$effectiveCount songs')
+                                  : '0 songs',
+                              style: AppTypography.bodySmall.copyWith(
+                                color: pl.songCount == 0 && effectiveCount > 0 ? AppColors.primary : AppColors.textSecondary,
+                              ),
+                            ),
                             trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted),
                             onTap: () {
                               HapticFeedback.selectionClick();

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:dio/dio.dart';
 import '../models/playlist.dart';
+import 'offline_storage_service.dart';
 import 'spotify_service.dart';
 import 'subsonic_api_service.dart';
 
@@ -36,14 +37,17 @@ class ImportProgressStatus {
 class SpotifyImporterService {
   final SpotifyService _spotifyService;
   final SubsonicApiService _apiService;
+  final OfflineStorageService? _storageService;
   final Dio _dio;
 
   SpotifyImporterService({
     SpotifyService? spotifyService,
     required SubsonicApiService apiService,
+    OfflineStorageService? storageService,
     Dio? dio,
   })  : _spotifyService = spotifyService ?? SpotifyService(),
         _apiService = apiService,
+        _storageService = storageService,
         _dio = dio ?? Dio();
 
   /// Executes full Spotify playlist import pipeline
@@ -86,11 +90,13 @@ class SpotifyImporterService {
     if (session != null) {
       try {
         final serverBase = session.serverUrl;
+        final companionServer = serverBase.replaceAll(':6767', ':6969');
         await _dio.post(
-          '$serverBase/api/import-playlist',
+          '$companionServer/api/import-playlist',
           data: {
             'spotifyUrl': spotifyUrl,
             'playlistName': playlistInfo.name,
+            'coverUrl': playlistInfo.coverUrl,
             'tracks': playlistInfo.tracks
                 .map((t) => {
                       'title': t.title,
@@ -102,8 +108,8 @@ class SpotifyImporterService {
             'username': session.username,
           },
           options: Options(
-            receiveTimeout: const Duration(seconds: 5),
-            sendTimeout: const Duration(seconds: 5),
+            receiveTimeout: const Duration(seconds: 10),
+            sendTimeout: const Duration(seconds: 10),
           ),
         );
       } catch (_) {
@@ -182,15 +188,43 @@ class SpotifyImporterService {
       songIds: matchedSongIds.isNotEmpty ? matchedSongIds : null,
     );
 
+    final plId = createdPlaylist?.id ?? 'imported_${DateTime.now().millisecondsSinceEpoch}';
+
+    // Persist custom Spotify playlist cover
+    if (playlistInfo.coverUrl != null && playlistInfo.coverUrl!.isNotEmpty) {
+      await _storageService?.savePlaylistCover(plId, playlistInfo.coverUrl!);
+      await _storageService?.savePlaylistCover(playlistInfo.name, playlistInfo.coverUrl!);
+    }
+
+    // Persist imported track metadata for zero-state display while server downloads
+    final rawTrackList = playlistInfo.tracks
+        .map((t) => {
+              'title': t.title,
+              'artist': t.artist,
+              'durationMs': t.durationMs,
+              'uri': t.uri,
+            })
+        .toList();
+    await _storageService?.saveImportedPlaylistTracks(plId, rawTrackList);
+    await _storageService?.saveImportedPlaylistTracks(playlistInfo.name, rawTrackList);
+
     // 6. Complete
-    final finalPlaylist = createdPlaylist ??
-        Playlist(
-          id: 'imported_${DateTime.now().millisecondsSinceEpoch}',
-          name: playlistInfo.name,
-          songCount: matchedSongIds.length,
-          duration: totalTracks * 180,
-          coverArtId: playlistInfo.coverUrl,
-        );
+    final finalPlaylist = (createdPlaylist != null)
+        ? Playlist(
+            id: createdPlaylist.id,
+            name: createdPlaylist.name,
+            songCount: matchedSongIds.isNotEmpty ? matchedSongIds.length : playlistInfo.tracks.length,
+            duration: createdPlaylist.duration > 0 ? createdPlaylist.duration : totalTracks * 180,
+            coverArtId: playlistInfo.coverUrl ?? createdPlaylist.coverArtId,
+            tracks: createdPlaylist.tracks,
+          )
+        : Playlist(
+            id: plId,
+            name: playlistInfo.name,
+            songCount: totalTracks,
+            duration: totalTracks * 180,
+            coverArtId: playlistInfo.coverUrl,
+          );
 
     onProgress(
       ImportProgressStatus(

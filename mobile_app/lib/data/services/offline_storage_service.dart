@@ -12,6 +12,8 @@ class OfflineStorageService {
   static const String _keyDownloadedTracks = 'localspotify_downloaded_tracks';
   static const String _keyMaxBitRate = 'localspotify_max_bitrate';
   static const String _keyRecentSearches = 'localspotify_recent_searches';
+  static const String _keyPlaylistCovers = 'localspotify_playlist_covers';
+  static const String _keyImportedPlaylistTracks = 'localspotify_imported_playlist_tracks';
 
   final SharedPreferences _prefs;
   final Dio _dio;
@@ -79,6 +81,47 @@ class OfflineStorageService {
 
   Future<void> clearRecentSearches() async {
     await _prefs.remove(_keyRecentSearches);
+  }
+
+  // ================= Custom Playlist Covers & Imported Tracks =================
+  Future<void> savePlaylistCover(String idOrName, String url) async {
+    final raw = _prefs.getString(_keyPlaylistCovers);
+    final Map<String, dynamic> map = raw != null ? (jsonDecode(raw) as Map<String, dynamic>) : {};
+    map[idOrName.toLowerCase().trim()] = url;
+    await _prefs.setString(_keyPlaylistCovers, jsonEncode(map));
+  }
+
+  String? getPlaylistCover(String idOrName) {
+    final raw = _prefs.getString(_keyPlaylistCovers);
+    if (raw == null) return null;
+    try {
+      final map = jsonDecode(raw) as Map<String, dynamic>;
+      return map[idOrName.toLowerCase().trim()] as String?;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> saveImportedPlaylistTracks(String idOrName, List<Map<String, dynamic>> tracks) async {
+    final raw = _prefs.getString(_keyImportedPlaylistTracks);
+    final Map<String, dynamic> map = raw != null ? (jsonDecode(raw) as Map<String, dynamic>) : {};
+    map[idOrName.toLowerCase().trim()] = tracks;
+    await _prefs.setString(_keyImportedPlaylistTracks, jsonEncode(map));
+  }
+
+  List<Map<String, dynamic>> getImportedPlaylistTracks(String idOrName) {
+    final raw = _prefs.getString(_keyImportedPlaylistTracks);
+    if (raw == null) return [];
+    try {
+      final map = jsonDecode(raw) as Map<String, dynamic>;
+      final list = map[idOrName.toLowerCase().trim()];
+      if (list is List) {
+        return list.whereType<Map<String, dynamic>>().toList();
+      }
+      return [];
+    } catch (_) {
+      return [];
+    }
   }
 
   // ================= Offline Downloads =================

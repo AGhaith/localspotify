@@ -69,8 +69,38 @@ class MusicProvider extends ChangeNotifier {
   String? get downloadingEntityId => _downloadingEntityId;
   double get downloadingProgress => _downloadingProgress;
 
-  String getCoverArtUrl(String? coverArtId, {int size = 500}) =>
-      _musicRepository.getCoverArtUrl(coverArtId, size: size);
+  String getCoverArtUrl(
+    String? coverArtId, {
+    int size = 500,
+    String? playlistId,
+    String? playlistName,
+    int? songCount,
+  }) =>
+      _musicRepository.getCoverArtUrl(
+        coverArtId,
+        size: size,
+        playlistId: playlistId,
+        playlistName: playlistName,
+        songCount: songCount,
+      );
+
+  Future<void> savePlaylistCover(String idOrName, String url) async {
+    await _musicRepository.savePlaylistCover(idOrName, url);
+    notifyListeners();
+  }
+
+  String? getCustomPlaylistCover(String idOrName) {
+    return _musicRepository.getPlaylistCover(idOrName);
+  }
+
+  Future<void> saveImportedPlaylistTracks(String idOrName, List<SpotifyTrackItem> tracks) async {
+    await _musicRepository.saveImportedPlaylistTracks(idOrName, tracks);
+    notifyListeners();
+  }
+
+  List<SpotifyTrackItem> getImportedPlaylistTracks(String idOrName) {
+    return _musicRepository.getImportedPlaylistTracks(idOrName);
+  }
 
   void setFilter(String filter) {
     _activeFilter = filter;

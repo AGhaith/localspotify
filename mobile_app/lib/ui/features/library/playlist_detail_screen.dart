@@ -96,7 +96,16 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
         }
 
         final playlist = snapshot.data!;
-        final coverUrl = music.getCoverArtUrl(playlist.coverArtId, size: 500);
+        final coverUrl = music.getCoverArtUrl(
+          playlist.coverArtId,
+          size: 500,
+          playlistId: playlist.id,
+          playlistName: playlist.name,
+          songCount: playlist.tracks.length,
+        );
+        final importedTracks = music.getImportedPlaylistTracks(playlist.id).isNotEmpty
+            ? music.getImportedPlaylistTracks(playlist.id)
+            : music.getImportedPlaylistTracks(playlist.name);
         final isDownloaded = playlist.tracks.isNotEmpty &&
             playlist.tracks.every((t) => music.isDownloaded(t.id));
 
@@ -117,6 +126,11 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                   onPressed: () => Navigator.maybePop(context),
                 ),
                 actions: [
+                  IconButton(
+                    icon: const Icon(Icons.refresh_rounded, color: Colors.white),
+                    tooltip: 'Refresh Tracks',
+                    onPressed: _retry,
+                  ),
                   IconButton(
                     icon: const Icon(Icons.delete_outline_rounded, color: Colors.white70),
                     onPressed: () => _confirmDelete(context, music, playlist),
@@ -161,8 +175,16 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '${playlist.tracks.length} songs • ${DurationFormatter.format(playlist.duration)}',
-                        style: AppTypography.bodySmall,
+                        playlist.tracks.isNotEmpty
+                            ? '${playlist.tracks.length} songs • ${DurationFormatter.format(playlist.duration)}'
+                            : (importedTracks.isNotEmpty
+                                ? '${importedTracks.length} tracks • Downloading on server'
+                                : '0 songs'),
+                        style: AppTypography.bodySmall.copyWith(
+                          color: playlist.tracks.isEmpty && importedTracks.isNotEmpty
+                              ? AppColors.primary
+                              : AppColors.textSecondary,
+                        ),
                       ),
                       if (playlist.comment != null && playlist.comment!.isNotEmpty) ...[
                         const SizedBox(height: 6),
@@ -187,7 +209,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                             NeoButton(
                               text: 'Shuffle',
                               icon: Icons.shuffle_rounded,
-                              backgroundColor: const Color(0xFF222430),
+                              backgroundColor: AppColors.surface,
                               textColor: AppColors.textPrimary,
                               borderColor: AppColors.border,
                               onPressed: () {
@@ -216,7 +238,90 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
               ),
 
               // Tracks List
-              if (playlist.tracks.isEmpty)
+              if (playlist.tracks.isEmpty && importedTracks.isNotEmpty) ...[
+                // Syncing Banner
+                SliverToBoxAdapter(
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.primary.withValues(alpha: 0.4), width: 1.5),
+                    ),
+                    child: Row(
+                      children: [
+                        const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.2,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Downloading tracks on server',
+                                style: AppTypography.titleMedium.copyWith(fontSize: 14, color: Colors.white),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'High-fidelity audio is being downloaded to your vault.',
+                                style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary, fontSize: 11),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: AppColors.primary),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          ),
+                          onPressed: _retry,
+                          child: Text('Refresh', style: AppTypography.labelSmall.copyWith(color: AppColors.primary)),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Imported Tracklist Preview
+                SliverPadding(
+                  padding: const EdgeInsets.only(bottom: 100),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (ctx, i) {
+                        final t = importedTracks[i];
+                        return ListTile(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                          leading: SizedBox(
+                            width: 32,
+                            child: Center(
+                              child: Text('${i + 1}', style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted)),
+                            ),
+                          ),
+                          title: Text(t.title, style: AppTypography.titleMedium, maxLines: 1, overflow: TextOverflow.ellipsis),
+                          subtitle: Text(t.artist, style: AppTypography.bodySmall, maxLines: 1, overflow: TextOverflow.ellipsis),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(t.durationFormatted, style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted)),
+                              const SizedBox(width: 8),
+                              const Icon(Icons.cloud_download_rounded, size: 16, color: AppColors.primary),
+                            ],
+                          ),
+                        );
+                      },
+                      childCount: importedTracks.length,
+                    ),
+                  ),
+                ),
+              ] else if (playlist.tracks.isEmpty)
                 SliverFillRemaining(
                   hasScrollBody: false,
                   child: Center(

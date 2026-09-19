@@ -43,6 +43,10 @@ while [[ $# -gt 0 ]]; do
       TAIL_LOGS=true
       shift
       ;;
+    --import|-i)
+      IMPORT_URL="$2"
+      shift 2
+      ;;
     --status|-s)
       STATUS_ONLY=true
       shift
@@ -51,13 +55,14 @@ while [[ $# -gt 0 ]]; do
       echo "LocalSpotify Launcher & Updater"
       echo ""
       echo "Options:"
-      echo "  ./launch.sh            Pull git updates, update dependencies, rebuild & start stack"
-      echo "  ./launch.sh --no-pull  Skip git pull (use if already pulled manually)"
-      echo "  ./launch.sh --no-build Restart containers without rebuilding images"
-      echo "  ./launch.sh --apk      Also build Android APK after updating services"
-      echo "  ./launch.sh --logs     Follow live container logs"
-      echo "  ./launch.sh --status   Display running services status"
-      echo "  ./launch.sh --help     Show this help screen"
+      echo "  ./launch.sh                    Pull git updates, update dependencies, rebuild & start stack"
+      echo "  ./launch.sh --import <url>     Import a Spotify playlist directly into vault & sync library"
+      echo "  ./launch.sh --no-pull          Skip git pull (use if already pulled manually)"
+      echo "  ./launch.sh --no-build         Restart containers without rebuilding images"
+      echo "  ./launch.sh --apk              Also build Android APK after updating services"
+      echo "  ./launch.sh --logs             Follow live container logs"
+      echo "  ./launch.sh --status           Display running services status"
+      echo "  ./launch.sh --help             Show this help screen"
       exit 0
       ;;
     *)
@@ -147,6 +152,17 @@ fi
 if [ "$TAIL_LOGS" = true ]; then
   log_info "Tailing live logs (Ctrl+C to exit)..."
   $DOCKER_COMPOSE logs -f
+  exit 0
+fi
+
+# If Spotify playlist import requested
+if [ -n "${IMPORT_URL:-}" ]; then
+  log_header "Importing Spotify Playlist"
+  if ! command -v python3 >/dev/null 2>&1; then
+    log_error "Python 3 is required for importing playlists."
+    exit 1
+  fi
+  python3 "$REPO_ROOT/my-music/import_spotify_playlist.py" "$IMPORT_URL" --music-dir "$REPO_ROOT/my-music" --server "http://localhost:6767"
   exit 0
 fi
 

@@ -45,7 +45,7 @@ class MiniPlayerBar extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: const Color(0xFF14151E),
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: AppColors.borderStrong, width: 1.5),
           boxShadow: const [

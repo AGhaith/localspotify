@@ -61,7 +61,7 @@ class _BottomNavShellState extends State<BottomNavShell> {
                   Container(
                     padding: EdgeInsets.fromLTRB(16, 8, 16, bottomInset > 0 ? bottomInset : 10),
                     decoration: const BoxDecoration(
-                      color: Color(0xFF08080C),
+                      color: AppColors.background,
                       border: Border(
                         top: BorderSide(color: AppColors.border, width: 1),
                       ),
