@@ -6,6 +6,8 @@ import '../data/models/lyrics.dart';
 import '../data/models/playlist.dart';
 import '../data/models/track.dart';
 import '../data/repositories/music_repository.dart';
+import '../data/services/spotify_service.dart';
+import '../data/services/spotify_importer_service.dart';
 
 class MusicProvider extends ChangeNotifier {
   final MusicRepository _musicRepository;
@@ -264,6 +266,25 @@ class MusicProvider extends ChangeNotifier {
       notifyListeners();
     }
     return ok;
+  }
+
+  // ================= Spotify Playlist Import =================
+  Future<SpotifyPlaylistInfo> fetchSpotifyPlaylist(String urlOrId) {
+    return _musicRepository.fetchSpotifyPlaylist(urlOrId);
+  }
+
+  Future<Playlist?> importSpotifyPlaylist({
+    required String spotifyUrl,
+    required void Function(ImportProgressStatus) onProgress,
+  }) async {
+    final pl = await _musicRepository.importSpotifyPlaylist(
+      spotifyUrl: spotifyUrl,
+      onProgress: onProgress,
+    );
+    if (pl != null) {
+      await loadLibrary();
+    }
+    return pl;
   }
 
   // ================= Instant Radio / Mix =================

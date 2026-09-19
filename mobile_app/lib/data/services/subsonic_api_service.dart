@@ -624,4 +624,31 @@ class SubsonicApiService {
       return false;
     }
   }
+
+  /// Trigger a library scan on the server
+  Future<Map<String, dynamic>?> startScan() async {
+    try {
+      final url = _getEndpointUrl('startScan');
+      final response = await _dio.get(url, queryParameters: _buildParams());
+      final subResp = response.data['subsonic-response'];
+      if (subResp['status'] == 'ok') {
+        return subResp['scanStatus'];
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  /// Get status of library scan
+  Future<Map<String, dynamic>?> getScanStatus() async {
+    try {
+      final url = _getEndpointUrl('getScanStatus');
+      final response = await _dio.get(url, queryParameters: _buildParams());
+      final subResp = response.data['subsonic-response'];
+      if (subResp['status'] == 'ok') {
+        return subResp['scanStatus'];
+      }
+    } catch (_) {}
+    return null;
+  }
 }
+

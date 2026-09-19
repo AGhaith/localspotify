@@ -8,6 +8,7 @@ import '../../../state/music_provider.dart';
 import '../../core_widgets/cached_cover_art.dart';
 import '../offline/offline_screen.dart';
 import 'artist_detail_screen.dart';
+import 'import_spotify_playlist_sheet.dart';
 import 'liked_songs_screen.dart';
 import 'playlist_detail_screen.dart';
 
@@ -35,11 +36,31 @@ class _LibraryScreenState extends State<LibraryScreen> {
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.card,
         title: const Text('Create New Playlist'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          style: AppTypography.bodyLarge,
-          decoration: const InputDecoration(hintText: 'My Favorite Mix'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextField(
+              controller: controller,
+              autofocus: true,
+              style: AppTypography.bodyLarge,
+              decoration: const InputDecoration(hintText: 'My Favorite Mix'),
+            ),
+            const SizedBox(height: 14),
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF1DB954),
+                side: const BorderSide(color: Color(0xFF1DB954)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              icon: const Icon(Icons.download_rounded, size: 16),
+              label: const Text('Import from Spotify instead'),
+              onPressed: () {
+                Navigator.pop(ctx);
+                ImportSpotifyPlaylistSheet.show(context);
+              },
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -92,9 +113,19 @@ class _LibraryScreenState extends State<LibraryScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text('Your Library', style: AppTypography.displayMedium),
-                      IconButton(
-                        icon: const Icon(Icons.add_rounded, color: AppColors.primary, size: 28),
-                        onPressed: () => _showCreatePlaylistDialog(context, music),
+                      Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.playlist_add_check_rounded, color: Color(0xFF1DB954), size: 26),
+                            tooltip: 'Import Spotify Playlist',
+                            onPressed: () => ImportSpotifyPlaylistSheet.show(context),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.add_rounded, color: AppColors.primary, size: 28),
+                            tooltip: 'Create New Playlist',
+                            onPressed: () => _showCreatePlaylistDialog(context, music),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -188,12 +219,70 @@ class _LibraryScreenState extends State<LibraryScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text('Playlists', style: AppTypography.titleLarge),
-                        TextButton.icon(
-                          icon: const Icon(Icons.add_rounded, size: 18, color: AppColors.primary),
-                          label: Text('New', style: AppTypography.labelMedium.copyWith(color: AppColors.primary)),
-                          onPressed: () => _showCreatePlaylistDialog(context, music),
+                        Row(
+                          children: [
+                            TextButton.icon(
+                              icon: const Icon(Icons.download_rounded, size: 16, color: Color(0xFF1DB954)),
+                              label: Text('Import Spotify', style: AppTypography.labelMedium.copyWith(color: const Color(0xFF1DB954))),
+                              onPressed: () => ImportSpotifyPlaylistSheet.show(context),
+                            ),
+                            const SizedBox(width: 4),
+                            TextButton.icon(
+                              icon: const Icon(Icons.add_rounded, size: 18, color: AppColors.primary),
+                              label: Text('New', style: AppTypography.labelMedium.copyWith(color: AppColors.primary)),
+                              onPressed: () => _showCreatePlaylistDialog(context, music),
+                            ),
+                          ],
                         ),
                       ],
+                    ),
+                  ),
+                ),
+
+                // Spotify Import Highlight Card
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                    child: GestureDetector(
+                      onTap: () => ImportSpotifyPlaylistSheet.show(context),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF132018),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFF1DB954).withValues(alpha: 0.35)),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF1DB954),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(Icons.playlist_add_check_rounded, color: Colors.black, size: 22),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Import Spotify Playlist',
+                                    style: AppTypography.titleMedium.copyWith(fontSize: 14, color: Colors.white),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Download tracks to server & add to your account',
+                                    style: AppTypography.bodySmall.copyWith(color: Colors.white60, fontSize: 11),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(Icons.arrow_forward_ios_rounded, size: 13, color: Color(0xFF1DB954)),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ),

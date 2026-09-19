@@ -6,22 +6,34 @@ import '../models/track.dart';
 import '../services/subsonic_api_service.dart';
 import '../services/offline_storage_service.dart';
 import '../services/lyrics_service.dart';
+import '../services/spotify_service.dart';
+import '../services/spotify_importer_service.dart';
 
 class MusicRepository {
   final SubsonicApiService _apiService;
   final OfflineStorageService _storageService;
   final LyricsService _lyricsService;
+  final SpotifyService _spotifyService;
+  final SpotifyImporterService _spotifyImporterService;
 
   MusicRepository({
     required SubsonicApiService apiService,
     required OfflineStorageService storageService,
     LyricsService? lyricsService,
+    SpotifyService? spotifyService,
+    SpotifyImporterService? spotifyImporterService,
   })  : _apiService = apiService,
         _storageService = storageService,
         _lyricsService = lyricsService ??
             LyricsService(
               subsonicService: apiService,
               storageService: storageService,
+            ),
+        _spotifyService = spotifyService ?? SpotifyService(),
+        _spotifyImporterService = spotifyImporterService ??
+            SpotifyImporterService(
+              apiService: apiService,
+              spotifyService: spotifyService,
             );
 
   String getCoverArtUrl(String? coverArtId, {int size = 500}) {
@@ -181,4 +193,23 @@ class MusicRepository {
   List<String> getRecentSearches() => _storageService.getRecentSearches();
   Future<void> addRecentSearch(String query) => _storageService.addRecentSearch(query);
   Future<void> clearRecentSearches() => _storageService.clearRecentSearches();
+
+  // ================= Spotify Playlist Import =================
+  Future<SpotifyPlaylistInfo> fetchSpotifyPlaylist(String urlOrId) {
+    return _spotifyService.fetchPlaylist(urlOrId);
+  }
+
+  Future<Playlist?> importSpotifyPlaylist({
+    required String spotifyUrl,
+    required void Function(ImportProgressStatus) onProgress,
+  }) {
+    return _spotifyImporterService.importPlaylist(
+      spotifyUrl: spotifyUrl,
+      onProgress: onProgress,
+    );
+  }
+
+  Future<Map<String, dynamic>?> startServerScan() => _apiService.startScan();
+  Future<Map<String, dynamic>?> getServerScanStatus() => _apiService.getScanStatus();
 }
+
