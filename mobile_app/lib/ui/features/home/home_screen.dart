@@ -11,6 +11,7 @@ import '../../core_widgets/cached_cover_art.dart';
 import '../library/album_detail_screen.dart';
 import '../library/artist_detail_screen.dart';
 import '../library/liked_songs_screen.dart';
+import '../offline/offline_screen.dart';
 import '../settings/settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -49,6 +50,15 @@ class _HomeScreenState extends State<HomeScreen> {
     final music = context.watch<MusicProvider>();
     final auth = context.watch<AuthProvider>();
     final player = context.read<AudioPlayerProvider>();
+
+    final isDownloadedOnly = music.activeFilter == 'downloaded';
+    final offlineAlbumIds = music.offlineTracks.map((t) => t.albumId).toSet();
+    final displayedRecentAlbums = isDownloadedOnly
+        ? music.recentAlbums.where((a) => offlineAlbumIds.contains(a.id)).toList()
+        : music.recentAlbums;
+    final displayedFrequentAlbums = isDownloadedOnly
+        ? music.frequentAlbums.where((a) => offlineAlbumIds.contains(a.id)).toList()
+        : music.frequentAlbums;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -113,6 +123,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                   _buildPill(music, 'all', 'All', () => music.setFilter('all')),
                                   const SizedBox(width: 8),
                                   _buildPill(music, 'music', 'Music', () => music.setFilter('music')),
+                                  const SizedBox(width: 8),
+                                  _buildPill(music, 'downloaded', '💾 Downloaded', () => music.setFilter('downloaded')),
                                   const SizedBox(width: 8),
                                   _buildPill(music, 'radio', '⚡ Instant Radio', () => _onRadioPillTapped(music, player)),
                                 ],
@@ -206,51 +218,89 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
 
-              // Recently Added Albums Header
+              // Recently Added / Downloaded Albums Header
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
                   child: Text(
-                    'Recently Added',
+                    isDownloadedOnly ? 'Downloaded Albums' : 'Recently Added',
                     style: AppTypography.titleLarge,
                   ),
                 ),
               ),
 
-              // Horizontal Album Carousel
+              // Horizontal Album Carousel or Downloaded Empty State
               SliverToBoxAdapter(
-                child: SizedBox(
-                  height: 200,
-                  child: music.isLoadingHome && music.recentAlbums.isEmpty
-                      ? const Center(
-                          child: CircularProgressIndicator(color: AppColors.primary),
-                        )
-                      : ListView.separated(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          scrollDirection: Axis.horizontal,
-                          physics: const BouncingScrollPhysics(),
-                          itemCount: music.recentAlbums.length,
-                          separatorBuilder: (_, __) => const SizedBox(width: 12),
-                          itemBuilder: (ctx, i) {
-                            final album = music.recentAlbums[i];
-                            return AlbumCard(
-                              album: album,
-                              coverUrl: music.getCoverArtUrl(album.coverArtId, size: 250),
-                              onTap: () => _openAlbum(context, album.id),
-                              onPlayTap: () async {
-                                final detailed = await music.getAlbumDetails(album.id);
-                                if (detailed.tracks.isNotEmpty) {
-                                  player.playTracks(tracks: detailed.tracks, initialIndex: 0);
-                                }
-                              },
-                            );
-                          },
+                child: isDownloadedOnly && displayedRecentAlbums.isEmpty
+                    ? Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: AppColors.card,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: AppColors.border, width: 1.5),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('No downloaded albums yet', style: AppTypography.titleMedium),
+                              const SizedBox(height: 6),
+                              Text(
+                                'Tracks and albums you download for offline playback will appear here.',
+                                style: AppTypography.bodySmall,
+                              ),
+                              const SizedBox(height: 14),
+                              ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primary,
+                                  foregroundColor: Colors.black,
+                                ),
+                                icon: const Icon(Icons.arrow_circle_down_rounded, size: 18),
+                                label: const Text('View All Downloaded Tracks'),
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (_) => const OfflineScreen()),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
                         ),
-                ),
+                      )
+                    : SizedBox(
+                        height: 200,
+                        child: music.isLoadingHome && displayedRecentAlbums.isEmpty
+                            ? const Center(
+                                child: CircularProgressIndicator(color: AppColors.primary),
+                              )
+                            : ListView.separated(
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                scrollDirection: Axis.horizontal,
+                                physics: const BouncingScrollPhysics(),
+                                itemCount: displayedRecentAlbums.length,
+                                separatorBuilder: (_, __) => const SizedBox(width: 12),
+                                itemBuilder: (ctx, i) {
+                                  final album = displayedRecentAlbums[i];
+                                  return AlbumCard(
+                                    album: album,
+                                    coverUrl: music.getCoverArtUrl(album.coverArtId, size: 250),
+                                    onTap: () => _openAlbum(context, album.id),
+                                    onPlayTap: () async {
+                                      final detailed = await music.getAlbumDetails(album.id);
+                                      if (detailed.tracks.isNotEmpty) {
+                                        player.playTracks(tracks: detailed.tracks, initialIndex: 0);
+                                      }
+                                    },
+                                  );
+                                },
+                              ),
+                      ),
               ),
 
-              // Popular Artists Section (if loaded)
-              if (music.artists.isNotEmpty) ...[
+              // Popular Artists Section (only when not filtered to downloaded)
+              if (!isDownloadedOnly && music.artists.isNotEmpty) ...[
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
@@ -307,45 +357,47 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
 
               // Frequently Played Albums Header
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
-                  child: Text(
-                    'Frequently Played',
-                    style: AppTypography.titleLarge,
+              if (displayedFrequentAlbums.isNotEmpty) ...[
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
+                    child: Text(
+                      'Frequently Played',
+                      style: AppTypography.titleLarge,
+                    ),
                   ),
                 ),
-              ),
 
-              // Frequent Albums Grid
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
-                sliver: SliverGrid(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
-                    childAspectRatio: 0.8,
-                  ),
-                  delegate: SliverChildBuilderDelegate(
-                    (ctx, i) {
-                      final album = music.frequentAlbums[i];
-                      return AlbumCard(
-                        album: album,
-                        coverUrl: music.getCoverArtUrl(album.coverArtId, size: 250),
-                        onTap: () => _openAlbum(context, album.id),
-                        onPlayTap: () async {
-                          final detailed = await music.getAlbumDetails(album.id);
-                          if (detailed.tracks.isNotEmpty) {
-                            player.playTracks(tracks: detailed.tracks, initialIndex: 0);
-                          }
-                        },
-                      );
-                    },
-                    childCount: music.frequentAlbums.length,
+                // Frequent Albums Grid
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+                  sliver: SliverGrid(
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      mainAxisSpacing: 12,
+                      crossAxisSpacing: 12,
+                      childAspectRatio: 0.8,
+                    ),
+                    delegate: SliverChildBuilderDelegate(
+                      (ctx, i) {
+                        final album = displayedFrequentAlbums[i];
+                        return AlbumCard(
+                          album: album,
+                          coverUrl: music.getCoverArtUrl(album.coverArtId, size: 250),
+                          onTap: () => _openAlbum(context, album.id),
+                          onPlayTap: () async {
+                            final detailed = await music.getAlbumDetails(album.id);
+                            if (detailed.tracks.isNotEmpty) {
+                              player.playTracks(tracks: detailed.tracks, initialIndex: 0);
+                            }
+                          },
+                        );
+                      },
+                      childCount: displayedFrequentAlbums.length,
+                    ),
                   ),
                 ),
-              ),
+              ],
             ],
           ),
         ),

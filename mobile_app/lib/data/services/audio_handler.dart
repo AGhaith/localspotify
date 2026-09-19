@@ -209,4 +209,7 @@ class LocalSpotifyAudioHandler extends BaseAudioHandler
         shuffleMode == AudioServiceShuffleMode.group;
     await _player.setShuffleModeEnabled(enabled);
   }
+
+  @override
+  Future<void> setSpeed(double speed) => _player.setSpeed(speed);
 }

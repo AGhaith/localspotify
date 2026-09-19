@@ -48,7 +48,12 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  const result = await fetchAndMergeArtistData(id as string, fetchSubsonicData);
+  const cacheKey = `artist:${id}`;
+  const result = await redisCache.getOrSet(
+    cacheKey,
+    async () => fetchAndMergeArtistData(id as string, fetchSubsonicData),
+    3600,
+  );
 
   return {
     data: result,

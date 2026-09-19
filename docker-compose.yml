@@ -19,6 +19,21 @@ services:
     volumes:
       - ./navidrome-data:/data
       - ./my-music:/music:ro
+  redis:
+    image: redis:7-alpine
+    container_name: localspotify-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   subsonic-player:
     build:
       context: ./subsonic-player
@@ -30,3 +45,8 @@ services:
       - "6969:3000"
     environment:
       - NUXT_PUBLIC_SERVER_URL=http://100.92.248.49:6767
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      redis:
+        condition: service_healthy

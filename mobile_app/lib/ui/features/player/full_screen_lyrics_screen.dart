@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/theme/dynamic_palette_service.dart';
 import '../../../core/utils/duration_formatter.dart';
 import '../../../data/models/lyrics.dart';
 import '../../../data/models/track.dart';
@@ -24,6 +25,10 @@ class _FullScreenLyricsScreenState extends State<FullScreenLyricsScreen> {
   int _lastActiveIndex = -1;
   Future<Lyrics?>? _lyricsFuture;
   double? _dragValue;
+  PaletteColors? _paletteColors;
+  String? _lastTrackId;
+
+  Lyrics? _cachedLyrics;
 
   @override
   void initState() {
@@ -36,12 +41,30 @@ class _FullScreenLyricsScreenState extends State<FullScreenLyricsScreen> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.track.id != widget.track.id) {
       _lastActiveIndex = -1;
+      _cachedLyrics = null;
+      _lastTrackId = null;
       _loadLyrics();
     }
   }
 
   void _loadLyrics() {
-    _lyricsFuture = context.read<MusicProvider>().getLyrics(widget.track);
+    _lyricsFuture = context.read<MusicProvider>().getLyrics(widget.track).then((l) {
+      if (mounted) setState(() => _cachedLyrics = l);
+      return l;
+    });
+  }
+
+  void _loadPalette(Track track, MusicProvider music) {
+    if (_lastTrackId == track.id) return;
+    _lastTrackId = track.id;
+    final coverArtUrl = music.getCoverArtUrl(track.coverArtId, size: 250);
+    DynamicPaletteService().extractColors(
+      key: (track.coverArtId != null && track.coverArtId!.isNotEmpty) ? track.coverArtId! : track.id,
+      imageUrl: coverArtUrl,
+      localImagePath: track.localCoverArtPath,
+    ).then((palette) {
+      if (mounted) setState(() => _paletteColors = palette);
+    });
   }
 
   @override
@@ -63,6 +86,129 @@ class _FullScreenLyricsScreenState extends State<FullScreenLyricsScreen> {
     }
   }
 
+  void _showShareLyricsCard(BuildContext context, Track track, Lyrics? lyrics, int activeIndex) {
+    String quoteText = '';
+    if (lyrics != null && lyrics.isSynced && lyrics.lines.isNotEmpty) {
+      final startIndex = (activeIndex - 1).clamp(0, lyrics.lines.length - 1);
+      final endIndex = (activeIndex + 2).clamp(0, lyrics.lines.length);
+      quoteText = lyrics.lines
+          .sublist(startIndex, endIndex)
+          .map((l) => l.text)
+          .where((t) => t.isNotEmpty)
+          .join('\n');
+    } else if (lyrics != null && lyrics.rawText.isNotEmpty) {
+      quoteText = lyrics.rawText.split('\n').take(4).join('\n');
+    } else {
+      quoteText = '♪ ${track.title} ♪';
+    }
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return Container(
+          padding: const EdgeInsets.all(24),
+          decoration: const BoxDecoration(
+            color: Color(0xFF141622),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Share Lyrics Card', style: AppTypography.titleLarge),
+              const SizedBox(height: 16),
+              // Spotify-style Card preview
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: _paletteColors?.toAmbientGradient() ??
+                      const LinearGradient(
+                        colors: [Color(0xFF32125A), Color(0xFF120824)],
+                      ),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.white24, width: 1.5),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: AppColors.shadow,
+                      offset: Offset(4, 4),
+                      blurRadius: 0,
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        CachedCoverArt(
+                          imageUrl: context.read<MusicProvider>().getCoverArtUrl(track.coverArtId, size: 120),
+                          localImagePath: track.localCoverArtPath,
+                          width: 40,
+                          height: 40,
+                          borderRadius: 8,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(track.title, style: AppTypography.titleMedium.copyWith(fontSize: 14), maxLines: 1),
+                              Text(track.artist, style: AppTypography.bodySmall.copyWith(color: Colors.white70), maxLines: 1),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+                    Text(
+                      quoteText,
+                      style: const TextStyle(
+                        fontFamily: 'Montserrat',
+                        fontSize: 19,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        height: 1.45,
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    Row(
+                      children: [
+                        const Icon(Icons.music_note_rounded, color: AppColors.primary, size: 16),
+                        const SizedBox(width: 4),
+                        Text('LocalSpotify', style: AppTypography.labelSmall.copyWith(color: AppColors.primary, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.black,
+                  minimumSize: const Size(double.infinity, 50),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+                icon: const Icon(Icons.copy_rounded, size: 20),
+                label: const Text('Copy Lyrics Quote', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                onPressed: () {
+                  HapticFeedback.mediumImpact();
+                  Clipboard.setData(ClipboardData(text: '"$quoteText"\n— ${track.title} by ${track.artist}'));
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Lyrics quote copied to clipboard!'), duration: Duration(seconds: 2)),
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final player = context.watch<AudioPlayerProvider>();
@@ -70,24 +216,29 @@ class _FullScreenLyricsScreenState extends State<FullScreenLyricsScreen> {
     final currentTrack = player.currentTrack ?? widget.track;
     final currentPosition = player.position;
 
+    _loadPalette(currentTrack, music);
+
     final currentSeconds = _dragValue != null
         ? (_dragValue! * player.duration.inSeconds).toInt()
         : player.position.inSeconds;
 
     return Scaffold(
       backgroundColor: const Color(0xFF0C0817),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF220C40),
-              Color(0xFF0F0B1A),
-              Color(0xFF08060E),
-            ],
-            stops: [0.0, 0.45, 1.0],
-          ),
+      body: AnimatedContainer(
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeOutCubic,
+        decoration: BoxDecoration(
+          gradient: _paletteColors?.toAmbientGradient() ??
+              const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xFF220C40),
+                  Color(0xFF0F0B1A),
+                  Color(0xFF08060E),
+                ],
+                stops: [0.0, 0.45, 1.0],
+              ),
         ),
         child: SafeArea(
           child: Column(
@@ -128,6 +279,14 @@ class _FullScreenLyricsScreenState extends State<FullScreenLyricsScreen> {
                         ],
                       ),
                     ),
+                    IconButton(
+                      icon: const Icon(Icons.share_rounded, color: Colors.white70, size: 22),
+                      tooltip: 'Share Lyrics Card',
+                      onPressed: () {
+                        _showShareLyricsCard(context, currentTrack, _cachedLyrics, _lastActiveIndex);
+                      },
+                    ),
+                    const SizedBox(width: 4),
                     CachedCoverArt(
                       imageUrl: music.getCoverArtUrl(currentTrack.coverArtId, size: 100),
                       localImagePath: currentTrack.localCoverArtPath,

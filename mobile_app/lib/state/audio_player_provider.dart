@@ -54,6 +54,22 @@ class AudioPlayerProvider extends ChangeNotifier {
   bool get isShuffle => _isShuffle;
   AppRepeatMode get repeatMode => _repeatMode;
   bool get hasTrack => _currentTrack != null;
+  double _playbackSpeed = 1.0;
+  int _crossfadeDurationSeconds = 0;
+
+  double get playbackSpeed => _playbackSpeed;
+  int get crossfadeDurationSeconds => _crossfadeDurationSeconds;
+
+  Future<void> setPlaybackSpeed(double speed) async {
+    _playbackSpeed = speed;
+    await _audioHandler.setSpeed(speed);
+    notifyListeners();
+  }
+
+  void setCrossfadeDuration(int seconds) {
+    _crossfadeDurationSeconds = seconds;
+    notifyListeners();
+  }
 
   bool get hasActiveSleepTimer =>
       _sleepTimer != null && _sleepTimer!.isActive && _sleepTimerTarget != null;

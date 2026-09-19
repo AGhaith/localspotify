@@ -3,12 +3,15 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/theme/dynamic_palette_service.dart';
 import '../../../core/utils/duration_formatter.dart';
+import '../../../data/models/track.dart';
 import '../../../state/audio_player_provider.dart';
 import '../../../state/music_provider.dart';
 import '../../core_widgets/cached_cover_art.dart';
 import '../library/album_detail_screen.dart';
 import '../library/artist_detail_screen.dart';
+import 'equalizer_sheet.dart';
 import 'lyrics_view.dart';
 import 'queue_sheet.dart';
 
@@ -21,6 +24,21 @@ class NowPlayingSheet extends StatefulWidget {
 
 class _NowPlayingSheetState extends State<NowPlayingSheet> {
   double? _dragValue;
+  PaletteColors? _paletteColors;
+  String? _lastTrackId;
+
+  void _loadPalette(Track track, MusicProvider music) {
+    if (_lastTrackId == track.id) return;
+    _lastTrackId = track.id;
+    final coverArtUrl = music.getCoverArtUrl(track.coverArtId, size: 250);
+    DynamicPaletteService().extractColors(
+      key: (track.coverArtId != null && track.coverArtId!.isNotEmpty) ? track.coverArtId! : track.id,
+      imageUrl: coverArtUrl,
+      localImagePath: track.localCoverArtPath,
+    ).then((palette) {
+      if (mounted) setState(() => _paletteColors = palette);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,16 +48,26 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
 
     if (track == null) return const SizedBox.shrink();
 
+    _loadPalette(track, music);
+
     final coverArtUrl = music.getCoverArtUrl(track.coverArtId, size: 600);
     final currentSeconds = _dragValue != null
         ? (_dragValue! * player.duration.inSeconds).toInt()
         : player.position.inSeconds;
 
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeOutCubic,
       height: MediaQuery.of(context).size.height * 0.94,
-      decoration: const BoxDecoration(
-        color: Color(0xFF0A0B10),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      decoration: BoxDecoration(
+        gradient: _paletteColors?.toAmbientGradient() ??
+            const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0xFF1B142E), Color(0xFF0F0B1A), Color(0xFF07070B)],
+              stops: [0.0, 0.55, 1.0],
+            ),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: SafeArea(
         child: Column(
@@ -101,6 +129,11 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
                   ),
                   Row(
                     children: [
+                      // Equalizer & Audio Options Icon
+                      IconButton(
+                        icon: const Icon(Icons.tune_rounded, color: AppColors.textSecondary, size: 22),
+                        onPressed: () => _showEqualizerSheet(context),
+                      ),
                       // Sleep Timer icon
                       IconButton(
                         icon: Icon(
@@ -128,26 +161,45 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
                 child: Column(
                   children: [
                     const SizedBox(height: 12),
-                    // High-Res Artwork
+                    // High-Res Artwork with Swipe-to-Skip
                     Center(
                       child: AspectRatio(
                         aspectRatio: 1,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: AppColors.borderStrong, width: 2),
-                            boxShadow: const [
-                              BoxShadow(
-                                color: AppColors.shadow,
-                                offset: Offset(6, 6),
-                                blurRadius: 0,
-                              ),
-                            ],
-                          ),
-                          child: CachedCoverArt(
-                            imageUrl: coverArtUrl,
-                            localImagePath: track.localCoverArtPath,
-                            borderRadius: 14,
+                        child: GestureDetector(
+                          onHorizontalDragEnd: (details) {
+                            final velocity = details.primaryVelocity ?? 0;
+                            if (velocity < -250) {
+                              // Swipe Left -> Skip Next
+                              HapticFeedback.lightImpact();
+                              player.skipNext();
+                            } else if (velocity > 250) {
+                              // Swipe Right -> Skip Previous
+                              HapticFeedback.lightImpact();
+                              player.skipPrevious();
+                            }
+                          },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: AppColors.borderStrong, width: 2),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: (_paletteColors?.ambientTop ?? AppColors.primary).withValues(alpha: 0.35),
+                                  offset: const Offset(0, 10),
+                                  blurRadius: 30,
+                                ),
+                                const BoxShadow(
+                                  color: AppColors.shadow,
+                                  offset: Offset(6, 6),
+                                  blurRadius: 0,
+                                ),
+                              ],
+                            ),
+                            child: CachedCoverArt(
+                              imageUrl: coverArtUrl,
+                              localImagePath: track.localCoverArtPath,
+                              borderRadius: 14,
+                            ),
                           ),
                         ),
                       ),
@@ -348,6 +400,15 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
           ],
         ),
       ),
+    );
+  }
+
+  void _showEqualizerSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const EqualizerSheet(),
     );
   }
 

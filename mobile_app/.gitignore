@@ -39,4 +39,5 @@ migrate_working_dir/
 **/android/**/GeneratedPluginRegistrant.java
 **/android/app/.cxx
 **/android/app/build
+**/android/build
 **/android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
