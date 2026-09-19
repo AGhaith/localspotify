@@ -29,6 +29,19 @@ class MiniPlayerBar extends StatelessWidget {
           builder: (_) => const NowPlayingSheet(),
         );
       },
+      // Horizontal swipe to skip tracks (Spotify-style gesture)
+      onHorizontalDragEnd: (details) {
+        final velocity = details.primaryVelocity ?? 0;
+        if (velocity < -250) {
+          // Swipe Left -> Skip Next
+          HapticFeedback.lightImpact();
+          player.skipNext();
+        } else if (velocity > 250) {
+          // Swipe Right -> Skip Previous
+          HapticFeedback.lightImpact();
+          player.skipPrevious();
+        }
+      },
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
@@ -52,6 +65,7 @@ class MiniPlayerBar extends StatelessWidget {
                 children: [
                   CachedCoverArt(
                     imageUrl: music.getCoverArtUrl(track.coverArtId, size: 120),
+                    localImagePath: track.localCoverArtPath,
                     width: 44,
                     height: 44,
                     borderRadius: 8,
@@ -110,7 +124,7 @@ class MiniPlayerBar extends StatelessWidget {
               child: LinearProgressIndicator(
                 value: player.progress,
                 minHeight: 2.5,
-                backgroundColor: Colors.white.withOpacity(0.08),
+                backgroundColor: Colors.white.withValues(alpha: 0.08),
                 valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
               ),
             ),

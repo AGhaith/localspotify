@@ -58,7 +58,7 @@ class _NeoButtonState extends State<NeoButton> {
         ),
         padding: const EdgeInsets.symmetric(horizontal: 20),
         decoration: BoxDecoration(
-          color: enabled ? widget.backgroundColor : widget.backgroundColor.withOpacity(0.5),
+          color: enabled ? widget.backgroundColor : widget.backgroundColor.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(widget.borderRadius),
           border: Border.all(color: widget.borderColor, width: 1.5),
           boxShadow: _isPressed

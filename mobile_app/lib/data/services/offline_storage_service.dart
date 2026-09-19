@@ -9,6 +9,8 @@ import '../models/track.dart';
 class OfflineStorageService {
   static const String _keySession = 'localspotify_user_session';
   static const String _keyDownloadedTracks = 'localspotify_downloaded_tracks';
+  static const String _keyMaxBitRate = 'localspotify_max_bitrate';
+  static const String _keyRecentSearches = 'localspotify_recent_searches';
 
   final SharedPreferences _prefs;
   final Dio _dio;
@@ -44,10 +46,53 @@ class OfflineStorageService {
     await _prefs.remove(_keySession);
   }
 
+  // ================= Bitrate & Settings =================
+  Future<void> saveMaxBitRate(int? bitrate) async {
+    if (bitrate == null) {
+      await _prefs.remove(_keyMaxBitRate);
+    } else {
+      await _prefs.setInt(_keyMaxBitRate, bitrate);
+    }
+  }
+
+  int? getMaxBitRate() {
+    return _prefs.getInt(_keyMaxBitRate);
+  }
+
+  // ================= Recent Searches =================
+  List<String> getRecentSearches() {
+    return _prefs.getStringList(_keyRecentSearches) ?? [];
+  }
+
+  Future<void> addRecentSearch(String query) async {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return;
+    final list = getRecentSearches();
+    list.removeWhere((item) => item.toLowerCase() == trimmed.toLowerCase());
+    list.insert(0, trimmed);
+    if (list.length > 15) {
+      list.removeRange(15, list.length);
+    }
+    await _prefs.setStringList(_keyRecentSearches, list);
+  }
+
+  Future<void> clearRecentSearches() async {
+    await _prefs.remove(_keyRecentSearches);
+  }
+
   // ================= Offline Downloads =================
   Future<Directory> get _musicDirectory async {
     final docs = await getApplicationDocumentsDirectory();
     final dir = Directory('${docs.path}/music');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
+
+  Future<Directory> get _coversDirectory async {
+    final docs = await getApplicationDocumentsDirectory();
+    final dir = Directory('${docs.path}/music/covers');
     if (!await dir.exists()) {
       await dir.create(recursive: true);
     }
@@ -73,6 +118,7 @@ class OfflineStorageService {
   Future<Track> downloadTrack({
     required Track track,
     required String downloadUrl,
+    String? coverArtUrl,
     void Function(int received, int total)? onProgress,
   }) async {
     final dir = await _musicDirectory;
@@ -81,15 +127,31 @@ class OfflineStorageService {
         : 'm4a';
     final filePath = '${dir.path}/${track.id}.$extension';
 
+    // 1. Download audio file
     await _dio.download(
       downloadUrl,
       filePath,
       onReceiveProgress: onProgress,
     );
 
+    // 2. Download offline cover art if available
+    String? localCoverPath;
+    if (coverArtUrl != null && coverArtUrl.isNotEmpty && track.coverArtId != null) {
+      try {
+        final coversDir = await _coversDirectory;
+        final coverFilePath = '${coversDir.path}/${track.coverArtId}.jpg';
+        final coverFile = File(coverFilePath);
+        if (!await coverFile.exists()) {
+          await _dio.download(coverArtUrl, coverFilePath);
+        }
+        localCoverPath = coverFilePath;
+      } catch (_) {}
+    }
+
     final offlineTrack = track.copyWith(
       isOffline: true,
       localAudioPath: filePath,
+      localCoverArtPath: localCoverPath,
     );
 
     // Save to list
@@ -118,5 +180,32 @@ class OfflineStorageService {
       final jsonList = existing.map((t) => jsonEncode(t.toJson())).toList();
       await _prefs.setStringList(_keyDownloadedTracks, jsonList);
     }
+  }
+
+  Future<int> getTotalDownloadedBytes() async {
+    try {
+      final dir = await _musicDirectory;
+      int totalSize = 0;
+      if (await dir.exists()) {
+        await for (final entity in dir.list(recursive: true, followLinks: false)) {
+          if (entity is File) {
+            totalSize += await entity.length();
+          }
+        }
+      }
+      return totalSize;
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  Future<void> clearAllDownloads() async {
+    try {
+      final dir = await _musicDirectory;
+      if (await dir.exists()) {
+        await dir.delete(recursive: true);
+      }
+    } catch (_) {}
+    await _prefs.remove(_keyDownloadedTracks);
   }
 }

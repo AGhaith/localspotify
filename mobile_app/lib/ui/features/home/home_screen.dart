@@ -7,8 +7,11 @@ import '../../../state/audio_player_provider.dart';
 import '../../../state/auth_provider.dart';
 import '../../../state/music_provider.dart';
 import '../../core_widgets/album_card.dart';
+import '../../core_widgets/cached_cover_art.dart';
 import '../library/album_detail_screen.dart';
+import '../library/artist_detail_screen.dart';
 import '../library/liked_songs_screen.dart';
+import '../settings/settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -24,6 +27,21 @@ class _HomeScreenState extends State<HomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<MusicProvider>().loadHomeFeed();
     });
+  }
+
+  void _onRadioPillTapped(MusicProvider music, AudioPlayerProvider player) async {
+    music.setFilter('radio');
+    HapticFeedback.heavyImpact();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Generating continuous radio station...'),
+        duration: Duration(seconds: 1),
+      ),
+    );
+    final radioTracks = await music.getRandomMix(size: 40);
+    if (radioTracks.isNotEmpty) {
+      player.playTracks(tracks: radioTracks, initialIndex: 0);
+    }
   }
 
   @override
@@ -58,8 +76,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           GestureDetector(
                             onTap: () => _showUserMenu(context, auth),
                             child: Container(
-                              width: 36,
-                              height: 36,
+                              width: 38,
+                              height: 38,
                               decoration: const BoxDecoration(
                                 color: AppColors.primary,
                                 shape: BoxShape.circle,
@@ -78,12 +96,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                       : 'U',
                                   style: AppTypography.labelLarge.copyWith(
                                     color: AppColors.textDark,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               ),
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 10),
                           // Filter Pills
                           Expanded(
                             child: SingleChildScrollView(
@@ -91,14 +110,24 @@ class _HomeScreenState extends State<HomeScreen> {
                               physics: const BouncingScrollPhysics(),
                               child: Row(
                                 children: [
-                                  _buildPill(music, 'all', 'All'),
+                                  _buildPill(music, 'all', 'All', () => music.setFilter('all')),
                                   const SizedBox(width: 8),
-                                  _buildPill(music, 'music', 'Music'),
+                                  _buildPill(music, 'music', 'Music', () => music.setFilter('music')),
                                   const SizedBox(width: 8),
-                                  _buildPill(music, 'radio', 'Radio Stations'),
+                                  _buildPill(music, 'radio', '⚡ Instant Radio', () => _onRadioPillTapped(music, player)),
                                 ],
                               ),
                             ),
+                          ),
+                          // Settings Button
+                          IconButton(
+                            icon: const Icon(Icons.settings_outlined, color: AppColors.textPrimary),
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                              );
+                            },
                           ),
                         ],
                       ),
@@ -220,6 +249,63 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
 
+              // Popular Artists Section (if loaded)
+              if (music.artists.isNotEmpty) ...[
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
+                    child: Text('Artists You Might Like', style: AppTypography.titleLarge),
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: SizedBox(
+                    height: 115,
+                    child: ListView.separated(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: music.artists.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 14),
+                      itemBuilder: (ctx, i) {
+                        final artist = music.artists[i];
+                        return GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => ArtistDetailScreen(artistId: artist.id),
+                              ),
+                            );
+                          },
+                          child: Column(
+                            children: [
+                              CachedCoverArt(
+                                imageUrl: music.getCoverArtUrl(artist.coverArtId, size: 150),
+                                width: 72,
+                                height: 72,
+                                borderRadius: 99,
+                                placeholderIcon: Icons.person_rounded,
+                              ),
+                              const SizedBox(height: 6),
+                              SizedBox(
+                                width: 76,
+                                child: Text(
+                                  artist.name,
+                                  maxLines: 1,
+                                  textAlign: TextAlign.center,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTypography.bodySmall,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ],
+
               // Frequently Played Albums Header
               SliverToBoxAdapter(
                 child: Padding(
@@ -267,16 +353,16 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildPill(MusicProvider music, String key, String label) {
-    final active = music.activeFilter == key;
+  Widget _buildPill(MusicProvider music, String id, String label, VoidCallback onTap) {
+    final active = music.activeFilter == id;
+
     return GestureDetector(
       onTap: () {
         HapticFeedback.selectionClick();
-        music.setFilter(key);
+        onTap();
       },
       child: Container(
-        height: 32,
-        padding: const EdgeInsets.symmetric(horizontal: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
         decoration: BoxDecoration(
           color: active ? AppColors.primary : const Color(0xFF222430),
           borderRadius: BorderRadius.circular(99),
@@ -298,6 +384,7 @@ class _HomeScreenState extends State<HomeScreen> {
             style: AppTypography.labelLarge.copyWith(
               color: active ? AppColors.textDark : AppColors.textPrimary,
               fontSize: 12,
+              fontWeight: FontWeight.bold,
             ),
           ),
         ),
@@ -334,6 +421,17 @@ class _HomeScreenState extends State<HomeScreen> {
                   subtitle: Text(auth.session?.serverUrl ?? '', style: AppTypography.bodySmall),
                 ),
                 const Divider(),
+                ListTile(
+                  leading: const Icon(Icons.settings_rounded, color: AppColors.textPrimary),
+                  title: Text('Settings & Storage', style: AppTypography.bodyLarge),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                    );
+                  },
+                ),
                 ListTile(
                   leading: const Icon(Icons.logout_rounded, color: AppColors.error),
                   title: Text('Log Out', style: AppTypography.bodyLarge.copyWith(color: AppColors.error)),

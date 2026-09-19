@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/foundation.dart';
-import 'package:just_audio/just_audio.dart';
 import '../data/models/track.dart';
 import '../data/repositories/music_repository.dart';
 import '../data/services/audio_handler.dart';
@@ -23,6 +22,10 @@ class AudioPlayerProvider extends ChangeNotifier {
   bool _isShuffle = false;
   AppRepeatMode _repeatMode = AppRepeatMode.off;
   bool _hasScrobbledCurrent = false;
+
+  // Sleep Timer
+  Timer? _sleepTimer;
+  DateTime? _sleepTimerTarget;
 
   // Stream Subscriptions
   StreamSubscription? _playerStateSub;
@@ -51,6 +54,15 @@ class AudioPlayerProvider extends ChangeNotifier {
   bool get isShuffle => _isShuffle;
   AppRepeatMode get repeatMode => _repeatMode;
   bool get hasTrack => _currentTrack != null;
+
+  bool get hasActiveSleepTimer =>
+      _sleepTimer != null && _sleepTimer!.isActive && _sleepTimerTarget != null;
+
+  Duration? get sleepTimerRemaining {
+    if (!hasActiveSleepTimer) return null;
+    final diff = _sleepTimerTarget!.difference(DateTime.now());
+    return diff.isNegative ? Duration.zero : diff;
+  }
 
   double get progress {
     if (_duration.inMilliseconds == 0) return 0.0;
@@ -83,6 +95,8 @@ class AudioPlayerProvider extends ChangeNotifier {
           ),
         );
         _currentTrack = match;
+        _currentIndex = _queue.indexWhere((t) => t.id == item.id);
+        if (_currentIndex == -1) _currentIndex = 0;
         _duration = item.duration ?? Duration.zero;
         _hasScrobbledCurrent = false;
         notifyListeners();
@@ -116,6 +130,19 @@ class AudioPlayerProvider extends ChangeNotifier {
     });
   }
 
+  MediaItem _trackToMediaItem(Track t) {
+    final audioUrl = t.isOffline && t.localAudioPath != null
+        ? t.localAudioPath!
+        : _musicRepository.getStreamUrl(t.id);
+
+    final coverArtUrl = _musicRepository.getCoverArtUrl(t.coverArtId, size: 500);
+
+    return t.toMediaItem(
+      audioUri: Uri.parse(audioUrl),
+      artUri: coverArtUrl.isNotEmpty ? Uri.parse(coverArtUrl) : null,
+    );
+  }
+
   Future<void> playTracks({
     required List<Track> tracks,
     int initialIndex = 0,
@@ -128,18 +155,7 @@ class AudioPlayerProvider extends ChangeNotifier {
     _hasScrobbledCurrent = false;
     notifyListeners();
 
-    final mediaItems = tracks.map((t) {
-      final audioUrl = t.isOffline && t.localAudioPath != null
-          ? t.localAudioPath!
-          : _musicRepository.getStreamUrl(t.id);
-
-      final coverArtUrl = _musicRepository.getCoverArtUrl(t.coverArtId, size: 500);
-
-      return t.toMediaItem(
-        audioUri: Uri.parse(audioUrl),
-        artUri: coverArtUrl.isNotEmpty ? Uri.parse(coverArtUrl) : null,
-      );
-    }).toList();
+    final mediaItems = tracks.map(_trackToMediaItem).toList();
 
     await _audioHandler.setTrackQueue(
       items: mediaItems,
@@ -152,6 +168,63 @@ class AudioPlayerProvider extends ChangeNotifier {
     await playTracks(tracks: [track], initialIndex: 0);
   }
 
+  // ================= Queue Manipulation =================
+  Future<void> addToQueue(Track track) async {
+    _queue.add(track);
+    notifyListeners();
+    await _audioHandler.addQueueItem(_trackToMediaItem(track));
+  }
+
+  Future<void> playNext(Track track) async {
+    if (_queue.isEmpty) {
+      await playTrack(track);
+      return;
+    }
+    final insertIndex = (_currentIndex + 1).clamp(0, _queue.length);
+    _queue.insert(insertIndex, track);
+    notifyListeners();
+    await _audioHandler.insertQueueItem(insertIndex, _trackToMediaItem(track));
+  }
+
+  Future<void> removeFromQueue(int index) async {
+    if (index >= 0 && index < _queue.length) {
+      if (index == _currentIndex) {
+        await skipNext();
+      }
+      _queue.removeAt(index);
+      if (index < _currentIndex) {
+        _currentIndex--;
+      }
+      notifyListeners();
+      await _audioHandler.removeQueueItemAt(index);
+    }
+  }
+
+  Future<void> reorderQueue(int oldIndex, int newIndex) async {
+    if (oldIndex < 0 || oldIndex >= _queue.length || newIndex < 0 || newIndex >= _queue.length) return;
+    final item = _queue.removeAt(oldIndex);
+    _queue.insert(newIndex, item);
+
+    if (_currentIndex == oldIndex) {
+      _currentIndex = newIndex;
+    } else if (oldIndex < _currentIndex && newIndex >= _currentIndex) {
+      _currentIndex--;
+    } else if (oldIndex > _currentIndex && newIndex <= _currentIndex) {
+      _currentIndex++;
+    }
+    notifyListeners();
+    await _audioHandler.moveQueueItem(oldIndex, newIndex);
+  }
+
+  Future<void> clearQueue() async {
+    await _audioHandler.stop();
+    _queue.clear();
+    _currentTrack = null;
+    _currentIndex = 0;
+    notifyListeners();
+  }
+
+  // ================= Playback Controls =================
   Future<void> togglePlay() async {
     if (_isPlaying) {
       await _audioHandler.pause();
@@ -177,6 +250,15 @@ class AudioPlayerProvider extends ChangeNotifier {
 
   Future<void> skipPrevious() async {
     await _audioHandler.skipToPrevious();
+  }
+
+  Future<void> skipToQueueItem(int index) async {
+    if (index >= 0 && index < _queue.length) {
+      _currentIndex = index;
+      _currentTrack = _queue[index];
+      notifyListeners();
+      await _audioHandler.skipToQueueItem(index);
+    }
   }
 
   Future<void> toggleShuffle() async {
@@ -205,8 +287,28 @@ class AudioPlayerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ================= Sleep Timer =================
+  void setSleepTimer(Duration duration) {
+    _sleepTimer?.cancel();
+    _sleepTimerTarget = DateTime.now().add(duration);
+    notifyListeners();
+
+    _sleepTimer = Timer(duration, () async {
+      await _audioHandler.pause();
+      cancelSleepTimer();
+    });
+  }
+
+  void cancelSleepTimer() {
+    _sleepTimer?.cancel();
+    _sleepTimer = null;
+    _sleepTimerTarget = null;
+    notifyListeners();
+  }
+
   @override
   void dispose() {
+    _sleepTimer?.cancel();
     _playerStateSub?.cancel();
     _positionSub?.cancel();
     _bufferedSub?.cancel();

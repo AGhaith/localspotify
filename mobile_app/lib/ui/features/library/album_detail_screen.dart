@@ -11,6 +11,8 @@ import '../../core_widgets/cached_cover_art.dart';
 import '../../core_widgets/neo_button.dart';
 import '../../core_widgets/track_row.dart';
 
+import 'artist_detail_screen.dart';
+
 class AlbumDetailScreen extends StatelessWidget {
   final String albumId;
 
@@ -20,6 +22,7 @@ class AlbumDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final music = context.watch<MusicProvider>();
     final player = context.read<AudioPlayerProvider>();
+    final isDownloading = music.downloadingEntityId == albumId;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -32,6 +35,7 @@ class AlbumDetailScreen extends StatelessWidget {
 
           if (snapshot.hasError || !snapshot.hasData) {
             return Scaffold(
+              backgroundColor: AppColors.background,
               appBar: AppBar(leading: const BackButton()),
               body: Center(
                 child: Text('Failed to load album', style: AppTypography.bodyMedium),
@@ -65,7 +69,7 @@ class AlbumDetailScreen extends StatelessWidget {
                             end: Alignment.bottomCenter,
                             colors: [
                               Colors.transparent,
-                              Colors.black.withOpacity(0.6),
+                              Colors.black.withValues(alpha: 0.6),
                               AppColors.background,
                             ],
                           ),
@@ -88,9 +92,36 @@ class AlbumDetailScreen extends StatelessWidget {
                         style: AppTypography.displayMedium,
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        album.artist,
-                        style: AppTypography.titleMedium.copyWith(color: AppColors.primary),
+                      GestureDetector(
+                        onTap: (album.artistId != null && album.artistId!.isNotEmpty)
+                            ? () {
+                                HapticFeedback.lightImpact();
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => ArtistDetailScreen(artistId: album.artistId!),
+                                  ),
+                                );
+                              }
+                            : null,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              album.artist,
+                              style: AppTypography.titleMedium.copyWith(
+                                color: AppColors.primary,
+                                decoration: (album.artistId != null && album.artistId!.isNotEmpty)
+                                    ? TextDecoration.underline
+                                    : TextDecoration.none,
+                              ),
+                            ),
+                            if (album.artistId != null && album.artistId!.isNotEmpty) ...[
+                              const SizedBox(width: 4),
+                              const Icon(Icons.chevron_right_rounded, color: AppColors.primary, size: 18),
+                            ],
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 6),
                       Text(
@@ -98,7 +129,10 @@ class AlbumDetailScreen extends StatelessWidget {
                         style: AppTypography.bodySmall,
                       ),
                       const SizedBox(height: 16),
-                      Row(
+                      Wrap(
+                        spacing: 10,
+                        runSpacing: 10,
+                        crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           NeoButton(
                             text: 'Play',
@@ -108,7 +142,6 @@ class AlbumDetailScreen extends StatelessWidget {
                               player.playTracks(tracks: album.tracks, initialIndex: 0);
                             },
                           ),
-                          const SizedBox(width: 12),
                           NeoButton(
                             text: 'Shuffle',
                             icon: Icons.shuffle_rounded,
@@ -120,6 +153,26 @@ class AlbumDetailScreen extends StatelessWidget {
                               final shuffled = List.of(album.tracks)..shuffle();
                               player.playTracks(tracks: shuffled, initialIndex: 0);
                             },
+                          ),
+                          // 1-Tap Download Album Button
+                          NeoButton(
+                            text: isDownloading
+                                ? '${(music.downloadingProgress * 100).toInt()}%'
+                                : 'Download All',
+                            icon: isDownloading
+                                ? Icons.hourglass_top_rounded
+                                : Icons.download_rounded,
+                            backgroundColor: isDownloading
+                                ? AppColors.primary.withValues(alpha: 0.2)
+                                : const Color(0xFF1E293B),
+                            textColor: isDownloading ? AppColors.primary : AppColors.textPrimary,
+                            borderColor: isDownloading ? AppColors.primary : AppColors.border,
+                            onPressed: isDownloading
+                                ? null
+                                : () {
+                                    HapticFeedback.lightImpact();
+                                    music.downloadAlbum(album);
+                                  },
                           ),
                         ],
                       ),

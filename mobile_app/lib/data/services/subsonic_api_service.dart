@@ -4,6 +4,7 @@ import '../models/track.dart';
 import '../models/album.dart';
 import '../models/artist.dart';
 import '../models/playlist.dart';
+import '../models/lyrics.dart';
 import '../../core/utils/md5_hasher.dart';
 
 class SubsonicApiService {
@@ -366,5 +367,214 @@ class SubsonicApiService {
     params['size'] = size.toString();
     final queryStr = params.entries.map((e) => '${e.key}=${Uri.encodeComponent(e.value)}').join('&');
     return '$baseUrl/rest/getCoverArt.view?$queryStr';
+  }
+
+  /// Get rich artist info (Last.fm biography, large image, similar artists)
+  Future<Map<String, dynamic>?> getArtistInfo2(String artistId) async {
+    try {
+      final url = _getEndpointUrl('getArtistInfo2');
+      final response = await _dio.get(
+        url,
+        queryParameters: _buildParams({'id': artistId}),
+      );
+      final subResp = response.data['subsonic-response'];
+      if (subResp['status'] == 'ok') {
+        return subResp['artistInfo2'] as Map<String, dynamic>?;
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  /// Get Top Songs for an artist
+  Future<List<Track>> getTopSongs(String artistName, {int count = 25}) async {
+    try {
+      final url = _getEndpointUrl('getTopSongs');
+      final response = await _dio.get(
+        url,
+        queryParameters: _buildParams({'artist': artistName, 'count': count}),
+      );
+      final subResp = response.data['subsonic-response'];
+      if (subResp['status'] == 'ok') {
+        final rawSongs = subResp['topSongs']?['song'];
+        if (rawSongs is List) {
+          return rawSongs
+              .whereType<Map<String, dynamic>>()
+              .map((e) => Track.fromSubsonicJson(e))
+              .toList();
+        }
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  /// Get Similar Songs (Instant Radio Mix) based on a seed song
+  Future<List<Track>> getSimilarSongs2(String songId, {int count = 50}) async {
+    try {
+      final url = _getEndpointUrl('getSimilarSongs2');
+      final response = await _dio.get(
+        url,
+        queryParameters: _buildParams({'id': songId, 'count': count}),
+      );
+      final subResp = response.data['subsonic-response'];
+      if (subResp['status'] == 'ok') {
+        final rawSongs = subResp['similarSongs2']?['song'];
+        if (rawSongs is List) {
+          return rawSongs
+              .whereType<Map<String, dynamic>>()
+              .map((e) => Track.fromSubsonicJson(e))
+              .toList();
+        }
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  /// Get Random Songs (for Shuffle Station / Instant Mix)
+  Future<List<Track>> getRandomSongs({int size = 50}) async {
+    try {
+      final url = _getEndpointUrl('getRandomSongs');
+      final response = await _dio.get(
+        url,
+        queryParameters: _buildParams({'size': size}),
+      );
+      final subResp = response.data['subsonic-response'];
+      if (subResp['status'] == 'ok') {
+        final rawSongs = subResp['randomSongs']?['song'];
+        if (rawSongs is List) {
+          return rawSongs
+              .whereType<Map<String, dynamic>>()
+              .map((e) => Track.fromSubsonicJson(e))
+              .toList();
+        }
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  /// Get Lyrics (synced or unsynced)
+  Future<Lyrics?> getLyrics({String? songId, String? artist, String? title}) async {
+    // 1. Try getLyricsBySongId (OpenSubsonic standard for synced LRC)
+    if (songId != null) {
+      try {
+        final url = _getEndpointUrl('getLyricsBySongId');
+        final response = await _dio.get(
+          url,
+          queryParameters: _buildParams({'id': songId}),
+        );
+        final subResp = response.data['subsonic-response'];
+        if (subResp['status'] == 'ok') {
+          final lyricsList = subResp['lyricsList']?['structuredLyrics'];
+          if (lyricsList is List && lyricsList.isNotEmpty) {
+            final first = lyricsList.first;
+            final lineList = first['line'];
+            if (lineList is List) {
+              final lines = <LyricsLine>[];
+              for (final l in lineList) {
+                if (l is Map) {
+                  final start = (l['start'] as num?)?.toInt() ?? 0;
+                  final value = l['value']?.toString() ?? '';
+                  lines.add(LyricsLine(timestamp: Duration(milliseconds: start), text: value));
+                }
+              }
+              if (lines.isNotEmpty) {
+                return Lyrics(
+                  artist: artist,
+                  title: title,
+                  isSynced: true,
+                  lines: lines,
+                  rawText: lines.map((l) => l.text).join('\n'),
+                );
+              }
+            }
+          }
+        }
+      } catch (_) {}
+    }
+
+    // 2. Fallback to standard getLyrics
+    if (artist != null && title != null) {
+      try {
+        final url = _getEndpointUrl('getLyrics');
+        final response = await _dio.get(
+          url,
+          queryParameters: _buildParams({'artist': artist, 'title': title}),
+        );
+        final subResp = response.data['subsonic-response'];
+        if (subResp['status'] == 'ok') {
+          final content = subResp['lyrics']?['content']?.toString();
+          if (content != null && content.isNotEmpty) {
+            if (content.contains('[00:') || content.contains('[01:')) {
+              return Lyrics.fromLrc(content, artist: artist, title: title);
+            }
+            return Lyrics.fromPlainText(content, artist: artist, title: title);
+          }
+        }
+      } catch (_) {}
+    }
+    return null;
+  }
+
+  /// Create a new playlist
+  Future<Playlist?> createPlaylist(String name, {List<String>? songIds}) async {
+    try {
+      final url = _getEndpointUrl('createPlaylist');
+      final params = _buildParams({'name': name});
+      if (songIds != null && songIds.isNotEmpty) {
+        params['songId'] = songIds;
+      }
+      final response = await _dio.get(url, queryParameters: params);
+      final subResp = response.data['subsonic-response'];
+      if (subResp['status'] == 'ok') {
+        final plRaw = subResp['playlist'];
+        if (plRaw is Map<String, dynamic>) {
+          return Playlist.fromSubsonicJson(plRaw);
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  /// Update an existing playlist
+  Future<bool> updatePlaylist(
+    String playlistId, {
+    String? name,
+    String? comment,
+    bool? isPublic,
+    List<String>? songIdsToAdd,
+    List<int>? songIndicesToRemove,
+  }) async {
+    try {
+      final url = _getEndpointUrl('updatePlaylist');
+      final params = _buildParams({'playlistId': playlistId});
+      if (name != null) params['name'] = name;
+      if (comment != null) params['comment'] = comment;
+      if (isPublic != null) params['public'] = isPublic;
+      if (songIdsToAdd != null && songIdsToAdd.isNotEmpty) {
+        params['songIdToAdd'] = songIdsToAdd;
+      }
+      if (songIndicesToRemove != null && songIndicesToRemove.isNotEmpty) {
+        params['songIndexToRemove'] = songIndicesToRemove;
+      }
+      final response = await _dio.get(url, queryParameters: params);
+      final subResp = response.data['subsonic-response'];
+      return subResp['status'] == 'ok';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Delete a playlist
+  Future<bool> deletePlaylist(String playlistId) async {
+    try {
+      final url = _getEndpointUrl('deletePlaylist');
+      final response = await _dio.get(
+        url,
+        queryParameters: _buildParams({'id': playlistId}),
+      );
+      final subResp = response.data['subsonic-response'];
+      return subResp['status'] == 'ok';
+    } catch (_) {
+      return false;
+    }
   }
 }

@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../data/models/album.dart';
 import '../data/models/artist.dart';
+import '../data/models/lyrics.dart';
 import '../data/models/playlist.dart';
 import '../data/models/track.dart';
 import '../data/repositories/music_repository.dart';
@@ -20,7 +22,10 @@ class MusicProvider extends ChangeNotifier {
   List<Track> _searchTracks = [];
   List<Album> _searchAlbums = [];
   List<Artist> _searchArtists = [];
+  List<Playlist> _searchPlaylists = [];
+  List<String> _recentSearches = [];
   bool _isSearching = false;
+  Timer? _searchDebounce;
 
   // Active Pill
   String _activeFilter = 'all'; // 'all', 'music', 'radio'
@@ -30,8 +35,14 @@ class MusicProvider extends ChangeNotifier {
   bool _isLoadingLibrary = false;
   String? _homeError;
 
+  // Batch download progress tracking
+  String? _downloadingEntityId;
+  double _downloadingProgress = 0.0;
+
   MusicProvider({required MusicRepository musicRepository})
-      : _musicRepository = musicRepository;
+      : _musicRepository = musicRepository {
+    _recentSearches = _musicRepository.getRecentSearches();
+  }
 
   // Getters
   List<Album> get recentAlbums => _recentAlbums;
@@ -43,11 +54,16 @@ class MusicProvider extends ChangeNotifier {
   List<Track> get searchTracks => _searchTracks;
   List<Album> get searchAlbums => _searchAlbums;
   List<Artist> get searchArtists => _searchArtists;
+  List<Playlist> get searchPlaylists => _searchPlaylists;
+  List<String> get recentSearches => _recentSearches;
   bool get isSearching => _isSearching;
   String get activeFilter => _activeFilter;
   bool get isLoadingHome => _isLoadingHome;
   bool get isLoadingLibrary => _isLoadingLibrary;
   String? get homeError => _homeError;
+
+  String? get downloadingEntityId => _downloadingEntityId;
+  double get downloadingProgress => _downloadingProgress;
 
   String getCoverArtUrl(String? coverArtId, {int size = 500}) =>
       _musicRepository.getCoverArtUrl(coverArtId, size: size);
@@ -111,11 +127,21 @@ class MusicProvider extends ChangeNotifier {
     return _musicRepository.getPlaylist(playlistId);
   }
 
+  // ================= Search =================
+  void searchDebounced(String query) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 350), () {
+      search(query);
+    });
+  }
+
   Future<void> search(String query) async {
-    if (query.trim().isEmpty) {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) {
       _searchTracks = [];
       _searchAlbums = [];
       _searchArtists = [];
+      _searchPlaylists = [];
       _isSearching = false;
       notifyListeners();
       return;
@@ -125,10 +151,19 @@ class MusicProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final res = await _musicRepository.search(query);
+      final res = await _musicRepository.search(trimmed);
       _searchTracks = res['songs'] as List<Track>? ?? [];
       _searchAlbums = res['albums'] as List<Album>? ?? [];
       _searchArtists = res['artists'] as List<Artist>? ?? [];
+
+      // Filter matching local playlists
+      _searchPlaylists = _playlists
+          .where((p) => p.name.toLowerCase().contains(trimmed.toLowerCase()))
+          .toList();
+
+      // Record to recent searches
+      await _musicRepository.addRecentSearch(trimmed);
+      _recentSearches = _musicRepository.getRecentSearches();
     } catch (_) {
     } finally {
       _isSearching = false;
@@ -136,6 +171,13 @@ class MusicProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> clearRecentSearches() async {
+    await _musicRepository.clearRecentSearches();
+    _recentSearches = [];
+    notifyListeners();
+  }
+
+  // ================= Star / Like =================
   Future<void> toggleStar(Track track) async {
     final isStarredNow = !track.isStarred;
     if (isStarredNow) {
@@ -158,6 +200,61 @@ class MusicProvider extends ChangeNotifier {
     }
   }
 
+  // ================= Playlists Management =================
+  Future<Playlist?> createPlaylist(String name, {List<String>? songIds}) async {
+    final pl = await _musicRepository.createPlaylist(name, songIds: songIds);
+    if (pl != null) {
+      _playlists.insert(0, pl);
+      notifyListeners();
+    }
+    return pl;
+  }
+
+  Future<bool> addTrackToPlaylist(String playlistId, String trackId) async {
+    final ok = await _musicRepository.updatePlaylist(
+      playlistId,
+      songIdsToAdd: [trackId],
+    );
+    if (ok) {
+      await loadLibrary();
+    }
+    return ok;
+  }
+
+  Future<bool> removeTrackFromPlaylist(String playlistId, int trackIndex) async {
+    final ok = await _musicRepository.updatePlaylist(
+      playlistId,
+      songIndicesToRemove: [trackIndex],
+    );
+    if (ok) {
+      await loadLibrary();
+    }
+    return ok;
+  }
+
+  Future<bool> deletePlaylist(String playlistId) async {
+    final ok = await _musicRepository.deletePlaylist(playlistId);
+    if (ok) {
+      _playlists.removeWhere((p) => p.id == playlistId);
+      notifyListeners();
+    }
+    return ok;
+  }
+
+  // ================= Instant Radio / Mix =================
+  Future<List<Track>> getRadioStation(Track seedTrack) {
+    return _musicRepository.getSimilarSongs(seedTrack.id, count: 40);
+  }
+
+  Future<List<Track>> getRandomMix({int size = 40}) {
+    return _musicRepository.getRandomSongs(size: size);
+  }
+
+  // ================= Lyrics =================
+  Future<Lyrics?> getLyrics(Track track) {
+    return _musicRepository.getLyrics(track);
+  }
+
   // ================= Offline Downloads =================
   Future<void> downloadTrack(Track track) async {
     try {
@@ -178,5 +275,77 @@ class MusicProvider extends ChangeNotifier {
 
   bool isDownloaded(String trackId) {
     return _musicRepository.isTrackDownloaded(trackId);
+  }
+
+  Future<void> downloadAlbum(
+    Album album, {
+    void Function(int completed, int total)? onProgress,
+  }) async {
+    _downloadingEntityId = album.id;
+    _downloadingProgress = 0.0;
+    notifyListeners();
+
+    try {
+      final total = album.tracks.length;
+      for (int i = 0; i < total; i++) {
+        final track = album.tracks[i];
+        if (!isDownloaded(track.id)) {
+          await downloadTrack(track);
+        }
+        _downloadingProgress = (i + 1) / total;
+        onProgress?.call(i + 1, total);
+        notifyListeners();
+      }
+    } finally {
+      _downloadingEntityId = null;
+      _downloadingProgress = 0.0;
+      notifyListeners();
+    }
+  }
+
+  Future<void> downloadPlaylist(
+    Playlist playlist, {
+    void Function(int completed, int total)? onProgress,
+  }) async {
+    _downloadingEntityId = playlist.id;
+    _downloadingProgress = 0.0;
+    notifyListeners();
+
+    try {
+      final total = playlist.tracks.length;
+      for (int i = 0; i < total; i++) {
+        final track = playlist.tracks[i];
+        if (!isDownloaded(track.id)) {
+          await downloadTrack(track);
+        }
+        _downloadingProgress = (i + 1) / total;
+        onProgress?.call(i + 1, total);
+        notifyListeners();
+      }
+    } finally {
+      _downloadingEntityId = null;
+      _downloadingProgress = 0.0;
+      notifyListeners();
+    }
+  }
+
+  Future<int> getOfflineStorageBytes() {
+    return _musicRepository.getTotalDownloadedBytes();
+  }
+
+  Future<void> clearAllDownloads() async {
+    await _musicRepository.clearAllDownloads();
+    _offlineTracks.clear();
+    notifyListeners();
+  }
+
+  // Streaming Bitrate
+  Future<void> saveMaxBitRate(int? bitrate) => _musicRepository.saveMaxBitRate(bitrate);
+  int? getMaxBitRate() => _musicRepository.getMaxBitRate();
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    super.dispose();
   }
 }

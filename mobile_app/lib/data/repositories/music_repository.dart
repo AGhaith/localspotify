@@ -1,5 +1,6 @@
 import '../models/album.dart';
 import '../models/artist.dart';
+import '../models/lyrics.dart';
 import '../models/playlist.dart';
 import '../models/track.dart';
 import '../services/subsonic_api_service.dart';
@@ -20,7 +21,8 @@ class MusicRepository {
   }
 
   String getStreamUrl(String trackId) {
-    return _apiService.getStreamUrl(trackId);
+    final maxBitRate = _storageService.getMaxBitRate();
+    return _apiService.getStreamUrl(trackId, maxBitRate: maxBitRate);
   }
 
   Future<List<Album>> getRecentAlbums({int size = 20}) {
@@ -43,8 +45,39 @@ class MusicRepository {
     return _apiService.getArtists();
   }
 
-  Future<Artist> getArtist(String artistId) {
-    return _apiService.getArtist(artistId);
+  Future<Artist> getArtist(String artistId) async {
+    final baseArtist = await _apiService.getArtist(artistId);
+    final info = await _apiService.getArtistInfo2(artistId);
+    final topSongs = await _apiService.getTopSongs(baseArtist.name, count: 20);
+
+    var enriched = baseArtist;
+    if (info != null) {
+      enriched = Artist.fromArtistInfoJson(baseArtist: enriched, infoJson: info);
+    }
+    if (topSongs.isNotEmpty) {
+      enriched = enriched.copyWith(topTracks: topSongs);
+    }
+    return enriched;
+  }
+
+  Future<List<Track>> getTopSongs(String artistName, {int count = 25}) {
+    return _apiService.getTopSongs(artistName, count: count);
+  }
+
+  Future<List<Track>> getSimilarSongs(String songId, {int count = 50}) {
+    return _apiService.getSimilarSongs2(songId, count: count);
+  }
+
+  Future<List<Track>> getRandomSongs({int size = 50}) {
+    return _apiService.getRandomSongs(size: size);
+  }
+
+  Future<Lyrics?> getLyrics(Track track) {
+    return _apiService.getLyrics(
+      songId: track.id,
+      artist: track.artist,
+      title: track.title,
+    );
   }
 
   Future<List<Playlist>> getPlaylists() {
@@ -53,6 +86,32 @@ class MusicRepository {
 
   Future<Playlist> getPlaylist(String playlistId) {
     return _apiService.getPlaylist(playlistId);
+  }
+
+  Future<Playlist?> createPlaylist(String name, {List<String>? songIds}) {
+    return _apiService.createPlaylist(name, songIds: songIds);
+  }
+
+  Future<bool> updatePlaylist(
+    String playlistId, {
+    String? name,
+    String? comment,
+    bool? isPublic,
+    List<String>? songIdsToAdd,
+    List<int>? songIndicesToRemove,
+  }) {
+    return _apiService.updatePlaylist(
+      playlistId,
+      name: name,
+      comment: comment,
+      isPublic: isPublic,
+      songIdsToAdd: songIdsToAdd,
+      songIndicesToRemove: songIndicesToRemove,
+    );
+  }
+
+  Future<bool> deletePlaylist(String playlistId) {
+    return _apiService.deletePlaylist(playlistId);
   }
 
   Future<List<Track>> getStarredTracks() {
@@ -75,7 +134,7 @@ class MusicRepository {
     return _apiService.scrobble(trackId);
   }
 
-  // ================= Offline Handling =================
+  // ================= Offline & Storage Handling =================
   List<Track> getDownloadedTracks() {
     return _storageService.getDownloadedTracks();
   }
@@ -86,9 +145,11 @@ class MusicRepository {
 
   Future<Track> downloadTrack(Track track, {void Function(int, int)? onProgress}) {
     final streamUrl = _apiService.getStreamUrl(track.id);
+    final coverArtUrl = _apiService.getCoverArtUrl(track.coverArtId, size: 500);
     return _storageService.downloadTrack(
       track: track,
       downloadUrl: streamUrl,
+      coverArtUrl: coverArtUrl,
       onProgress: onProgress,
     );
   }
@@ -96,4 +157,20 @@ class MusicRepository {
   Future<void> deleteDownloadedTrack(String trackId) {
     return _storageService.deleteDownloadedTrack(trackId);
   }
+
+  Future<int> getTotalDownloadedBytes() {
+    return _storageService.getTotalDownloadedBytes();
+  }
+
+  Future<void> clearAllDownloads() {
+    return _storageService.clearAllDownloads();
+  }
+
+  // Bitrate & Search Settings
+  Future<void> saveMaxBitRate(int? bitrate) => _storageService.saveMaxBitRate(bitrate);
+  int? getMaxBitRate() => _storageService.getMaxBitRate();
+
+  List<String> getRecentSearches() => _storageService.getRecentSearches();
+  Future<void> addRecentSearch(String query) => _storageService.addRecentSearch(query);
+  Future<void> clearRecentSearches() => _storageService.clearRecentSearches();
 }

@@ -1,9 +1,11 @@
+import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 
 class CachedCoverArt extends StatelessWidget {
   final String? imageUrl;
+  final String? localImagePath;
   final double? width;
   final double? height;
   final double borderRadius;
@@ -12,6 +14,7 @@ class CachedCoverArt extends StatelessWidget {
   const CachedCoverArt({
     super.key,
     required this.imageUrl,
+    this.localImagePath,
     this.width,
     this.height,
     this.borderRadius = 8,
@@ -20,6 +23,27 @@ class CachedCoverArt extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 1. If local image path exists and file is valid, load from local disk (100% offline support)
+    if (localImagePath != null && localImagePath!.isNotEmpty) {
+      final file = File(localImagePath!);
+      if (file.existsSync()) {
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(borderRadius),
+          child: Image.file(
+            file,
+            width: width,
+            height: height,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => _buildNetworkOrFallback(),
+          ),
+        );
+      }
+    }
+
+    return _buildNetworkOrFallback();
+  }
+
+  Widget _buildNetworkOrFallback() {
     if (imageUrl == null || imageUrl!.isEmpty) {
       return _buildFallback();
     }

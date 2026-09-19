@@ -19,6 +19,7 @@ class Track {
   final bool isStarred;
   final bool isOffline;
   final String? localAudioPath;
+  final String? localCoverArtPath;
 
   const Track({
     required this.id,
@@ -39,6 +40,7 @@ class Track {
     this.isStarred = false,
     this.isOffline = false,
     this.localAudioPath,
+    this.localCoverArtPath,
   });
 
   Track copyWith({
@@ -60,6 +62,7 @@ class Track {
     bool? isStarred,
     bool? isOffline,
     String? localAudioPath,
+    String? localCoverArtPath,
   }) {
     return Track(
       id: id ?? this.id,
@@ -80,6 +83,7 @@ class Track {
       isStarred: isStarred ?? this.isStarred,
       isOffline: isOffline ?? this.isOffline,
       localAudioPath: localAudioPath ?? this.localAudioPath,
+      localCoverArtPath: localCoverArtPath ?? this.localCoverArtPath,
     );
   }
 
@@ -123,6 +127,7 @@ class Track {
         'isStarred': isStarred,
         'isOffline': isOffline,
         'localAudioPath': localAudioPath,
+        'localCoverArtPath': localCoverArtPath,
       };
 
   factory Track.fromJson(Map<String, dynamic> json) => Track(
@@ -144,6 +149,7 @@ class Track {
         isStarred: json['isStarred'] as bool? ?? false,
         isOffline: json['isOffline'] as bool? ?? false,
         localAudioPath: json['localAudioPath']?.toString(),
+        localCoverArtPath: json['localCoverArtPath']?.toString(),
       );
 
   MediaItem toMediaItem({required Uri audioUri, Uri? artUri}) {
@@ -158,6 +164,7 @@ class Track {
         'url': audioUri.toString(),
         'isOffline': isOffline,
         'localAudioPath': localAudioPath,
+        'localCoverArtPath': localCoverArtPath,
         'trackNumber': trackNumber,
       },
     );

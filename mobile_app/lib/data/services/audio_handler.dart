@@ -73,6 +73,17 @@ class LocalSpotifyAudioHandler extends BaseAudioHandler
     );
   }
 
+  AudioSource _createAudioSource(MediaItem item) {
+    final url = item.extras?['url'] as String? ?? '';
+    final isOffline = item.extras?['isOffline'] as bool? ?? false;
+    final localPath = item.extras?['localAudioPath'] as String?;
+
+    if (isOffline && localPath != null && localPath.isNotEmpty) {
+      return AudioSource.uri(Uri.file(localPath), tag: item);
+    }
+    return AudioSource.uri(Uri.parse(url), tag: item);
+  }
+
   Future<void> setTrackQueue({
     required List<MediaItem> items,
     int initialIndex = 0,
@@ -81,16 +92,7 @@ class LocalSpotifyAudioHandler extends BaseAudioHandler
     if (items.isEmpty) return;
 
     queue.add(items);
-    final audioSources = items.map((item) {
-      final url = item.extras?['url'] as String? ?? '';
-      final isOffline = item.extras?['isOffline'] as bool? ?? false;
-      final localPath = item.extras?['localAudioPath'] as String?;
-
-      if (isOffline && localPath != null && localPath.isNotEmpty) {
-        return AudioSource.uri(Uri.file(localPath), tag: item);
-      }
-      return AudioSource.uri(Uri.parse(url), tag: item);
-    }).toList();
+    final audioSources = items.map(_createAudioSource).toList();
 
     await _playlist.clear();
     await _playlist.addAll(audioSources);
@@ -107,6 +109,43 @@ class LocalSpotifyAudioHandler extends BaseAudioHandler
       }
     } catch (e) {
       print('[AudioHandler] Error loading audio source: $e');
+    }
+  }
+
+  @override
+  Future<void> addQueueItem(MediaItem mediaItem) async {
+    final newQueue = List<MediaItem>.from(queue.value)..add(mediaItem);
+    queue.add(newQueue);
+    await _playlist.add(_createAudioSource(mediaItem));
+  }
+
+  @override
+  Future<void> insertQueueItem(int index, MediaItem mediaItem) async {
+    final newQueue = List<MediaItem>.from(queue.value)..insert(index, mediaItem);
+    queue.add(newQueue);
+    await _playlist.insert(index, _createAudioSource(mediaItem));
+  }
+
+  @override
+  Future<void> removeQueueItemAt(int index) async {
+    if (index >= 0 && index < queue.value.length) {
+      final newQueue = List<MediaItem>.from(queue.value)..removeAt(index);
+      queue.add(newQueue);
+      await _playlist.removeAt(index);
+    }
+  }
+
+  Future<void> moveQueueItem(int oldIndex, int newIndex) async {
+    if (oldIndex >= 0 &&
+        oldIndex < queue.value.length &&
+        newIndex >= 0 &&
+        newIndex < queue.value.length) {
+      final item = queue.value[oldIndex];
+      final newQueue = List<MediaItem>.from(queue.value);
+      newQueue.removeAt(oldIndex);
+      newQueue.insert(newIndex, item);
+      queue.add(newQueue);
+      await _playlist.move(oldIndex, newIndex);
     }
   }
 
