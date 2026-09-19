@@ -7,6 +7,8 @@ class SpotifyTrackItem {
   final int durationMs;
   final String uri;
   final String? previewUrl;
+  final String? coverUrl;
+  final String? album;
 
   const SpotifyTrackItem({
     required this.title,
@@ -14,6 +16,8 @@ class SpotifyTrackItem {
     required this.durationMs,
     required this.uri,
     this.previewUrl,
+    this.coverUrl,
+    this.album,
   });
 
   String get durationFormatted {
@@ -134,6 +138,8 @@ class SpotifyService {
                       durationMs: duration,
                       uri: uri,
                       previewUrl: preview,
+                      coverUrl: coverUrl,
+                      album: name,
                     ),
                   );
                 }

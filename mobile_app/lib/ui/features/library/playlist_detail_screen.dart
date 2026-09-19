@@ -529,7 +529,12 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
   Track? _findMatchedTrack(List<Track> tracks, SpotifyTrackItem imported) {
     final cleanTitle = imported.title.toLowerCase().trim();
     for (final t in tracks) {
-      if (t.title.toLowerCase().trim() == cleanTitle) return t;
+      final tTitle = t.title.toLowerCase().trim();
+      if (tTitle == cleanTitle ||
+          tTitle.contains(cleanTitle) ||
+          cleanTitle.contains(tTitle)) {
+        return t;
+      }
     }
     return null;
   }

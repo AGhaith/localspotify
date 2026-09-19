@@ -30,7 +30,7 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
   void _loadPalette(Track track, MusicProvider music) {
     if (_lastTrackId == track.id) return;
     _lastTrackId = track.id;
-    final coverArtUrl = music.getCoverArtUrl(track.coverArtId, size: 250);
+    final coverArtUrl = music.getCoverArtUrl(track.coverArtId, albumName: track.album, size: 250);
     DynamicPaletteService().extractColors(
       key: (track.coverArtId != null && track.coverArtId!.isNotEmpty) ? track.coverArtId! : track.id,
       imageUrl: coverArtUrl,
@@ -50,7 +50,7 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
 
     _loadPalette(track, music);
 
-    final coverArtUrl = music.getCoverArtUrl(track.coverArtId, size: 600);
+    final coverArtUrl = music.getCoverArtUrl(track.coverArtId, albumName: track.album, size: 600);
     final currentSeconds = _dragValue != null
         ? (_dragValue! * player.duration.inSeconds).toInt()
         : player.position.inSeconds;
@@ -89,14 +89,16 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
 
             // Header Bar
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   IconButton(
                     icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textPrimary, size: 28),
+                    padding: const EdgeInsets.all(6),
+                    constraints: const BoxConstraints(),
                     onPressed: () => Navigator.pop(context),
                   ),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: GestureDetector(
                       onTap: () {
@@ -110,18 +112,23 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
                         }
                       },
                       child: Column(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
                             'PLAYING FROM ALBUM',
                             style: AppTypography.labelSmall.copyWith(
                               color: AppColors.textMuted,
                               letterSpacing: 1.2,
+                              fontSize: 10,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 2),
                           Text(
                             track.album,
                             maxLines: 1,
+                            softWrap: false,
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.center,
                             style: AppTypography.titleMedium.copyWith(fontSize: 13),
@@ -130,25 +137,38 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
                       ),
                     ),
                   ),
+                  const SizedBox(width: 8),
                   Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       // Equalizer & Audio Options Icon
                       IconButton(
-                        icon: const Icon(Icons.tune_rounded, color: AppColors.textSecondary, size: 22),
+                        icon: const Icon(Icons.tune_rounded, color: AppColors.textSecondary, size: 20),
+                        padding: const EdgeInsets.all(6),
+                        constraints: const BoxConstraints(),
+                        visualDensity: VisualDensity.compact,
                         onPressed: () => _showEqualizerSheet(context),
                       ),
+                      const SizedBox(width: 4),
                       // Sleep Timer icon
                       IconButton(
                         icon: Icon(
                           Icons.bedtime_rounded,
                           color: player.hasActiveSleepTimer ? AppColors.primary : AppColors.textSecondary,
-                          size: 22,
+                          size: 20,
                         ),
+                        padding: const EdgeInsets.all(6),
+                        constraints: const BoxConstraints(),
+                        visualDensity: VisualDensity.compact,
                         onPressed: () => _showSleepTimerDialog(context, player),
                       ),
+                      const SizedBox(width: 4),
                       // Queue Sheet Icon
                       IconButton(
-                        icon: const Icon(Icons.queue_music_rounded, color: AppColors.textPrimary, size: 24),
+                        icon: const Icon(Icons.queue_music_rounded, color: AppColors.textPrimary, size: 22),
+                        padding: const EdgeInsets.all(6),
+                        constraints: const BoxConstraints(),
+                        visualDensity: VisualDensity.compact,
                         onPressed: () => _showQueue(context),
                       ),
                     ],
@@ -210,7 +230,7 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
 
                     const SizedBox(height: 24),
 
-                    // Track Info & Like Button
+                    // Track Info, Download Button & Like Button
                     Row(
                       children: [
                         Expanded(
@@ -245,6 +265,61 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
                             ],
                           ),
                         ),
+                        // Offline Download Button
+                        if (music.downloadingEntityId == track.id)
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 10),
+                            child: SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.2,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          )
+                        else
+                          IconButton(
+                            icon: Icon(
+                              music.isDownloaded(track.id)
+                                  ? Icons.arrow_circle_down_rounded
+                                  : Icons.arrow_circle_down_outlined,
+                              color: music.isDownloaded(track.id)
+                                  ? AppColors.primary
+                                  : AppColors.textSecondary,
+                              size: 26,
+                            ),
+                            tooltip: music.isDownloaded(track.id)
+                                ? 'Downloaded (Tap to remove)'
+                                : 'Download for offline playback',
+                            onPressed: () async {
+                              HapticFeedback.lightImpact();
+                              if (music.isDownloaded(track.id)) {
+                                await music.deleteOfflineTrack(track.id);
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Removed track from offline downloads'),
+                                      duration: Duration(seconds: 2),
+                                      behavior: SnackBarBehavior.floating,
+                                      backgroundColor: AppColors.surface,
+                                    ),
+                                  );
+                                }
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Downloading "${track.title}" for offline playback...'),
+                                    duration: const Duration(seconds: 2),
+                                    behavior: SnackBarBehavior.floating,
+                                    backgroundColor: AppColors.surface,
+                                  ),
+                                );
+                                await music.downloadTrack(track);
+                              }
+                            },
+                          ),
+                        // Like / Favorite Button
                         IconButton(
                           icon: Icon(
                             track.isStarred ? Icons.favorite_rounded : Icons.favorite_border_rounded,

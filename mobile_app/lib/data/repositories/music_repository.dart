@@ -42,14 +42,26 @@ class MusicRepository {
     int size = 500,
     String? playlistId,
     String? playlistName,
+    String? albumName,
     int? songCount,
   }) {
+    if (coverArtId != null && (coverArtId.startsWith('http://') || coverArtId.startsWith('https://'))) {
+      return coverArtId;
+    }
     if (playlistId != null) {
       final custom = _storageService.getPlaylistCover(playlistId);
       if (custom != null && custom.isNotEmpty) return custom;
     }
     if (playlistName != null) {
       final custom = _storageService.getPlaylistCover(playlistName);
+      if (custom != null && custom.isNotEmpty) return custom;
+    }
+    if (albumName != null) {
+      final custom = _storageService.getPlaylistCover(albumName);
+      if (custom != null && custom.isNotEmpty) return custom;
+    }
+    if (coverArtId != null) {
+      final custom = _storageService.getPlaylistCover(coverArtId);
       if (custom != null && custom.isNotEmpty) return custom;
     }
     // If it's a playlist with 0 songs, NEVER return Navidrome's default vinyl cover art!
@@ -76,6 +88,8 @@ class MusicRepository {
                 'artist': t.artist,
                 'durationMs': t.durationMs,
                 'uri': t.uri,
+                'coverUrl': t.coverUrl,
+                'album': t.album,
               })
           .toList(),
     );
@@ -89,6 +103,8 @@ class MusicRepository {
               artist: m['artist']?.toString() ?? '',
               durationMs: (m['durationMs'] as num?)?.toInt() ?? 0,
               uri: m['uri']?.toString() ?? '',
+              coverUrl: m['coverUrl']?.toString(),
+              album: m['album']?.toString(),
             ))
         .toList();
   }
@@ -153,8 +169,76 @@ class MusicRepository {
     return _apiService.getPlaylists();
   }
 
-  Future<Playlist> getPlaylist(String playlistId) {
-    return _apiService.getPlaylist(playlistId);
+  Future<Playlist> getPlaylist(String playlistId) async {
+    final pl = await _apiService.getPlaylist(playlistId);
+    final imported = getImportedPlaylistTracks(playlistId).isNotEmpty
+        ? getImportedPlaylistTracks(playlistId)
+        : getImportedPlaylistTracks(pl.name);
+    final customCover = getPlaylistCover(playlistId) ?? getPlaylistCover(pl.name);
+
+    final enrichedTracks = pl.tracks.map((t) {
+      String title = t.title;
+      String artist = t.artist;
+      String album = t.album;
+      String? coverArtId = t.coverArtId;
+
+      // If artist is unknown or generic and title contains ' - ', extract artist & title
+      if ((artist.isEmpty || artist.toLowerCase().contains('unknown')) && title.contains(' - ')) {
+        final parts = title.split(' - ');
+        if (parts.length >= 2) {
+          artist = parts[0].trim();
+          title = parts.sublist(1).join(' - ').trim();
+        }
+      }
+
+      SpotifyTrackItem? match;
+      final cleanTitle = title.toLowerCase().trim();
+      final fullRaw = t.title.toLowerCase().trim();
+      for (final imp in imported) {
+        final impTitle = imp.title.toLowerCase().trim();
+        if (impTitle == cleanTitle ||
+            cleanTitle.contains(impTitle) ||
+            impTitle.contains(cleanTitle) ||
+            fullRaw.contains(impTitle)) {
+          match = imp;
+          break;
+        }
+      }
+
+      if (match != null) {
+        title = match.title;
+        if (artist == 'Unknown Artist' || artist.isEmpty || artist.toLowerCase().contains('unknown')) {
+          artist = match.artist;
+        }
+        if (album == 'Unknown Album' || album.isEmpty || album.toLowerCase().contains('unknown')) {
+          album = match.album ?? pl.name;
+        }
+        if (coverArtId == null || coverArtId.isEmpty || coverArtId.startsWith('pl-')) {
+          coverArtId = match.coverUrl ?? customCover;
+        }
+      } else {
+        if (album == 'Unknown Album' || album.isEmpty || album.toLowerCase().contains('unknown')) {
+          album = pl.name;
+        }
+        if (coverArtId == null || coverArtId.isEmpty || coverArtId.startsWith('pl-')) {
+          coverArtId = customCover;
+        }
+      }
+
+      return t.copyWith(
+        title: title,
+        artist: artist,
+        album: album,
+        coverArtId: coverArtId,
+      );
+    }).toList();
+
+    return pl.copyWith(
+      tracks: enrichedTracks,
+      coverArtId: (pl.coverArtId != null && pl.coverArtId!.isNotEmpty && !pl.coverArtId!.startsWith('pl-'))
+          ? pl.coverArtId
+          : customCover,
+    );
   }
 
   Future<Playlist?> createPlaylist(String name, {List<String>? songIds}) {

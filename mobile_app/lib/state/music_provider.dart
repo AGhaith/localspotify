@@ -74,6 +74,7 @@ class MusicProvider extends ChangeNotifier {
     int size = 500,
     String? playlistId,
     String? playlistName,
+    String? albumName,
     int? songCount,
   }) =>
       _musicRepository.getCoverArtUrl(
@@ -81,6 +82,7 @@ class MusicProvider extends ChangeNotifier {
         size: size,
         playlistId: playlistId,
         playlistName: playlistName,
+        albumName: albumName,
         songCount: songCount,
       );
 

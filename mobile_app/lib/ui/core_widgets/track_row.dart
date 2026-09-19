@@ -69,7 +69,7 @@ class TrackRow extends StatelessWidget {
                 alignment: Alignment.center,
                 children: [
                   CachedCoverArt(
-                    imageUrl: music.getCoverArtUrl(track.coverArtId, size: 150),
+                    imageUrl: music.getCoverArtUrl(track.coverArtId, albumName: track.album, size: 150),
                     localImagePath: track.localCoverArtPath,
                     width: 48,
                     height: 48,
@@ -189,7 +189,7 @@ class TrackRow extends StatelessWidget {
                 // Header
                 ListTile(
                   leading: CachedCoverArt(
-                    imageUrl: music.getCoverArtUrl(track.coverArtId, size: 150),
+                    imageUrl: music.getCoverArtUrl(track.coverArtId, albumName: track.album, size: 150),
                     localImagePath: track.localCoverArtPath,
                     width: 48,
                     height: 48,

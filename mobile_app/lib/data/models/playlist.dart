@@ -45,4 +45,28 @@ class Playlist {
       tracks: parsedTracks,
     );
   }
+
+  Playlist copyWith({
+    String? id,
+    String? name,
+    String? comment,
+    String? owner,
+    bool? isPublic,
+    int? songCount,
+    int? duration,
+    String? coverArtId,
+    List<Track>? tracks,
+  }) {
+    return Playlist(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      comment: comment ?? this.comment,
+      owner: owner ?? this.owner,
+      isPublic: isPublic ?? this.isPublic,
+      songCount: songCount ?? this.songCount,
+      duration: duration ?? this.duration,
+      coverArtId: coverArtId ?? this.coverArtId,
+      tracks: tracks ?? this.tracks,
+    );
+  }
 }

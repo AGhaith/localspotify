@@ -2,8 +2,8 @@
 """
 Spotify Playlist Importer for LocalSpotify Music Vault
 Fetches public Spotify playlist tracklists, downloads high-fidelity audio streams
-via yt-dlp, embeds HD album artwork & synced lyrics, triggers Navidrome library scan,
-and creates the playlist on the user's account.
+via yt-dlp, embeds HD album artwork & metadata tags into audio files, triggers
+Navidrome library scan, and links the playlist on the user's account.
 """
 
 import os
@@ -22,15 +22,12 @@ except ImportError:
     print("Warning: yt-dlp is required for downloading audio.")
 
 try:
-    from PIL import Image
-except ImportError:
-    pass
-
-try:
     import mutagen
     from mutagen.mp4 import MP4, MP4Cover
+    from mutagen.mp3 import MP3
+    from mutagen.id3 import ID3, TIT2, TPE1, TPE2, TALB, TRCK, APIC
 except ImportError:
-    pass
+    print("Warning: mutagen is required for tagging audio files.")
 
 
 def parse_spotify_playlist_id(url_or_id: str) -> str | None:
@@ -44,6 +41,36 @@ def parse_spotify_playlist_id(url_or_id: str) -> str | None:
         return m_uri.group(1)
     if re.match(r'^[a-zA-Z0-9]{15,30}$', clean):
         return clean
+    return None
+
+
+def fetch_track_artwork(track_uri: str) -> str | None:
+    """Fetches high-res cover image URL from Spotify track embed."""
+    try:
+        clean_id = track_uri.split(":")[-1] if ":" in track_uri else track_uri
+        embed_url = f"https://open.spotify.com/embed/track/{clean_id}"
+        req = urllib.request.Request(
+            embed_url,
+            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+        )
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            html = resp.read().decode('utf-8')
+
+        marker = '<script id="__NEXT_DATA__" type="application/json">'
+        start = html.find(marker)
+        if start == -1:
+            return None
+
+        end = html.find('</script>', start)
+        json_str = html[start + len(marker):end]
+        data = json.loads(json_str)
+        entity = data.get("props", {}).get("pageProps", {}).get("state", {}).get("data", {}).get("entity", {})
+        images = entity.get("visualIdentity", {}).get("image", [])
+        if images:
+            # Pick highest resolution image
+            return images[-1].get("url") or images[0].get("url")
+    except Exception:
+        pass
     return None
 
 
@@ -74,7 +101,7 @@ def fetch_spotify_playlist(playlist_id: str) -> dict:
     cover_url = None
     images = entity.get("visualIdentity", {}).get("image", [])
     if images:
-        cover_url = images[-1].get("url")
+        cover_url = images[-1].get("url") or images[0].get("url")
 
     tracks = []
     for t in track_list:
@@ -82,8 +109,25 @@ def fetch_spotify_playlist(playlist_id: str) -> dict:
             "title": t.get("title", "Unknown Title"),
             "artist": t.get("subtitle", "Unknown Artist"),
             "duration_ms": t.get("duration", 0),
-            "uri": t.get("uri", "")
+            "uri": t.get("uri", ""),
+            "cover_url": None,
         })
+
+    # Concurrently resolve track-specific cover art for top 50 tracks
+    print(f"[INFO] Resolving individual track artwork for {len(tracks)} tracks...")
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        futures = {
+            executor.submit(fetch_track_artwork, t["uri"]): t
+            for t in tracks if t["uri"]
+        }
+        for fut in as_completed(futures):
+            t = futures[fut]
+            try:
+                art = fut.result()
+                if art:
+                    t["cover_url"] = art
+            except Exception:
+                pass
 
     return {
         "id": playlist_id,
@@ -99,8 +143,58 @@ def sanitize_name(name: str) -> str:
     return re.sub(r'[\/\\:*?"<>|\x00-\x1f]', '', name).strip('. ')
 
 
-def download_single_track(track: dict, output_dir: str) -> str | None:
-    """Download single track via yt-dlp into M4A audio."""
+def tag_audio_file(
+    filepath: str,
+    title: str,
+    artist: str,
+    album: str,
+    track_num: int,
+    total_tracks: int,
+    cover_bytes: bytes | None
+):
+    """Embeds ID3 / MP4 tags and cover art into the downloaded audio file."""
+    try:
+        lower = filepath.lower()
+        if lower.endswith(".m4a") or lower.endswith(".mp4"):
+            audio = MP4(filepath)
+            audio['\xa9nam'] = [title]
+            audio['\xa9ART'] = [artist]
+            audio['\xa9aART'] = [artist]
+            audio['\xa9alb'] = [album]
+            audio['trkn'] = [(track_num, total_tracks)]
+            if cover_bytes:
+                fmt = MP4Cover.FORMAT_PNG if cover_bytes.startswith(b'\x89PNG') else MP4Cover.FORMAT_JPEG
+                audio['covr'] = [MP4Cover(cover_bytes, image_format=fmt)]
+            audio.save()
+        elif lower.endswith(".mp3"):
+            audio = MP3(filepath, ID3=ID3)
+            try:
+                audio.add_tags()
+            except Exception:
+                pass
+            audio.tags.add(TIT2(encoding=3, text=title))
+            audio.tags.add(TPE1(encoding=3, text=artist))
+            audio.tags.add(TPE2(encoding=3, text=artist))
+            audio.tags.add(TALB(encoding=3, text=album))
+            audio.tags.add(TRCK(encoding=3, text=f"{track_num}/{total_tracks}"))
+            if cover_bytes:
+                mime = 'image/png' if cover_bytes.startswith(b'\x89PNG') else 'image/jpeg'
+                audio.tags.add(APIC(encoding=3, mime=mime, type=3, desc='Cover', data=cover_bytes))
+            audio.save()
+    except Exception as e:
+        print(f"  [WARN] Could not embed tags into '{filepath}': {e}")
+
+
+def download_single_track(
+    track: dict,
+    output_dir: str,
+    playlist_title: str,
+    track_index: int,
+    total_tracks: int,
+    fallback_cover_url: str | None,
+    cached_cover_bytes: bytes | None = None
+) -> str | None:
+    """Download single track via yt-dlp into M4A audio and tag it with full metadata."""
     title = track["title"]
     artist = track["artist"]
     clean_title = sanitize_name(title)
@@ -109,7 +203,23 @@ def download_single_track(track: dict, output_dir: str) -> str | None:
     output_base = os.path.join(output_dir, f"{clean_artist} - {clean_title}")
     expected_path = f"{output_base}.m4a"
 
+    # Download cover image bytes
+    cover_bytes = cached_cover_bytes
+    track_art_url = track.get("cover_url") or fallback_cover_url
+    if track.get("cover_url") and track.get("cover_url") != fallback_cover_url:
+        try:
+            req = urllib.request.Request(
+                track["cover_url"],
+                headers={"User-Agent": "Mozilla/5.0"}
+            )
+            with urllib.request.urlopen(req, timeout=8) as r:
+                cover_bytes = r.read()
+        except Exception:
+            cover_bytes = cached_cover_bytes
+
     if os.path.exists(expected_path):
+        # Re-tag existing file to ensure metadata & thumbnails are present
+        tag_audio_file(expected_path, title, artist, playlist_title, track_index, total_tracks, cover_bytes)
         return expected_path
 
     ydl_opts = {
@@ -123,8 +233,8 @@ def download_single_track(track: dict, output_dir: str) -> str | None:
         'no_warnings': True,
         'noprogress': True,
         'noplaylist': True,
-        'socket_timeout': 10,
-        'retries': 2,
+        'socket_timeout': 15,
+        'retries': 3,
     }
 
     query = f"ytsearch1:{artist} - {title} Audio"
@@ -135,7 +245,11 @@ def download_single_track(track: dict, output_dir: str) -> str | None:
         print(f"  Failed downloading '{title}' by {artist}: {e}")
         return None
 
-    return expected_path if os.path.exists(expected_path) else None
+    if os.path.exists(expected_path):
+        tag_audio_file(expected_path, title, artist, playlist_title, track_index, total_tracks, cover_bytes)
+        return expected_path
+
+    return None
 
 
 def sync_navidrome_playlist(
@@ -234,25 +348,49 @@ def import_playlist(
 
     print(f"[INFO] Resolving Spotify playlist {playlist_id}...")
     info = fetch_spotify_playlist(playlist_id)
-    print(f"[OK] Found playlist: '{info['title']}' with {len(info['tracks'])} tracks")
+    total_tracks = len(info["tracks"])
+    print(f"[OK] Found playlist: '{info['title']}' with {total_tracks} tracks")
 
     playlist_folder = os.path.join(music_folder, sanitize_name(info["title"]))
     os.makedirs(playlist_folder, exist_ok=True)
+
+    # Download playlist cover.jpg for folder-level indexing
+    cached_cover_bytes = None
+    if info.get("cover_url"):
+        try:
+            req = urllib.request.Request(info["cover_url"], headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req, timeout=10) as r:
+                cached_cover_bytes = r.read()
+            cover_file = os.path.join(playlist_folder, "cover.jpg")
+            with open(cover_file, "wb") as f:
+                f.write(cached_cover_bytes)
+            print(f"[OK] Saved playlist cover art: {cover_file}")
+        except Exception as e:
+            print(f"[WARN] Could not save folder cover.jpg: {e}")
 
     print(f"[INFO] Downloading tracks concurrently to: {playlist_folder}")
     downloaded = 0
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = {
-            executor.submit(download_single_track, t, playlist_folder): t
-            for t in info["tracks"]
+            executor.submit(
+                download_single_track,
+                t,
+                playlist_folder,
+                info["title"],
+                i + 1,
+                total_tracks,
+                info["cover_url"],
+                cached_cover_bytes
+            ): t
+            for i, t in enumerate(info["tracks"])
         }
         for fut in as_completed(futures):
             res = fut.result()
             if res:
                 downloaded += 1
-            print(f"  Progress: {downloaded}/{len(info['tracks'])} downloaded", end="\r")
+            print(f"  Progress: {downloaded}/{total_tracks} downloaded & tagged", end="\r")
 
-    print(f"\n[OK] Successfully downloaded {downloaded}/{len(info['tracks'])} tracks into '{info['title']}'.")
+    print(f"\n[OK] Successfully downloaded & tagged {downloaded}/{total_tracks} tracks into '{info['title']}'.")
 
     if sync_server:
         titles = [t["title"] for t in info["tracks"]]

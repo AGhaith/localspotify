@@ -88,12 +88,25 @@ class Track {
   }
 
   factory Track.fromSubsonicJson(Map<String, dynamic> json) {
+    var rawTitle = json['title']?.toString() ?? 'Unknown Title';
+    var rawArtist = json['artist']?.toString() ?? 'Unknown Artist';
+    var rawAlbum = json['album']?.toString() ?? 'Unknown Album';
+
+    // If artist is unknown or placeholder and title contains ' - ', extract artist & title
+    if ((rawArtist.isEmpty || rawArtist.toLowerCase().contains('unknown')) && rawTitle.contains(' - ')) {
+      final parts = rawTitle.split(' - ');
+      if (parts.length >= 2) {
+        rawArtist = parts[0].trim();
+        rawTitle = parts.sublist(1).join(' - ').trim();
+      }
+    }
+
     return Track(
       id: json['id']?.toString() ?? '',
-      title: json['title']?.toString() ?? 'Unknown Title',
-      artist: json['artist']?.toString() ?? 'Unknown Artist',
+      title: rawTitle,
+      artist: rawArtist,
       artistId: json['artistId']?.toString(),
-      album: json['album']?.toString() ?? 'Unknown Album',
+      album: rawAlbum,
       albumId: json['albumId']?.toString(),
       duration: (json['duration'] as num?)?.toInt() ?? 0,
       coverArtId: json['coverArt']?.toString(),
