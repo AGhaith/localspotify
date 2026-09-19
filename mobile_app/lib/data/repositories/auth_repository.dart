@@ -66,6 +66,55 @@ class AuthRepository {
     return session;
   }
 
+  Future<UserSession> createAccount({
+    required String serverUrl,
+    required String username,
+    required String email,
+    required String password,
+  }) async {
+    await _apiService.createUser(
+      serverUrl: serverUrl,
+      username: username,
+      password: password,
+      email: email,
+    );
+
+    return login(
+      serverUrl: serverUrl,
+      username: username,
+      password: password,
+    );
+  }
+
+  Future<UserSession> loginWithGoogle({
+    required String serverUrl,
+    required String email,
+    required String displayName,
+  }) async {
+    var cleanUrl = serverUrl.trim();
+    if (!cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) {
+      cleanUrl = 'http://$cleanUrl';
+    }
+    while (cleanUrl.endsWith('/')) {
+      cleanUrl = cleanUrl.substring(0, cleanUrl.length - 1);
+    }
+
+    final username = email.split('@').first;
+    final salt = Md5Hasher.generateSalt();
+    final token = Md5Hasher.hashToken(email, salt);
+
+    final session = UserSession(
+      serverUrl: cleanUrl,
+      username: username,
+      token: token,
+      salt: salt,
+    );
+
+    _apiService.updateSession(session);
+    await _storageService.saveSession(session);
+    return session;
+  }
+
   Future<void> logout() async {
     _apiService.clearSession();
     await _storageService.clearSession();

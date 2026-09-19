@@ -3,7 +3,9 @@ import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../state/auth_provider.dart';
+import '../../core_widgets/google_auth_button.dart';
 import '../../core_widgets/neo_button.dart';
+import 'create_account_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -56,6 +58,30 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       );
     }
+  }
+
+  void _onGoogleLogin() {
+    GoogleAccountSelectorSheet.show(
+      context,
+      onSelected: (email, displayName) async {
+        final serverUrl = _serverUrlController.text.trim();
+        final auth = context.read<AuthProvider>();
+        final ok = await auth.loginWithGoogle(
+          serverUrl: serverUrl.isNotEmpty ? serverUrl : 'http://100.92.248.49:6767',
+          email: email,
+          displayName: displayName,
+        );
+
+        if (!ok && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(auth.errorMessage ?? 'Google login failed.'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+      },
+    );
   }
 
   @override
@@ -166,6 +192,62 @@ class _LoginScreenState extends State<LoginScreen> {
                   isLoading: isLoading,
                   onPressed: isLoading ? null : _onLogin,
                 ),
+
+                const SizedBox(height: 20),
+
+                // OR Divider
+                Row(
+                  children: [
+                    const Expanded(child: Divider(color: Colors.white24)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      child: Text('OR', style: AppTypography.labelSmall.copyWith(color: Colors.white54)),
+                    ),
+                    const Expanded(child: Divider(color: Colors.white24)),
+                  ],
+                ),
+
+                const SizedBox(height: 20),
+
+                // Google Login Button
+                GoogleAuthButton(
+                  text: 'Continue with Google',
+                  isLoading: isLoading,
+                  onPressed: _onGoogleLogin,
+                ),
+
+                const SizedBox(height: 32),
+
+                // Footer: Create Account Link
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      "Don't have an account? ",
+                      style: AppTypography.bodyMedium.copyWith(color: Colors.white70),
+                    ),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => CreateAccountScreen(
+                              initialServerUrl: _serverUrlController.text.trim(),
+                            ),
+                          ),
+                        );
+                      },
+                      child: Text(
+                        'Create one',
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
               ],
             ),
           ),

@@ -71,6 +71,60 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> createAccount({
+    required String serverUrl,
+    required String username,
+    required String email,
+    required String password,
+  }) async {
+    _status = AuthStatus.checking;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      _session = await _authRepository.createAccount(
+        serverUrl: serverUrl,
+        username: username,
+        email: email,
+        password: password,
+      );
+      _status = AuthStatus.authenticated;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _status = AuthStatus.error;
+      _errorMessage = e.toString().replaceAll('Exception:', '').trim();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> loginWithGoogle({
+    required String serverUrl,
+    required String email,
+    required String displayName,
+  }) async {
+    _status = AuthStatus.checking;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      _session = await _authRepository.loginWithGoogle(
+        serverUrl: serverUrl,
+        email: email,
+        displayName: displayName,
+      );
+      _status = AuthStatus.authenticated;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _status = AuthStatus.error;
+      _errorMessage = e.toString().replaceAll('Exception:', '').trim();
+      notifyListeners();
+      return false;
+    }
+  }
+
   Future<void> logout() async {
     await _authRepository.logout();
     _session = null;

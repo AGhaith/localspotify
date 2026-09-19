@@ -91,6 +91,53 @@ class SubsonicApiService {
     }
   }
 
+  /// Create a new user account on the Subsonic / Navidrome server
+  Future<bool> createUser({
+    required String serverUrl,
+    required String username,
+    required String password,
+    required String email,
+  }) async {
+    final clean = _cleanUrl(serverUrl);
+    final salt = Md5Hasher.generateSalt();
+    final token = Md5Hasher.hashToken(password, salt);
+
+    final query = {
+      'u': username,
+      't': token,
+      's': salt,
+      'v': '1.16.1',
+      'c': 'LocalSpotify',
+      'f': 'json',
+      'username': username,
+      'password': password,
+      'email': email,
+    };
+
+    try {
+      final response = await _dio.get(
+        '$clean/rest/createUser.view',
+        queryParameters: query,
+      );
+      final data = response.data;
+      if (data is Map && data.containsKey('subsonic-response')) {
+        final sub = data['subsonic-response'];
+        if (sub['status'] == 'ok') {
+          return true;
+        } else if (sub['error'] != null) {
+          final msg = sub['error']['message'] ?? 'Server rejected registration';
+          throw Exception(msg);
+        }
+      }
+      return true;
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404 || e.response?.statusCode == 403) {
+        throw Exception('Server does not allow public registration. Contact your vault admin or sign in.');
+      }
+      throw Exception('Failed to connect to server for registration: ${e.message}');
+    }
+  }
+
   /// Get Album list by type: recent, newest, frequent, starred, etc.
   Future<List<Album>> getAlbumList({
     String type = 'recent',
