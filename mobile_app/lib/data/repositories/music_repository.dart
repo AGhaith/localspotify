@@ -5,16 +5,24 @@ import '../models/playlist.dart';
 import '../models/track.dart';
 import '../services/subsonic_api_service.dart';
 import '../services/offline_storage_service.dart';
+import '../services/lyrics_service.dart';
 
 class MusicRepository {
   final SubsonicApiService _apiService;
   final OfflineStorageService _storageService;
+  final LyricsService _lyricsService;
 
   MusicRepository({
     required SubsonicApiService apiService,
     required OfflineStorageService storageService,
+    LyricsService? lyricsService,
   })  : _apiService = apiService,
-        _storageService = storageService;
+        _storageService = storageService,
+        _lyricsService = lyricsService ??
+            LyricsService(
+              subsonicService: apiService,
+              storageService: storageService,
+            );
 
   String getCoverArtUrl(String? coverArtId, {int size = 500}) {
     return _apiService.getCoverArtUrl(coverArtId, size: size);
@@ -73,11 +81,7 @@ class MusicRepository {
   }
 
   Future<Lyrics?> getLyrics(Track track) {
-    return _apiService.getLyrics(
-      songId: track.id,
-      artist: track.artist,
-      title: track.title,
-    );
+    return _lyricsService.getLyrics(track);
   }
 
   Future<List<Playlist>> getPlaylists() {
@@ -143,9 +147,13 @@ class MusicRepository {
     return _storageService.isTrackDownloaded(trackId);
   }
 
-  Future<Track> downloadTrack(Track track, {void Function(int, int)? onProgress}) {
+  Future<Track> downloadTrack(Track track, {void Function(int, int)? onProgress}) async {
     final streamUrl = _apiService.getStreamUrl(track.id);
     final coverArtUrl = _apiService.getCoverArtUrl(track.coverArtId, size: 500);
+    // Pre-cache lyrics for offline playback
+    try {
+      await _lyricsService.getLyrics(track);
+    } catch (_) {}
     return _storageService.downloadTrack(
       track: track,
       downloadUrl: streamUrl,

@@ -25,22 +25,30 @@ class Lyrics {
 
   factory Lyrics.fromLrc(String lrcContent, {String? artist, String? title}) {
     final lines = <LyricsLine>[];
-    final regex = RegExp(r'\[(\d{2}):(\d{2})\.?(\d{2,3})?\](.*)');
+    final timeRegex = RegExp(r'\[(\d{1,2}):(\d{2})(?:[.:](\d{2,3}))?\]');
 
     for (final rawLine in lrcContent.split('\n')) {
-      final match = regex.firstMatch(rawLine.trim());
-      if (match != null) {
+      final trimmed = rawLine.trim();
+      if (trimmed.isEmpty) continue;
+
+      final matches = timeRegex.allMatches(trimmed).toList();
+      if (matches.isEmpty) {
+        // Skip metadata tags like [ar:Artist], [ti:Title]
+        if (RegExp(r'^\[[a-zA-Z]+:.*\]$').hasMatch(trimmed)) continue;
+        continue;
+      }
+
+      final text = trimmed.replaceAll(timeRegex, '').trim();
+
+      for (final match in matches) {
         final minutes = int.tryParse(match.group(1) ?? '0') ?? 0;
         final seconds = int.tryParse(match.group(2) ?? '0') ?? 0;
         final millisGroup = match.group(3);
         var milliseconds = 0;
         if (millisGroup != null) {
-          milliseconds = int.tryParse(millisGroup) ?? 0;
-          if (millisGroup.length == 2) {
-            milliseconds *= 10;
-          }
+          final parsed = int.tryParse(millisGroup) ?? 0;
+          milliseconds = millisGroup.length == 2 ? parsed * 10 : parsed;
         }
-        final text = (match.group(4) ?? '').trim();
         final timestamp = Duration(
           minutes: minutes,
           seconds: seconds,

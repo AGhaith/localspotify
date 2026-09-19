@@ -56,5 +56,25 @@ Line three of song
       expect(lyrics.lines.isEmpty, isTrue);
       expect(lyrics.rawText, contains('Line one of song'));
     });
+
+    test('parses multi-timestamp and metadata LRC lines correctly', () {
+      const lrcWithMeta = '''
+[ti:Yellow]
+[ar:Coldplay]
+[al:Parachutes]
+[00:10.00][00:25.00]Look at the stars
+[00:30.50]Look how they shine for you
+''';
+
+      final lyrics = Lyrics.fromLrc(lrcWithMeta);
+      expect(lyrics.isSynced, isTrue);
+      expect(lyrics.lines.length, equals(3));
+      expect(lyrics.lines[0].timestamp, equals(const Duration(seconds: 10)));
+      expect(lyrics.lines[0].text, equals('Look at the stars'));
+      expect(lyrics.lines[1].timestamp, equals(const Duration(seconds: 25)));
+      expect(lyrics.lines[1].text, equals('Look at the stars'));
+      expect(lyrics.lines[2].timestamp, equals(const Duration(seconds: 30, milliseconds: 500)));
+      expect(lyrics.lines[2].text, equals('Look how they shine for you'));
+    });
   });
 }

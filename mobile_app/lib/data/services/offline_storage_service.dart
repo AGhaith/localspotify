@@ -5,6 +5,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_session.dart';
 import '../models/track.dart';
+import '../models/lyrics.dart';
 
 class OfflineStorageService {
   static const String _keySession = 'localspotify_user_session';
@@ -207,5 +208,21 @@ class OfflineStorageService {
       }
     } catch (_) {}
     await _prefs.remove(_keyDownloadedTracks);
+  }
+
+  // ================= Lyrics Storage & Cache =================
+  Future<void> saveCachedLyrics(String trackId, String rawLrc, bool isSynced) async {
+    await _prefs.setString('localspotify_lyrics_$trackId', rawLrc);
+    await _prefs.setBool('localspotify_lyrics_synced_$trackId', isSynced);
+  }
+
+  Lyrics? getCachedLyrics(String trackId, {String? artist, String? title}) {
+    final raw = _prefs.getString('localspotify_lyrics_$trackId');
+    if (raw == null || raw.trim().isEmpty) return null;
+    final isSynced = _prefs.getBool('localspotify_lyrics_synced_$trackId') ?? false;
+    if (isSynced) {
+      return Lyrics.fromLrc(raw, artist: artist, title: title);
+    }
+    return Lyrics.fromPlainText(raw, artist: artist, title: title);
   }
 }
