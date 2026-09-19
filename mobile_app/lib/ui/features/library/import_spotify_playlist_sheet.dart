@@ -12,6 +12,7 @@ import '../../../data/services/spotify_service.dart';
 import '../../../state/music_provider.dart';
 import '../../core_widgets/cached_cover_art.dart';
 import '../../core_widgets/neo_button.dart';
+import '../../core_widgets/pressable_scale.dart';
 import 'playlist_detail_screen.dart';
 
 enum _ImportStep { input, preview, downloading, success, error }
@@ -542,65 +543,144 @@ class _ImportSpotifyPlaylistSheetState extends State<ImportSpotifyPlaylistSheet>
     final status = _importStatus;
     final progress = status?.progress ?? 0.15;
     final percentInt = (progress * 100).toInt();
+    final info = _playlistInfo;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Syncing to Library...',
-                style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold),
-              ),
-              Text(
-                '$percentInt%',
-                style: AppTypography.titleMedium.copyWith(color: _paletteVibrant, fontWeight: FontWeight.bold),
-              ),
-            ],
+          // Centerpiece Artwork with Glowing Ring & Progress Badge
+          Center(
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Container(
+                  width: 96,
+                  height: 96,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: _paletteVibrant.withValues(alpha: 0.35),
+                        blurRadius: 24,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(
+                  width: 96,
+                  height: 96,
+                  child: CircularProgressIndicator(
+                    value: progress > 0 ? progress : null,
+                    strokeWidth: 3.5,
+                    backgroundColor: Colors.white12,
+                    valueColor: AlwaysStoppedAnimation<Color>(_paletteVibrant),
+                  ),
+                ),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(40),
+                  child: CachedCoverArt(
+                    imageUrl: info?.coverUrl,
+                    width: 78,
+                    height: 78,
+                    borderRadius: 39,
+                    placeholderIcon: Icons.queue_music_rounded,
+                  ),
+                ),
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: _paletteVibrant,
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Colors.black45,
+                          blurRadius: 4,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      '$percentInt%',
+                      style: const TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 18),
 
-          // Linear Progress Bar
+          // Title & Progress Bar
+          Text(
+            info?.name ?? 'Syncing Playlist',
+            textAlign: TextAlign.center,
+            style: AppTypography.titleMedium.copyWith(fontSize: 16, fontWeight: FontWeight.bold),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Transferring tracks & audio to library vault',
+            textAlign: TextAlign.center,
+            style: AppTypography.bodySmall.copyWith(color: Colors.white60, fontSize: 12),
+          ),
+          const SizedBox(height: 14),
+
+          // Glowing Linear Progress Bar
           ClipRRect(
             borderRadius: BorderRadius.circular(6),
             child: LinearProgressIndicator(
               value: progress,
-              minHeight: 8,
+              minHeight: 6,
               backgroundColor: Colors.white12,
               valueColor: AlwaysStoppedAnimation<Color>(_paletteVibrant),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
 
-          // Current Status Text
+          // Dynamic Live Status Card
           Container(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: _paletteSurface.withValues(alpha: 0.7),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: _paletteVibrant.withValues(alpha: 0.3)),
+              color: _paletteSurface.withValues(alpha: 0.75),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: _paletteVibrant.withValues(alpha: 0.25), width: 1.2),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.2,
-                        valueColor: AlwaysStoppedAnimation<Color>(_paletteVibrant),
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: _paletteVibrant,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: _paletteVibrant,
+                            blurRadius: 6,
+                            spreadRadius: 1,
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        status?.message ?? 'Syncing tracks...',
-                        style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500),
+                        status?.message ?? 'Syncing tracks in progress...',
+                        style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -608,12 +688,20 @@ class _ImportSpotifyPlaylistSheetState extends State<ImportSpotifyPlaylistSheet>
                   ],
                 ),
                 if (status?.currentTrack != null) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    'Track: ${status!.currentTrack}',
-                    style: const TextStyle(color: Colors.white60, fontSize: 12),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      const Icon(Icons.graphic_eq_rounded, size: 14, color: Colors.white54),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          status!.currentTrack!,
+                          style: TextStyle(color: _paletteVibrant.withValues(alpha: 0.9), fontSize: 12, fontWeight: FontWeight.w500),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ],
@@ -621,14 +709,39 @@ class _ImportSpotifyPlaylistSheetState extends State<ImportSpotifyPlaylistSheet>
           ),
           const SizedBox(height: 16),
 
-          // Feature Badges
+          // Pipeline Quality Badges
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildFeaturePill(Icons.audio_file_rounded, 'Hi-Fi Audio'),
-              _buildFeaturePill(Icons.image_rounded, 'HD Artwork'),
+              _buildFeaturePill(Icons.music_note_rounded, 'Hi-Fi Audio'),
+              _buildFeaturePill(Icons.image_rounded, 'HD Covers'),
               _buildFeaturePill(Icons.subtitles_rounded, 'Synced Lyrics'),
             ],
+          ),
+          const SizedBox(height: 16),
+
+          // Run in Background Button
+          PressableScale(
+            onTap: () => Navigator.pop(context),
+            scaleFactor: 0.96,
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white12),
+              ),
+              child: const Center(
+                child: Text(
+                  'Continue in Background',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
           ),
         ],
       ),

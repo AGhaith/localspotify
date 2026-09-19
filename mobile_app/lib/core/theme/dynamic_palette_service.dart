@@ -68,9 +68,9 @@ class DynamicPaletteService {
 
   static const _defaultColors = PaletteColors(
     primaryAccent: AppColors.primary,
-    ambientTop: Color(0xFF1E1435),
-    ambientMid: Color(0xFF110D1F),
-    ambientBottom: Color(0xFF07070B),
+    ambientTop: Color(0xFF222226),
+    ambientMid: Color(0xFF141418),
+    ambientBottom: Color(0xFF0A0A0E),
   );
 }
 
@@ -99,4 +99,27 @@ class PaletteColors {
       stops: const [0.0, 0.55, 1.0],
     );
   }
+
+  LinearGradient toLyricsCardGradient() {
+    final topColor = Color.alphaBlend(
+      primaryAccent.withValues(alpha: 0.38),
+      ambientTop,
+    );
+    final bottomColor = Color.alphaBlend(
+      ambientMid.withValues(alpha: 0.85),
+      const Color(0xFF0E0E12),
+    );
+
+    return LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: [
+        topColor,
+        bottomColor,
+      ],
+      stops: const [0.0, 1.0],
+    );
+  }
+
+  Color get lyricsBorderColor => primaryAccent.withValues(alpha: 0.35);
 }

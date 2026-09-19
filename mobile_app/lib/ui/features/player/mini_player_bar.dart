@@ -6,6 +6,7 @@ import '../../../core/theme/app_typography.dart';
 import '../../../state/audio_player_provider.dart';
 import '../../../state/music_provider.dart';
 import '../../core_widgets/cached_cover_art.dart';
+import '../../core_widgets/pressable_scale.dart';
 import 'now_playing_sheet.dart';
 
 class MiniPlayerBar extends StatelessWidget {
@@ -19,9 +20,8 @@ class MiniPlayerBar extends StatelessWidget {
 
     if (track == null) return const SizedBox.shrink();
 
-    return GestureDetector(
+    return PressableScale(
       onTap: () {
-        HapticFeedback.lightImpact();
         showModalBottomSheet(
           context: context,
           isScrollControlled: true,
@@ -29,6 +29,8 @@ class MiniPlayerBar extends StatelessWidget {
           builder: (_) => const NowPlayingSheet(),
         );
       },
+      scaleFactor: 0.98,
+      child: GestureDetector(
       // Horizontal swipe to skip tracks (Spotify-style gesture)
       onHorizontalDragEnd: (details) {
         final velocity = details.primaryVelocity ?? 0;
@@ -92,28 +94,36 @@ class MiniPlayerBar extends StatelessWidget {
                     ),
                   ),
                   // Like Button
-                  IconButton(
-                    icon: Icon(
-                      track.isStarred ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                      color: track.isStarred ? AppColors.primary : AppColors.textSecondary,
-                      size: 22,
-                    ),
-                    onPressed: () {
+                  PressableScale(
+                    onTap: () {
                       HapticFeedback.lightImpact();
                       music.toggleStar(track);
                     },
+                    scaleFactor: 0.85,
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Icon(
+                        track.isStarred ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                        color: track.isStarred ? AppColors.primary : AppColors.textSecondary,
+                        size: 22,
+                      ),
+                    ),
                   ),
                   // Play / Pause Button
-                  IconButton(
-                    icon: Icon(
-                      player.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                      color: AppColors.textPrimary,
-                      size: 28,
-                    ),
-                    onPressed: () {
-                      HapticFeedback.lightImpact();
+                  PressableScale(
+                    onTap: () {
+                      HapticFeedback.mediumImpact();
                       player.togglePlay();
                     },
+                    scaleFactor: 0.88,
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Icon(
+                        player.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                        color: AppColors.textPrimary,
+                        size: 28,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -130,6 +140,7 @@ class MiniPlayerBar extends StatelessWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }

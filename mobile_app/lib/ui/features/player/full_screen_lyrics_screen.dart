@@ -10,6 +10,7 @@ import '../../../data/models/track.dart';
 import '../../../state/audio_player_provider.dart';
 import '../../../state/music_provider.dart';
 import '../../core_widgets/cached_cover_art.dart';
+import '../../core_widgets/pressable_scale.dart';
 
 class FullScreenLyricsScreen extends StatefulWidget {
   final Track track;
@@ -348,25 +349,47 @@ class _FullScreenLyricsScreenState extends State<FullScreenLyricsScreen> {
                         itemBuilder: (ctx, i) {
                           final line = lyrics.lines[i];
                           final isActive = i == activeIndex;
+                          final isArabic = AppTypography.isArabicText(line.text);
 
-                          return GestureDetector(
+                          final lineStyle = AppTypography.lyricsLineStyle(
+                            text: line.text,
+                            isActive: isActive,
+                            fontSize: isActive ? 27 : 21,
+                            activeColor: Colors.white,
+                            inactiveColor: Colors.white.withValues(alpha: 0.32),
+                          );
+
+                          return PressableScale(
                             onTap: () {
                               HapticFeedback.selectionClick();
                               player.seek(line.timestamp);
                             },
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              child: Text(
-                                line.text.isEmpty ? '...' : line.text,
-                                style: TextStyle(
-                                  fontFamily: 'Montserrat',
-                                  fontSize: isActive ? 26 : 21,
-                                  fontWeight: isActive ? FontWeight.w900 : FontWeight.w600,
-                                  color: isActive
-                                      ? Colors.white
-                                      : Colors.white.withValues(alpha: 0.3),
-                                  height: 1.35,
-                                  letterSpacing: -0.3,
+                            scaleFactor: 0.98,
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 250),
+                              curve: Curves.easeOutCubic,
+                              padding: EdgeInsets.symmetric(
+                                vertical: isActive ? 14 : 8,
+                                horizontal: isActive ? 10 : 4,
+                              ),
+                              margin: const EdgeInsets.symmetric(vertical: 2),
+                              decoration: BoxDecoration(
+                                color: isActive
+                                    ? Colors.white.withValues(alpha: 0.08)
+                                    : Colors.transparent,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Align(
+                                alignment: isArabic ? Alignment.centerRight : Alignment.centerLeft,
+                                child: AnimatedDefaultTextStyle(
+                                  duration: const Duration(milliseconds: 280),
+                                  curve: Curves.easeOutCubic,
+                                  style: lineStyle,
+                                  child: Text(
+                                    line.text.isEmpty ? '...' : line.text,
+                                    textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
+                                    textAlign: isArabic ? TextAlign.right : TextAlign.left,
+                                  ),
                                 ),
                               ),
                             ),
@@ -376,15 +399,19 @@ class _FullScreenLyricsScreenState extends State<FullScreenLyricsScreen> {
                     }
 
                     // 2. Plain Text Lyrics
+                    final isArabic = AppTypography.isArabicText(lyrics.rawText);
                     return SingleChildScrollView(
                       physics: const BouncingScrollPhysics(),
                       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
                       child: Text(
                         lyrics.rawText,
-                        style: AppTypography.bodyLarge.copyWith(
-                          color: Colors.white.withValues(alpha: 0.85),
-                          height: 1.8,
-                          fontSize: 18,
+                        textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
+                        textAlign: isArabic ? TextAlign.right : TextAlign.left,
+                        style: AppTypography.lyricsLineStyle(
+                          text: lyrics.rawText,
+                          isActive: true,
+                          fontSize: 19,
+                          activeColor: Colors.white.withValues(alpha: 0.88),
                         ),
                       ),
                     );

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../state/audio_player_provider.dart';
+import '../../core_widgets/pressable_scale.dart';
 import '../home/home_screen.dart';
 import '../library/library_screen.dart';
 import '../offline/offline_screen.dart';
@@ -95,12 +96,12 @@ class _BottomNavShellState extends State<BottomNavShell> {
   Widget _buildNavItem(int index, String label, IconData activeIcon, IconData inactiveIcon) {
     final isActive = _currentIndex == index;
 
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
+    return PressableScale(
       onTap: () {
         HapticFeedback.selectionClick();
         setState(() => _currentIndex = index);
       },
+      scaleFactor: 0.88,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         child: Column(

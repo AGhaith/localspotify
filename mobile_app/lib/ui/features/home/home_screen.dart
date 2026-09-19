@@ -8,6 +8,7 @@ import '../../../state/auth_provider.dart';
 import '../../../state/music_provider.dart';
 import '../../core_widgets/album_card.dart';
 import '../../core_widgets/cached_cover_art.dart';
+import '../../core_widgets/pressable_scale.dart';
 import '../library/album_detail_screen.dart';
 import '../library/artist_detail_screen.dart';
 import '../library/liked_songs_screen.dart';
@@ -89,8 +90,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       Row(
                         children: [
                           // User Avatar with initial
-                          GestureDetector(
+                          PressableScale(
                             onTap: () => _showUserMenu(context, auth),
+                            scaleFactor: 0.90,
                             child: Container(
                               width: 38,
                               height: 38,
@@ -138,14 +140,18 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                           // Settings Button
-                          IconButton(
-                            icon: const Icon(Icons.settings_outlined, color: AppColors.textPrimary),
-                            onPressed: () {
+                          PressableScale(
+                            onTap: () {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(builder: (_) => const SettingsScreen()),
                               );
                             },
+                            scaleFactor: 0.88,
+                            child: const Padding(
+                              padding: EdgeInsets.all(8.0),
+                              child: Icon(Icons.settings_outlined, color: AppColors.textPrimary, size: 24),
+                            ),
                           ),
                         ],
                       ),
@@ -439,11 +445,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildPill(MusicProvider music, String id, String label, VoidCallback onTap) {
     final active = music.activeFilter == id;
 
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.selectionClick();
-        onTap();
-      },
+    return PressableScale(
+      onTap: onTap,
+      scaleFactor: 0.92,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
         decoration: BoxDecoration(

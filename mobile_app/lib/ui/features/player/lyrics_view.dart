@@ -3,20 +3,24 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/theme/dynamic_palette_service.dart';
 import '../../../data/models/lyrics.dart';
 import '../../../data/models/track.dart';
 import '../../../state/audio_player_provider.dart';
 import '../../../state/music_provider.dart';
+import '../../core_widgets/pressable_scale.dart';
 import 'full_screen_lyrics_screen.dart';
 
 class LyricsView extends StatefulWidget {
   final Track track;
   final bool isFullScreen;
+  final PaletteColors? paletteColors;
 
   const LyricsView({
     super.key,
     required this.track,
     this.isFullScreen = false,
+    this.paletteColors,
   });
 
   @override
@@ -56,11 +60,11 @@ class _LyricsViewState extends State<LyricsView> {
   void _scrollToActive(int activeIndex, int totalLines) {
     if (activeIndex != _lastActiveIndex && _scrollController.hasClients) {
       _lastActiveIndex = activeIndex;
-      const itemHeight = 44.0;
-      final targetOffset = (activeIndex * itemHeight) - 140.0;
+      const itemHeight = 48.0;
+      final targetOffset = (activeIndex * itemHeight) - 130.0;
       _scrollController.animateTo(
         targetOffset.clamp(0.0, _scrollController.position.maxScrollExtent),
-        duration: const Duration(milliseconds: 300),
+        duration: const Duration(milliseconds: 380),
         curve: Curves.easeOutCubic,
       );
     }
@@ -75,17 +79,17 @@ class _LyricsViewState extends State<LyricsView> {
     );
   }
 
-  Widget _buildFullScreenButton(BuildContext context) {
+  Widget _buildFullScreenButton(BuildContext context, Color accentColor) {
     if (widget.isFullScreen) return const SizedBox.shrink();
-    return InkWell(
+    return PressableScale(
       onTap: () => _openFullScreen(context),
-      borderRadius: BorderRadius.circular(16),
+      scaleFactor: 0.92,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white24, width: 1),
+          border: Border.all(color: accentColor.withValues(alpha: 0.35), width: 1),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -96,9 +100,9 @@ class _LyricsViewState extends State<LyricsView> {
               'FULL SCREEN',
               style: AppTypography.labelSmall.copyWith(
                 color: Colors.white,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w800,
                 fontSize: 10,
-                letterSpacing: 0.5,
+                letterSpacing: 0.6,
               ),
             ),
           ],
@@ -111,23 +115,31 @@ class _LyricsViewState extends State<LyricsView> {
   Widget build(BuildContext context) {
     final player = context.watch<AudioPlayerProvider>();
     final currentPosition = player.position;
+    final palette = widget.paletteColors;
+    final accent = palette?.primaryAccent ?? AppColors.primary;
 
     return FutureBuilder<Lyrics?>(
       future: _lyricsFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Container(
+          return AnimatedContainer(
+            duration: const Duration(milliseconds: 350),
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: const Color(0xFF161922),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.border),
+              gradient: palette?.toLyricsCardGradient() ??
+                  const LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Color(0xFF222226), Color(0xFF141418)],
+                  ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: palette?.lyricsBorderColor ?? AppColors.border),
             ),
-            child: const Center(
+            child: Center(
               child: SizedBox(
                 width: 24,
                 height: 24,
-                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                child: CircularProgressIndicator(strokeWidth: 2, color: accent),
               ),
             ),
           );
@@ -135,16 +147,22 @@ class _LyricsViewState extends State<LyricsView> {
 
         final lyrics = snapshot.data;
         if (lyrics == null || (lyrics.lines.isEmpty && lyrics.rawText.isEmpty)) {
-          return Container(
+          return AnimatedContainer(
+            duration: const Duration(milliseconds: 350),
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: const Color(0xFF161922),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.border),
+              gradient: palette?.toLyricsCardGradient() ??
+                  const LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Color(0xFF222226), Color(0xFF141418)],
+                  ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: palette?.lyricsBorderColor ?? AppColors.border),
             ),
             child: Row(
               children: [
-                const Icon(Icons.lyrics_rounded, color: AppColors.textMuted, size: 22),
+                Icon(Icons.lyrics_rounded, color: accent.withValues(alpha: 0.7), size: 22),
                 const SizedBox(width: 12),
                 Text('No lyrics found for this song', style: AppTypography.bodySmall),
               ],
@@ -167,22 +185,28 @@ class _LyricsViewState extends State<LyricsView> {
             _scrollToActive(activeIndex, lyrics.lines.length);
           });
 
-          return Container(
-            height: widget.isFullScreen ? double.infinity : 320,
+          return AnimatedContainer(
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeOutCubic,
+            height: widget.isFullScreen ? double.infinity : 330,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Color(0xFF28114B), Color(0xFF0E0E18)],
+              gradient: palette?.toLyricsCardGradient() ??
+                  const LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Color(0xFF222228), Color(0xFF111115)],
+                  ),
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(
+                color: palette?.lyricsBorderColor ?? AppColors.borderStrong,
+                width: 1.5,
               ),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.borderStrong, width: 1.5),
-              boxShadow: const [
+              boxShadow: [
                 BoxShadow(
-                  color: AppColors.shadow,
-                  offset: Offset(4, 4),
-                  blurRadius: 0,
+                  color: (palette?.primaryAccent ?? Colors.black).withValues(alpha: 0.18),
+                  offset: const Offset(0, 6),
+                  blurRadius: 16,
                 ),
               ],
             ),
@@ -194,16 +218,12 @@ class _LyricsViewState extends State<LyricsView> {
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.lyrics_rounded, color: AppColors.primary, size: 20),
+                        Icon(Icons.lyrics_rounded, color: accent, size: 20),
                         const SizedBox(width: 8),
                         Text('Lyrics (Synced)', style: AppTypography.titleMedium),
                       ],
                     ),
-                    Row(
-                      children: [
-                        _buildFullScreenButton(context),
-                      ],
-                    ),
+                    _buildFullScreenButton(context, accent),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -215,23 +235,47 @@ class _LyricsViewState extends State<LyricsView> {
                     itemBuilder: (ctx, i) {
                       final line = lyrics.lines[i];
                       final isActive = i == activeIndex;
+                      final isArabic = AppTypography.isArabicText(line.text);
 
-                      return GestureDetector(
+                      final lineStyle = AppTypography.lyricsLineStyle(
+                        text: line.text,
+                        isActive: isActive,
+                        fontSize: isActive ? 21 : 16.5,
+                        activeColor: Colors.white,
+                        inactiveColor: Colors.white.withValues(alpha: 0.35),
+                      );
+
+                      return PressableScale(
                         onTap: () {
                           HapticFeedback.selectionClick();
                           player.seek(line.timestamp);
                         },
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          child: Text(
-                            line.text.isEmpty ? '...' : line.text,
-                            style: AppTypography.titleMedium.copyWith(
-                              fontSize: isActive ? 20 : 16,
-                              fontWeight: isActive ? FontWeight.w800 : FontWeight.w500,
-                              color: isActive
-                                  ? Colors.white
-                                  : Colors.white.withValues(alpha: 0.35),
-                              height: 1.3,
+                        scaleFactor: 0.98,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 250),
+                          curve: Curves.easeOutCubic,
+                          padding: EdgeInsets.symmetric(
+                            vertical: isActive ? 10 : 6,
+                            horizontal: isActive ? 8 : 4,
+                          ),
+                          margin: const EdgeInsets.symmetric(vertical: 2),
+                          decoration: BoxDecoration(
+                            color: isActive
+                                ? Colors.white.withValues(alpha: 0.08)
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Align(
+                            alignment: isArabic ? Alignment.centerRight : Alignment.centerLeft,
+                            child: AnimatedDefaultTextStyle(
+                              duration: const Duration(milliseconds: 280),
+                              curve: Curves.easeOutCubic,
+                              style: lineStyle,
+                              child: Text(
+                                line.text.isEmpty ? '...' : line.text,
+                                textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
+                                textAlign: isArabic ? TextAlign.right : TextAlign.left,
+                              ),
                             ),
                           ),
                         ),
@@ -245,13 +289,23 @@ class _LyricsViewState extends State<LyricsView> {
         }
 
         // 2. Plain Text Lyrics
-        return Container(
-          height: widget.isFullScreen ? double.infinity : 280,
+        final isArabic = AppTypography.isArabicText(lyrics.rawText);
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 400),
+          height: widget.isFullScreen ? double.infinity : 290,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFF161922),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.border),
+            gradient: palette?.toLyricsCardGradient() ??
+                const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0xFF222228), Color(0xFF111115)],
+                ),
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(
+              color: palette?.lyricsBorderColor ?? AppColors.border,
+              width: 1.5,
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -261,12 +315,12 @@ class _LyricsViewState extends State<LyricsView> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.lyrics_rounded, color: AppColors.primary, size: 20),
+                      Icon(Icons.lyrics_rounded, color: accent, size: 20),
                       const SizedBox(width: 8),
                       Text('Lyrics', style: AppTypography.titleMedium),
                     ],
                   ),
-                  _buildFullScreenButton(context),
+                  _buildFullScreenButton(context, accent),
                 ],
               ),
               const SizedBox(height: 12),
@@ -275,7 +329,14 @@ class _LyricsViewState extends State<LyricsView> {
                   physics: const BouncingScrollPhysics(),
                   child: Text(
                     lyrics.rawText,
-                    style: AppTypography.bodyMedium.copyWith(color: Colors.white70, height: 1.5),
+                    textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
+                    textAlign: isArabic ? TextAlign.right : TextAlign.left,
+                    style: AppTypography.lyricsLineStyle(
+                      text: lyrics.rawText,
+                      isActive: true,
+                      fontSize: 16,
+                      activeColor: Colors.white.withValues(alpha: 0.88),
+                    ),
                   ),
                 ),
               ),

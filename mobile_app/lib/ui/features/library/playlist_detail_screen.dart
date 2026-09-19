@@ -13,6 +13,7 @@ import '../../../state/music_provider.dart';
 import '../../core_widgets/cached_cover_art.dart';
 import '../../core_widgets/download_action_button.dart';
 import '../../core_widgets/neo_button.dart';
+import '../../core_widgets/pressable_scale.dart';
 import '../../core_widgets/track_row.dart';
 import '../player/mini_player_bar.dart';
 
@@ -382,20 +383,35 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                         const SizedBox(height: 12),
 
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              'Audio & metadata syncing in background',
-                              style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted, fontSize: 11),
-                            ),
-                            TextButton.icon(
-                              style: TextButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                visualDensity: VisualDensity.compact,
+                            Expanded(
+                              child: Text(
+                                'Audio & metadata syncing in background',
+                                style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted, fontSize: 11),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              icon: const Icon(Icons.refresh_rounded, size: 15, color: AppColors.primary),
-                              label: const Text('Refresh', style: TextStyle(color: AppColors.primary, fontSize: 12)),
-                              onPressed: _retry,
+                            ),
+                            const SizedBox(width: 8),
+                            PressableScale(
+                              onTap: _retry,
+                              scaleFactor: 0.92,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.refresh_rounded, size: 14, color: AppColors.primary),
+                                    SizedBox(width: 4),
+                                    Text('Refresh', style: TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.bold)),
+                                  ],
+                                ),
+                              ),
                             ),
                           ],
                         ),

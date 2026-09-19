@@ -9,6 +9,7 @@ import '../../../data/models/track.dart';
 import '../../../state/audio_player_provider.dart';
 import '../../../state/music_provider.dart';
 import '../../core_widgets/cached_cover_art.dart';
+import '../../core_widgets/pressable_scale.dart';
 import '../library/album_detail_screen.dart';
 import '../library/artist_detail_screen.dart';
 import 'equalizer_sheet.dart';
@@ -385,34 +386,43 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        IconButton(
-                          icon: Icon(
-                            Icons.shuffle_rounded,
-                            color: player.isShuffle ? AppColors.primary : AppColors.textMuted,
-                            size: 22,
-                          ),
-                          onPressed: () {
+                        PressableScale(
+                          onTap: () {
                             HapticFeedback.lightImpact();
                             player.toggleShuffle();
                           },
-                        ),
-                        IconButton(
-                          icon: const Icon(
-                            Icons.skip_previous_rounded,
-                            color: AppColors.textPrimary,
-                            size: 34,
+                          scaleFactor: 0.88,
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Icon(
+                              Icons.shuffle_rounded,
+                              color: player.isShuffle ? AppColors.primary : AppColors.textMuted,
+                              size: 22,
+                            ),
                           ),
-                          onPressed: () {
+                        ),
+                        PressableScale(
+                          onTap: () {
                             HapticFeedback.lightImpact();
                             player.skipPrevious();
                           },
+                          scaleFactor: 0.88,
+                          child: const Padding(
+                            padding: EdgeInsets.all(8.0),
+                            child: Icon(
+                              Icons.skip_previous_rounded,
+                              color: AppColors.textPrimary,
+                              size: 34,
+                            ),
+                          ),
                         ),
-                        // Big Play / Pause Button
-                        GestureDetector(
+                        // Big Play / Pause Button with responsive micro-animation
+                        PressableScale(
                           onTap: () {
                             HapticFeedback.mediumImpact();
                             player.togglePlay();
                           },
+                          scaleFactor: 0.92,
                           child: Container(
                             width: 64,
                             height: 64,
@@ -436,39 +446,47 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
                             ),
                           ),
                         ),
-                        IconButton(
-                          icon: const Icon(
-                            Icons.skip_next_rounded,
-                            color: AppColors.textPrimary,
-                            size: 34,
-                          ),
-                          onPressed: () {
+                        PressableScale(
+                          onTap: () {
                             HapticFeedback.lightImpact();
                             player.skipNext();
                           },
-                        ),
-                        IconButton(
-                          icon: Icon(
-                            player.repeatMode == AppRepeatMode.one
-                                ? Icons.repeat_one_rounded
-                                : Icons.repeat_rounded,
-                            color: player.repeatMode != AppRepeatMode.off
-                                ? AppColors.primary
-                                : AppColors.textMuted,
-                            size: 24,
+                          scaleFactor: 0.88,
+                          child: const Padding(
+                            padding: EdgeInsets.all(8.0),
+                            child: Icon(
+                              Icons.skip_next_rounded,
+                              color: AppColors.textPrimary,
+                              size: 34,
+                            ),
                           ),
-                          onPressed: () {
+                        ),
+                        PressableScale(
+                          onTap: () {
                             HapticFeedback.lightImpact();
                             player.toggleRepeat();
                           },
+                          scaleFactor: 0.88,
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Icon(
+                              player.repeatMode == AppRepeatMode.one
+                                  ? Icons.repeat_one_rounded
+                                  : Icons.repeat_rounded,
+                              color: player.repeatMode != AppRepeatMode.off
+                                  ? AppColors.primary
+                                  : AppColors.textMuted,
+                              size: 24,
+                            ),
+                          ),
                         ),
                       ],
                     ),
 
                     const SizedBox(height: 24),
 
-                    // Interactive Lyrics Card
-                    LyricsView(track: track),
+                    // Interactive Lyrics Card styled with album-derived dynamic palette
+                    LyricsView(track: track, paletteColors: _paletteColors),
 
                     const SizedBox(height: 32),
                   ],

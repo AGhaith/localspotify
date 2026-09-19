@@ -10,6 +10,7 @@ import '../../state/music_provider.dart';
 import '../features/library/album_detail_screen.dart';
 import '../features/library/artist_detail_screen.dart';
 import 'cached_cover_art.dart';
+import 'pressable_scale.dart';
 
 class TrackRow extends StatelessWidget {
   final Track track;
@@ -34,11 +35,9 @@ class TrackRow extends StatelessWidget {
     final isStarred = track.isStarred;
     final isDownloaded = music.isDownloaded(track.id);
 
-    return InkWell(
-      onTap: () {
-        HapticFeedback.selectionClick();
-        onTap();
-      },
+    return PressableScale(
+      onTap: onTap,
+      scaleFactor: 0.98,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
