@@ -7,6 +7,7 @@ import '../../../state/audio_player_provider.dart';
 import '../../../state/music_provider.dart';
 import '../../core_widgets/neo_button.dart';
 import '../../core_widgets/track_row.dart';
+import '../player/mini_player_bar.dart';
 
 class LikedSongsScreen extends StatefulWidget {
   const LikedSongsScreen({super.key});
@@ -21,7 +22,7 @@ class _LikedSongsScreenState extends State<LikedSongsScreen> {
   @override
   Widget build(BuildContext context) {
     final music = context.watch<MusicProvider>();
-    final player = context.read<AudioPlayerProvider>();
+    final player = context.watch<AudioPlayerProvider>();
 
     final tracks = _searchQuery.isEmpty
         ? music.starredTracks
@@ -33,6 +34,9 @@ class _LikedSongsScreenState extends State<LikedSongsScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      bottomNavigationBar: player.hasTrack
+          ? const SafeArea(top: false, child: MiniPlayerBar())
+          : null,
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [

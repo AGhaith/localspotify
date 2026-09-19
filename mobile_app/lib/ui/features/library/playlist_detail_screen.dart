@@ -11,6 +11,7 @@ import '../../core_widgets/cached_cover_art.dart';
 import '../../core_widgets/download_action_button.dart';
 import '../../core_widgets/neo_button.dart';
 import '../../core_widgets/track_row.dart';
+import '../player/mini_player_bar.dart';
 
 class PlaylistDetailScreen extends StatefulWidget {
   final String playlistId;
@@ -39,7 +40,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final music = context.watch<MusicProvider>();
-    final player = context.read<AudioPlayerProvider>();
+    final player = context.watch<AudioPlayerProvider>();
     final isDownloading = music.downloadingEntityId == widget.playlistId;
 
     return FutureBuilder<Playlist>(
@@ -56,6 +57,9 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                 onPressed: () => Navigator.maybePop(context),
               ),
             ),
+            bottomNavigationBar: player.hasTrack
+                ? const SafeArea(top: false, child: MiniPlayerBar())
+                : null,
             body: const Center(child: CircularProgressIndicator(color: AppColors.primary)),
           );
         }
@@ -71,6 +75,9 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                 onPressed: () => Navigator.maybePop(context),
               ),
             ),
+            bottomNavigationBar: player.hasTrack
+                ? const SafeArea(top: false, child: MiniPlayerBar())
+                : null,
             body: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -95,6 +102,9 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
 
         return Scaffold(
           backgroundColor: AppColors.background,
+          bottomNavigationBar: player.hasTrack
+              ? const SafeArea(top: false, child: MiniPlayerBar())
+              : null,
           body: CustomScrollView(
             physics: const BouncingScrollPhysics(),
             slivers: [

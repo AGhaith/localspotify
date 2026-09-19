@@ -11,6 +11,7 @@ import '../../core_widgets/cached_cover_art.dart';
 import '../../core_widgets/download_action_button.dart';
 import '../../core_widgets/neo_button.dart';
 import '../../core_widgets/track_row.dart';
+import '../player/mini_player_bar.dart';
 
 import 'artist_detail_screen.dart';
 
@@ -41,7 +42,7 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final music = context.watch<MusicProvider>();
-    final player = context.read<AudioPlayerProvider>();
+    final player = context.watch<AudioPlayerProvider>();
     final isDownloading = music.downloadingEntityId == widget.albumId;
 
     return FutureBuilder<Album>(
@@ -58,6 +59,9 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
                 onPressed: () => Navigator.maybePop(context),
               ),
             ),
+            bottomNavigationBar: player.hasTrack
+                ? const SafeArea(top: false, child: MiniPlayerBar())
+                : null,
             body: const Center(child: CircularProgressIndicator(color: AppColors.primary)),
           );
         }
@@ -73,6 +77,9 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
                 onPressed: () => Navigator.maybePop(context),
               ),
             ),
+            bottomNavigationBar: player.hasTrack
+                ? const SafeArea(top: false, child: MiniPlayerBar())
+                : null,
             body: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -97,6 +104,9 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
 
         return Scaffold(
           backgroundColor: AppColors.background,
+          bottomNavigationBar: player.hasTrack
+              ? const SafeArea(top: false, child: MiniPlayerBar())
+              : null,
           body: CustomScrollView(
             physics: const BouncingScrollPhysics(),
             slivers: [

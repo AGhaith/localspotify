@@ -3,9 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../state/audio_player_provider.dart';
 import '../../../state/auth_provider.dart';
 import '../../../state/music_provider.dart';
 import '../../core_widgets/neo_button.dart';
+import '../player/mini_player_bar.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -78,6 +80,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final music = context.watch<MusicProvider>();
+    final player = context.watch<AudioPlayerProvider>();
     final currentBitRate = music.getMaxBitRate();
 
     return Scaffold(
@@ -86,6 +89,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         title: Text('Settings & Storage', style: AppTypography.titleLarge),
         leading: const BackButton(),
       ),
+      bottomNavigationBar: player.hasTrack
+          ? const SafeArea(top: false, child: MiniPlayerBar())
+          : null,
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         physics: const BouncingScrollPhysics(),

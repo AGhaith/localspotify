@@ -7,6 +7,7 @@ import '../../../data/models/lyrics.dart';
 import '../../../data/models/track.dart';
 import '../../../state/audio_player_provider.dart';
 import '../../../state/music_provider.dart';
+import 'full_screen_lyrics_screen.dart';
 
 class LyricsView extends StatefulWidget {
   final Track track;
@@ -63,6 +64,47 @@ class _LyricsViewState extends State<LyricsView> {
         curve: Curves.easeOutCubic,
       );
     }
+  }
+
+  void _openFullScreen(BuildContext context) {
+    HapticFeedback.lightImpact();
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => FullScreenLyricsScreen(track: widget.track),
+      ),
+    );
+  }
+
+  Widget _buildFullScreenButton(BuildContext context) {
+    if (widget.isFullScreen) return const SizedBox.shrink();
+    return InkWell(
+      onTap: () => _openFullScreen(context),
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white24, width: 1),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.fullscreen_rounded, color: Colors.white, size: 16),
+            const SizedBox(width: 4),
+            Text(
+              'FULL SCREEN',
+              style: AppTypography.labelSmall.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+                fontSize: 10,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -157,9 +199,10 @@ class _LyricsViewState extends State<LyricsView> {
                         Text('Lyrics (Synced)', style: AppTypography.titleMedium),
                       ],
                     ),
-                    Text(
-                      'Tap line to seek',
-                      style: AppTypography.labelSmall.copyWith(color: AppColors.textMuted, fontSize: 10.5),
+                    Row(
+                      children: [
+                        _buildFullScreenButton(context),
+                      ],
                     ),
                   ],
                 ),
@@ -214,10 +257,16 @@ class _LyricsViewState extends State<LyricsView> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Icon(Icons.lyrics_rounded, color: AppColors.primary, size: 20),
-                  const SizedBox(width: 8),
-                  Text('Lyrics', style: AppTypography.titleMedium),
+                  Row(
+                    children: [
+                      const Icon(Icons.lyrics_rounded, color: AppColors.primary, size: 20),
+                      const SizedBox(width: 8),
+                      Text('Lyrics', style: AppTypography.titleMedium),
+                    ],
+                  ),
+                  _buildFullScreenButton(context),
                 ],
               ),
               const SizedBox(height: 12),

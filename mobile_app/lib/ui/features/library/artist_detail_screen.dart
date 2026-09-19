@@ -10,6 +10,7 @@ import '../../core_widgets/album_card.dart';
 import '../../core_widgets/cached_cover_art.dart';
 import '../../core_widgets/neo_button.dart';
 import '../../core_widgets/track_row.dart';
+import '../player/mini_player_bar.dart';
 import 'album_detail_screen.dart';
 
 class ArtistDetailScreen extends StatefulWidget {
@@ -40,7 +41,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final music = context.watch<MusicProvider>();
-    final player = context.read<AudioPlayerProvider>();
+    final player = context.watch<AudioPlayerProvider>();
 
     return FutureBuilder<Artist>(
       future: _artistFuture,
@@ -56,6 +57,9 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                 onPressed: () => Navigator.maybePop(context),
               ),
             ),
+            bottomNavigationBar: player.hasTrack
+                ? const SafeArea(top: false, child: MiniPlayerBar())
+                : null,
             body: const Center(
               child: CircularProgressIndicator(color: AppColors.primary),
             ),
@@ -73,6 +77,9 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                 onPressed: () => Navigator.maybePop(context),
               ),
             ),
+            bottomNavigationBar: player.hasTrack
+                ? const SafeArea(top: false, child: MiniPlayerBar())
+                : null,
             body: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -96,6 +103,9 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
 
         return Scaffold(
           backgroundColor: AppColors.background,
+          bottomNavigationBar: player.hasTrack
+              ? const SafeArea(top: false, child: MiniPlayerBar())
+              : null,
           body: CustomScrollView(
             physics: const BouncingScrollPhysics(),
             slivers: [
