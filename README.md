@@ -21,13 +21,21 @@ A modern self-hosted Spotify alternative powered by **Navidrome**, **Subsonic We
 
 ## 🛠️ Quick Start
 
-### 1. Install Downloader Requirements
+### 1. Launch & Update Server (All-in-One)
+Whenever you pull updates or want to launch the server stack:
+```bash
+./launch.sh
+```
+This automatically:
+- Pulls the latest git updates (`git pull origin main`)
+- Ensures directory structure and permissions
+- Updates Python requirements (`yt-dlp`, `mutagen`, `Pillow`, `syncedlyrics`)
+- Rebuilds and launches the Docker containers (`navidrome`, `subsonic-player`, `redis`)
+- Prunes old image layers and validates service health
+
+### 2. Manual Start (Alternative)
 ```bash
 ./install_requirements.sh
-```
-
-### 2. Start the Music Server Stack
-```bash
 docker compose up -d
 ```
 
