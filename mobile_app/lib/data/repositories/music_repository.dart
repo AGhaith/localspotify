@@ -398,6 +398,7 @@ class MusicRepository {
 
   List<String> getRecentSearches() => _storageService.getRecentSearches();
   Future<void> addRecentSearch(String query) => _storageService.addRecentSearch(query);
+  Future<void> removeRecentSearch(String query) => _storageService.removeRecentSearch(query);
   Future<void> clearRecentSearches() => _storageService.clearRecentSearches();
 
   // ================= Spotify Playlist Import =================

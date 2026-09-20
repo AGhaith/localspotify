@@ -296,6 +296,12 @@ class MusicProvider extends ChangeNotifier {
     return track;
   }
 
+  Future<void> removeRecentSearch(String query) async {
+    await _musicRepository.removeRecentSearch(query);
+    _recentSearches = _musicRepository.getRecentSearches();
+    notifyListeners();
+  }
+
   Future<void> clearRecentSearches() async {
     await _musicRepository.clearRecentSearches();
     _recentSearches = [];

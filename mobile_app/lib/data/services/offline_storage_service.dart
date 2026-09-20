@@ -79,6 +79,12 @@ class OfflineStorageService {
     await _prefs.setStringList(_keyRecentSearches, list);
   }
 
+  Future<void> removeRecentSearch(String query) async {
+    final list = getRecentSearches();
+    list.removeWhere((item) => item.toLowerCase() == query.trim().toLowerCase());
+    await _prefs.setStringList(_keyRecentSearches, list);
+  }
+
   Future<void> clearRecentSearches() async {
     await _prefs.remove(_keyRecentSearches);
   }
