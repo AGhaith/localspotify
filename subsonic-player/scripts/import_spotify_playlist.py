@@ -267,10 +267,63 @@ def download_single_track(
         'retries': 3,
     }
 
-    query = f"ytsearch1:{artist} - {title} Audio"
+    expected_duration = track.get("duration_ms", 0) / 1000.0 if track.get("duration_ms") else 0
+    queries = [
+        f"ytsearch5:{artist} - {title} Official Audio",
+        f"ytsearch5:{artist} - {title} Topic",
+        f"ytsearch5:{artist} - {title}",
+    ]
+
+    selected_video_url = None
+    search_ydl_opts = {
+        'extract_flat': True,
+        'quiet': True,
+        'no_warnings': True,
+        'socket_timeout': 10,
+    }
+
+    for query in queries:
+        try:
+            with yt_dlp.YoutubeDL(search_ydl_opts) as ydl:
+                info = ydl.extract_info(query, download=False)
+                entries = info.get('entries', []) if info else []
+                for entry in entries:
+                    if not entry:
+                        continue
+                    v_title = entry.get('title', '').lower()
+                    v_duration = entry.get('duration', 0) or 0
+
+                    # Check duration match
+                    if expected_duration > 20 and v_duration > 0:
+                        if abs(v_duration - expected_duration) > 15:
+                            continue
+
+                    # Filter forbidden keywords unless present in target title
+                    t_lower = title.lower()
+                    if 'cover' not in t_lower and any(w in v_title for w in ['cover', 'karaoke', 'tutorial', 'parody', 'reaction']):
+                        continue
+                    if 'live' not in t_lower and any(w in v_title for w in ['live at', 'live in', 'live from', 'concert']):
+                        continue
+                    if 'remix' not in t_lower and any(w in v_title for w in ['remix', 'slowed', 'speed up', 'reverb', 'bass boosted']):
+                        continue
+                    if any(w in v_title for w in ['1 hour', '10 hour', 'loop', 'full album']):
+                        continue
+
+                    v_id = entry.get('id')
+                    if v_id:
+                        selected_video_url = f"https://www.youtube.com/watch?v={v_id}"
+                        break
+        except Exception:
+            pass
+
+        if selected_video_url:
+            break
+
+    download_target = selected_video_url or f"ytsearch1:{artist} - {title} Official Audio"
+
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([query])
+            ydl.download([download_target])
     except Exception as e:
         print(f"  Failed downloading '{title}' by {artist}: {e}")
         return None
@@ -428,19 +481,113 @@ def import_playlist(
         sync_navidrome_playlist(info["title"], titles, server_url=server_url)
 
 
+def download_individual_track(
+    title: str,
+    artist: str,
+    album: str = "Singles",
+    duration_ms: int = 0,
+    cover_url: str | None = None,
+    music_folder: str = "./my-music",
+    server_url: str = "http://localhost:6767",
+    sync_server: bool = True
+) -> dict:
+    """Download single track via yt-dlp, embed metadata & high-res artwork, and trigger Navidrome scan."""
+    clean_artist = sanitize_name(artist) if artist else "Unknown Artist"
+    clean_album = sanitize_name(album) if album else "Singles"
+    clean_title = sanitize_name(title) if title else "Unknown Title"
+
+    artist_dir = os.path.join(music_folder, clean_artist, clean_album)
+    os.makedirs(artist_dir, exist_ok=True)
+
+    print(f"[INFO] Downloading single track '{title}' by '{artist}' into: {artist_dir}")
+    track_dict = {
+        "title": title,
+        "artist": artist,
+        "duration_ms": duration_ms,
+        "cover_url": cover_url
+    }
+
+    cached_cover_bytes = None
+    if cover_url:
+        try:
+            req = urllib.request.Request(cover_url, headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req, timeout=8) as r:
+                cached_cover_bytes = r.read()
+        except Exception:
+            pass
+
+    file_path = download_single_track(
+        track=track_dict,
+        output_dir=artist_dir,
+        playlist_title=clean_album,
+        track_index=1,
+        total_tracks=1,
+        fallback_cover_url=cover_url,
+        cached_cover_bytes=cached_cover_bytes,
+        music_folder=music_folder
+    )
+
+    if file_path and os.path.exists(file_path):
+        print(f"[OK] Downloaded & tagged track: {file_path}")
+        if sync_server:
+            try:
+                # Trigger quick Navidrome scan
+                clean_url = server_url.rstrip("/")
+                auth_params = "u=admin&p=admin&v=1.16.1&c=localspotify&f=json"
+                req = urllib.request.Request(f"{clean_url}/rest/startScan.view?{auth_params}")
+                urllib.request.urlopen(req, timeout=5)
+                print(f"[OK] Triggered Navidrome library scan on {clean_url}")
+            except Exception as e:
+                print(f"[WARN] Navidrome scan trigger skipped: {e}")
+        return {
+            "success": True,
+            "filePath": file_path,
+            "title": title,
+            "artist": artist,
+            "album": clean_album
+        }
+    else:
+        print(f"[ERROR] Failed to download audio for '{title}' by '{artist}'")
+        return {
+            "success": False,
+            "filePath": None,
+            "title": title,
+            "artist": artist
+        }
+
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Import Spotify Playlist into LocalSpotify vault")
-    parser.add_argument("url", help="Spotify playlist URL or ID")
+    parser = argparse.ArgumentParser(description="Import Spotify Playlist or Track into LocalSpotify vault")
+    parser.add_argument("url", nargs="?", default=None, help="Spotify playlist URL or ID")
+    parser.add_argument("--track-title", help="Download a single track by title")
+    parser.add_argument("--track-artist", help="Track artist")
+    parser.add_argument("--track-album", default="Singles", help="Track album name")
+    parser.add_argument("--track-cover", help="Track cover art URL")
+    parser.add_argument("--track-duration-ms", type=int, default=0, help="Track duration in milliseconds")
     parser.add_argument("--music-dir", default="./my-music", help="Destination music folder")
     parser.add_argument("--workers", type=int, default=4, help="Concurrent download workers")
     parser.add_argument("--server", default="http://localhost:6767", help="Navidrome server URL")
     parser.add_argument("--no-sync", action="store_true", help="Skip Navidrome library scan and playlist update")
     args = parser.parse_args()
 
-    import_playlist(
-        args.url,
-        music_folder=args.music_dir,
-        max_workers=args.workers,
-        server_url=args.server,
-        sync_server=not args.no_sync
-    )
+    if args.track_title and args.track_artist:
+        download_individual_track(
+            title=args.track_title,
+            artist=args.track_artist,
+            album=args.track_album,
+            duration_ms=args.track_duration_ms,
+            cover_url=args.track_cover,
+            music_folder=args.music_dir,
+            server_url=args.server,
+            sync_server=not args.no_sync
+        )
+    elif args.url:
+        import_playlist(
+            args.url,
+            music_folder=args.music_dir,
+            max_workers=args.workers,
+            server_url=args.server,
+            sync_server=not args.no_sync
+        )
+    else:
+        parser.print_help()
