@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
@@ -31,6 +33,9 @@ class _LyricsViewState extends State<LyricsView> {
   final ScrollController _scrollController = ScrollController();
   int _lastActiveIndex = -1;
   Future<Lyrics?>? _lyricsFuture;
+  List<GlobalKey> _itemKeys = [];
+  bool _isUserScrolling = false;
+  Timer? _userScrollTimer;
 
   @override
   void initState() {
@@ -43,6 +48,9 @@ class _LyricsViewState extends State<LyricsView> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.track.id != widget.track.id) {
       _lastActiveIndex = -1;
+      _itemKeys = [];
+      _isUserScrolling = false;
+      _userScrollTimer?.cancel();
       _loadLyrics();
     }
   }
@@ -54,18 +62,34 @@ class _LyricsViewState extends State<LyricsView> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _userScrollTimer?.cancel();
     super.dispose();
   }
 
-  void _scrollToActive(int activeIndex, int totalLines) {
-    if (activeIndex != _lastActiveIndex && _scrollController.hasClients) {
-      _lastActiveIndex = activeIndex;
-      const itemHeight = 48.0;
-      final targetOffset = (activeIndex * itemHeight) - 130.0;
-      _scrollController.animateTo(
-        targetOffset.clamp(0.0, _scrollController.position.maxScrollExtent),
+  void _onUserScrolled() {
+    _isUserScrolling = true;
+    _userScrollTimer?.cancel();
+    _userScrollTimer = Timer(const Duration(milliseconds: 3200), () {
+      if (mounted) {
+        setState(() => _isUserScrolling = false);
+      }
+    });
+  }
+
+  void _scrollToActive(int activeIndex) {
+    if (_isUserScrolling) return;
+    if (activeIndex < 0 || activeIndex >= _itemKeys.length) return;
+    if (activeIndex == _lastActiveIndex) return;
+    _lastActiveIndex = activeIndex;
+
+    final keyContext = _itemKeys[activeIndex].currentContext;
+    if (keyContext != null) {
+      Scrollable.ensureVisible(
+        keyContext,
         duration: const Duration(milliseconds: 380),
         curve: Curves.easeOutCubic,
+        alignment: 0.32,
+        alignmentPolicy: ScrollPositionAlignmentPolicy.explicit,
       );
     }
   }
@@ -172,7 +196,11 @@ class _LyricsViewState extends State<LyricsView> {
 
         // 1. Synced Lyrics
         if (lyrics.isSynced && lyrics.lines.isNotEmpty) {
-          int activeIndex = 0;
+          if (_itemKeys.length != lyrics.lines.length) {
+            _itemKeys = List.generate(lyrics.lines.length, (_) => GlobalKey());
+          }
+
+          int activeIndex = -1;
           for (int i = 0; i < lyrics.lines.length; i++) {
             if (lyrics.lines[i].timestamp <= currentPosition) {
               activeIndex = i;
@@ -182,7 +210,7 @@ class _LyricsViewState extends State<LyricsView> {
           }
 
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            _scrollToActive(activeIndex, lyrics.lines.length);
+            _scrollToActive(activeIndex);
           });
 
           return AnimatedContainer(
@@ -228,59 +256,70 @@ class _LyricsViewState extends State<LyricsView> {
                 ),
                 const SizedBox(height: 12),
                 Expanded(
-                  child: ListView.builder(
-                    controller: _scrollController,
-                    physics: const BouncingScrollPhysics(),
-                    itemCount: lyrics.lines.length,
-                    itemBuilder: (ctx, i) {
-                      final line = lyrics.lines[i];
-                      final isActive = i == activeIndex;
-                      final isArabic = AppTypography.isArabicText(line.text);
+                  child: NotificationListener<UserScrollNotification>(
+                    onNotification: (notification) {
+                      if (notification.direction != ScrollDirection.idle) {
+                        _onUserScrolled();
+                      }
+                      return false;
+                    },
+                    child: ListView.builder(
+                      controller: _scrollController,
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: lyrics.lines.length,
+                      itemBuilder: (ctx, i) {
+                        final line = lyrics.lines[i];
+                        final isActive = i == activeIndex;
+                        final isArabic = AppTypography.isArabicText(line.text);
 
-                      final lineStyle = AppTypography.lyricsLineStyle(
-                        text: line.text,
-                        isActive: isActive,
-                        fontSize: isActive ? 21 : 16.5,
-                        activeColor: Colors.white,
-                        inactiveColor: Colors.white.withValues(alpha: 0.35),
-                      );
+                        final lineStyle = AppTypography.lyricsLineStyle(
+                          text: line.text,
+                          isActive: isActive,
+                          fontSize: 17.5,
+                          activeColor: Colors.white,
+                          inactiveColor: Colors.white.withValues(alpha: 0.32),
+                        );
 
-                      return PressableScale(
-                        onTap: () {
-                          HapticFeedback.selectionClick();
-                          player.seek(line.timestamp);
-                        },
-                        scaleFactor: 0.98,
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 250),
-                          curve: Curves.easeOutCubic,
-                          padding: EdgeInsets.symmetric(
-                            vertical: isActive ? 10 : 6,
-                            horizontal: isActive ? 8 : 4,
-                          ),
-                          margin: const EdgeInsets.symmetric(vertical: 2),
-                          decoration: BoxDecoration(
-                            color: isActive
-                                ? Colors.white.withValues(alpha: 0.08)
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Align(
-                            alignment: isArabic ? Alignment.centerRight : Alignment.centerLeft,
-                            child: AnimatedDefaultTextStyle(
-                              duration: const Duration(milliseconds: 280),
-                              curve: Curves.easeOutCubic,
-                              style: lineStyle,
-                              child: Text(
-                                line.text.isEmpty ? '...' : line.text,
-                                textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
-                                textAlign: isArabic ? TextAlign.right : TextAlign.left,
+                        return PressableScale(
+                          key: _itemKeys[i],
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            player.seek(line.timestamp);
+                            _isUserScrolling = false;
+                            _scrollToActive(i);
+                          },
+                          scaleFactor: 0.98,
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 240),
+                            curve: Curves.easeOutCubic,
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 7,
+                              horizontal: 8,
+                            ),
+                            margin: const EdgeInsets.symmetric(vertical: 2),
+                            decoration: BoxDecoration(
+                              color: isActive
+                                  ? Colors.white.withValues(alpha: 0.08)
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Align(
+                              alignment: isArabic ? Alignment.centerRight : Alignment.centerLeft,
+                              child: AnimatedDefaultTextStyle(
+                                duration: const Duration(milliseconds: 240),
+                                curve: Curves.easeOutCubic,
+                                style: lineStyle,
+                                child: Text(
+                                  line.text.isEmpty ? '...' : line.text,
+                                  textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
+                                  textAlign: isArabic ? TextAlign.right : TextAlign.left,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      );
-                    },
+                        );
+                      },
+                    ),
                   ),
                 ),
               ],

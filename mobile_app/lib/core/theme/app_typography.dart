@@ -76,32 +76,31 @@ class AppTypography {
   static TextStyle lyricsLineStyle({
     required String text,
     required bool isActive,
-    double? fontSize,
+    double fontSize = 18.0,
     Color? activeColor,
     Color? inactiveColor,
   }) {
     final isArabic = isArabicText(text);
-    final baseSize = fontSize ?? (isActive ? 22.0 : 17.0);
 
     if (isArabic) {
       return GoogleFonts.cairo(
-        fontSize: baseSize,
+        fontSize: fontSize,
         fontWeight: isActive ? FontWeight.w800 : FontWeight.w600,
         color: isActive
             ? (activeColor ?? Colors.white)
             : (inactiveColor ?? Colors.white.withValues(alpha: 0.38)),
-        height: 1.5,
+        height: 1.45,
       );
     }
 
     return GoogleFonts.rubik(
-      fontSize: baseSize,
-      fontWeight: isActive ? FontWeight.w900 : FontWeight.w600,
+      fontSize: fontSize,
+      fontWeight: isActive ? FontWeight.w800 : FontWeight.w500,
       color: isActive
           ? (activeColor ?? Colors.white)
           : (inactiveColor ?? Colors.white.withValues(alpha: 0.35)),
       height: 1.35,
-      letterSpacing: -0.3,
+      letterSpacing: -0.2,
     );
   }
 }
