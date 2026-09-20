@@ -185,6 +185,22 @@ def tag_audio_file(
         print(f"  [WARN] Could not embed tags into '{filepath}': {e}")
 
 
+def find_existing_track_in_vault(title: str, artist: str, music_folder: str) -> str | None:
+    """Scan music folder to find any existing audio file matching artist/title."""
+    if not music_folder or not os.path.exists(music_folder):
+        return None
+    clean_title = sanitize_name(title).lower()
+    clean_artist = sanitize_name(artist).lower()
+
+    for root, _, files in os.walk(music_folder):
+        for f in files:
+            lower_f = f.lower()
+            if any(lower_f.endswith(ext) for ext in ['.m4a', '.mp3', '.flac', '.ogg', '.opus', '.wav']):
+                if clean_title in lower_f and (clean_artist in lower_f or clean_artist in root.lower()):
+                    return os.path.join(root, f)
+    return None
+
+
 def download_single_track(
     track: dict,
     output_dir: str,
@@ -192,9 +208,10 @@ def download_single_track(
     track_index: int,
     total_tracks: int,
     fallback_cover_url: str | None,
-    cached_cover_bytes: bytes | None = None
+    cached_cover_bytes: bytes | None = None,
+    music_folder: str = "./my-music"
 ) -> str | None:
-    """Download single track via yt-dlp into M4A audio and tag it with full metadata."""
+    """Download single track via yt-dlp into M4A audio or reuse existing vault file."""
     title = track["title"]
     artist = track["artist"]
     clean_title = sanitize_name(title)
@@ -221,6 +238,19 @@ def download_single_track(
         # Re-tag existing file to ensure metadata & thumbnails are present
         tag_audio_file(expected_path, title, artist, playlist_title, track_index, total_tracks, cover_bytes)
         return expected_path
+
+    # Check if already present anywhere in music vault
+    existing_vault_file = find_existing_track_in_vault(title, artist, music_folder)
+    if existing_vault_file and os.path.exists(existing_vault_file):
+        print(f"  [REUSE EXISTING] '{title}' by {artist} already exists in library: {existing_vault_file}")
+        try:
+            if os.path.abspath(existing_vault_file) != os.path.abspath(expected_path):
+                import shutil
+                shutil.copy2(existing_vault_file, expected_path)
+                tag_audio_file(expected_path, title, artist, playlist_title, track_index, total_tracks, cover_bytes)
+            return expected_path
+        except Exception:
+            return existing_vault_file
 
     ydl_opts = {
         'format': 'bestaudio[ext=m4a]/bestaudio/best',
@@ -380,7 +410,8 @@ def import_playlist(
                 i + 1,
                 total_tracks,
                 info["cover_url"],
-                cached_cover_bytes
+                cached_cover_bytes,
+                music_folder
             ): t
             for i, t in enumerate(info["tracks"])
         }

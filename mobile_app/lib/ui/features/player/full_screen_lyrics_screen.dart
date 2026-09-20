@@ -516,15 +516,24 @@ class _FullScreenLyricsScreenState extends State<FullScreenLyricsScreen> {
                             player.skipNext();
                           },
                         ),
-                        IconButton(
-                          icon: Icon(
-                            currentTrack.isStarred ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                            color: currentTrack.isStarred ? AppColors.primary : Colors.white70,
-                            size: 24,
-                          ),
-                          onPressed: () {
-                            HapticFeedback.lightImpact();
-                            music.toggleStar(currentTrack);
+                        Builder(
+                          builder: (context) {
+                            final isStarred = music.isTrackStarred(currentTrack.id);
+                            return PressableScale(
+                              onTap: () {
+                                HapticFeedback.lightImpact();
+                                music.toggleStar(currentTrack);
+                              },
+                              scaleFactor: 0.88,
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Icon(
+                                  isStarred ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                                  color: isStarred ? AppColors.primary : Colors.white70,
+                                  size: 24,
+                                ),
+                              ),
+                            );
                           },
                         ),
                       ],

@@ -32,7 +32,7 @@ class TrackRow extends StatelessWidget {
     final music = context.watch<MusicProvider>();
     final isCurrent = player.currentTrack?.id == track.id;
     final isPlaying = isCurrent && player.isPlaying;
-    final isStarred = track.isStarred;
+    final isStarred = music.isTrackStarred(track.id);
     final isDownloaded = music.isDownloaded(track.id);
 
     return PressableScale(
@@ -315,18 +315,23 @@ class TrackRow extends StatelessWidget {
                 ),
 
                 // 8. Like / Unlike
-                ListTile(
-                  leading: Icon(
-                    track.isStarred ? Icons.heart_broken_rounded : Icons.favorite_border_rounded,
-                    color: AppColors.textPrimary,
-                  ),
-                  title: Text(
-                    track.isStarred ? 'Remove from Liked Songs' : 'Save to Liked Songs',
-                    style: AppTypography.bodyLarge,
-                  ),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    music.toggleStar(track);
+                Builder(
+                  builder: (context) {
+                    final isLiked = music.isTrackStarred(track.id);
+                    return ListTile(
+                      leading: Icon(
+                        isLiked ? Icons.heart_broken_rounded : Icons.favorite_border_rounded,
+                        color: AppColors.textPrimary,
+                      ),
+                      title: Text(
+                        isLiked ? 'Remove from Liked Songs' : 'Save to Liked Songs',
+                        style: AppTypography.bodyLarge,
+                      ),
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        music.toggleStar(track);
+                      },
+                    );
                   },
                 ),
 

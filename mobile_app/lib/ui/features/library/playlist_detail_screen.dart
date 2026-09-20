@@ -244,13 +244,10 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                         isFullySynced
                             ? '${playlist.tracks.length} songs • ${DurationFormatter.format(playlist.duration)}'
                             : (hasImported
-                                ? '${playlist.tracks.length} of $totalExpected tracks ready • Syncing...'
+                                ? '${playlist.tracks.length} of $totalExpected tracks ready'
                                 : '0 songs'),
                         style: AppTypography.bodySmall.copyWith(
-                          color: !isFullySynced && hasImported
-                              ? AppColors.primary
-                              : AppColors.textSecondary,
-                          fontWeight: !isFullySynced && hasImported ? FontWeight.w600 : FontWeight.normal,
+                          color: AppColors.textSecondary,
                         ),
                       ),
                       if (playlist.comment != null && playlist.comment!.isNotEmpty) ...[
@@ -303,91 +300,42 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                 ),
               ),
 
-              // Syncing / Processing Banner with actual progress bar
+              // Sleek Minimalist Syncing Banner
               if (hasImported && !isFullySynced)
                 SliverToBoxAdapter(
                   child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    padding: const EdgeInsets.all(16),
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(16),
+                      color: const Color(0xFF181818),
+                      borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: AppColors.primary.withValues(alpha: 0.35),
-                        width: 1.2,
+                        color: Colors.white.withValues(alpha: 0.08),
+                        width: 1.0,
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.25),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Row(
                           children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: AppColors.primary.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: const Icon(Icons.sync_rounded, color: AppColors.primary, size: 20),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Syncing Playlist',
-                                    style: AppTypography.titleMedium.copyWith(fontSize: 15, fontWeight: FontWeight.bold),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    '${playlist.tracks.length} of $totalExpected tracks ready in library',
-                                    style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary, fontSize: 12),
-                                  ),
-                                ],
+                            const SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.0,
+                                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
                               ),
                             ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: AppColors.primary.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
-                              ),
-                              child: Text(
-                                '$syncPercent%',
-                                style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 14),
-
-                        // Actual Linear Progress Bar
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
-                          child: LinearProgressIndicator(
-                            value: syncProgress > 0 ? syncProgress : 0.05,
-                            minHeight: 6,
-                            backgroundColor: Colors.white12,
-                            valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-
-                        Row(
-                          children: [
+                            const SizedBox(width: 10),
                             Expanded(
                               child: Text(
-                                'Audio & metadata syncing in background',
-                                style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted, fontSize: 11),
+                                'Syncing: ${playlist.tracks.length} of $totalExpected tracks ready ($syncPercent%)',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -395,25 +343,35 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                             const SizedBox(width: 8),
                             PressableScale(
                               onTap: _retry,
-                              scaleFactor: 0.92,
+                              scaleFactor: 0.90,
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: AppColors.primary.withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                                  color: Colors.white.withValues(alpha: 0.08),
+                                  borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: const Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(Icons.refresh_rounded, size: 14, color: AppColors.primary),
+                                    Icon(Icons.refresh_rounded, size: 13, color: Colors.white70),
                                     SizedBox(width: 4),
-                                    Text('Refresh', style: TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.bold)),
+                                    Text('Refresh', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w600)),
                                   ],
                                 ),
                               ),
                             ),
                           ],
+                        ),
+                        const SizedBox(height: 10),
+                        // Thin Clean Linear Progress Bar
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(2),
+                          child: LinearProgressIndicator(
+                            value: syncProgress > 0 ? syncProgress : 0.05,
+                            minHeight: 3,
+                            backgroundColor: Colors.white12,
+                            valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                          ),
                         ),
                       ],
                     ),

@@ -312,11 +312,19 @@ class MusicRepository {
     return _apiService.getStarredTracks();
   }
 
+  Future<void> starTrack(String trackId) {
+    return _apiService.starItem(songId: trackId);
+  }
+
+  Future<void> unstarTrack(String trackId) {
+    return _apiService.unstarItem(songId: trackId);
+  }
+
   Future<void> toggleStarTrack(Track track) async {
     if (track.isStarred) {
-      await _apiService.unstarItem(songId: track.id);
+      await unstarTrack(track.id);
     } else {
-      await _apiService.starItem(songId: track.id);
+      await starTrack(track.id);
     }
   }
 

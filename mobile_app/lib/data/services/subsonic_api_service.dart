@@ -347,7 +347,7 @@ class SubsonicApiService {
   /// Star (Like) an item: song, album, artist
   Future<void> starItem({String? songId, String? albumId, String? artistId}) async {
     final url = _getEndpointUrl('star');
-    await _dio.get(
+    final response = await _dio.get(
       url,
       queryParameters: _buildParams({
         if (songId != null) 'id': songId,
@@ -355,12 +355,16 @@ class SubsonicApiService {
         if (artistId != null) 'artistId': artistId,
       }),
     );
+    final subResp = response.data['subsonic-response'];
+    if (subResp != null && subResp['status'] != 'ok') {
+      throw Exception(subResp['error']?['message'] ?? 'Failed to star item');
+    }
   }
 
   /// Unstar (Unlike) an item
   Future<void> unstarItem({String? songId, String? albumId, String? artistId}) async {
     final url = _getEndpointUrl('unstar');
-    await _dio.get(
+    final response = await _dio.get(
       url,
       queryParameters: _buildParams({
         if (songId != null) 'id': songId,
@@ -368,6 +372,10 @@ class SubsonicApiService {
         if (artistId != null) 'artistId': artistId,
       }),
     );
+    final subResp = response.data['subsonic-response'];
+    if (subResp != null && subResp['status'] != 'ok') {
+      throw Exception(subResp['error']?['message'] ?? 'Failed to unstar item');
+    }
   }
 
   /// Global Search

@@ -321,15 +321,24 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
                             },
                           ),
                         // Like / Favorite Button
-                        IconButton(
-                          icon: Icon(
-                            track.isStarred ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                            color: track.isStarred ? AppColors.primary : AppColors.textSecondary,
-                            size: 28,
-                          ),
-                          onPressed: () {
-                            HapticFeedback.lightImpact();
-                            music.toggleStar(track);
+                        Builder(
+                          builder: (context) {
+                            final isStarred = music.isTrackStarred(track.id);
+                            return PressableScale(
+                              onTap: () {
+                                HapticFeedback.lightImpact();
+                                music.toggleStar(track);
+                              },
+                              scaleFactor: 0.88,
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Icon(
+                                  isStarred ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                                  color: isStarred ? AppColors.primary : AppColors.textSecondary,
+                                  size: 28,
+                                ),
+                              ),
+                            );
                           },
                         ),
                       ],

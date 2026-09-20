@@ -244,25 +244,39 @@ class MusicProvider extends ChangeNotifier {
   }
 
   // ================= Star / Like =================
+  final Set<String> _starringInFlight = {};
+
+  bool isTrackStarred(String trackId) => _starredTracks.any((t) => t.id == trackId);
+
   Future<void> toggleStar(Track track) async {
-    final isStarredNow = !track.isStarred;
-    if (isStarredNow) {
+    if (_starringInFlight.contains(track.id)) return;
+    _starringInFlight.add(track.id);
+
+    final currentlyStarred = isTrackStarred(track.id);
+    final targetStarred = !currentlyStarred;
+
+    // Remove duplicates and apply optimistic update
+    _starredTracks.removeWhere((t) => t.id == track.id);
+    if (targetStarred) {
       _starredTracks.insert(0, track.copyWith(isStarred: true));
-    } else {
-      _starredTracks.removeWhere((t) => t.id == track.id);
     }
     notifyListeners();
 
     try {
-      await _musicRepository.toggleStarTrack(track);
+      if (targetStarred) {
+        await _musicRepository.starTrack(track.id);
+      } else {
+        await _musicRepository.unstarTrack(track.id);
+      }
     } catch (_) {
       // Revert if failed
-      if (isStarredNow) {
-        _starredTracks.removeWhere((t) => t.id == track.id);
-      } else {
-        _starredTracks.insert(0, track);
+      _starredTracks.removeWhere((t) => t.id == track.id);
+      if (currentlyStarred) {
+        _starredTracks.insert(0, track.copyWith(isStarred: true));
       }
       notifyListeners();
+    } finally {
+      _starringInFlight.remove(track.id);
     }
   }
 

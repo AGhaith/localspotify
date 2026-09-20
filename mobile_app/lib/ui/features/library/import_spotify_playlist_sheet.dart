@@ -541,7 +541,7 @@ class _ImportSpotifyPlaylistSheetState extends State<ImportSpotifyPlaylistSheet>
 
   Widget _buildDownloadingView() {
     final status = _importStatus;
-    final progress = status?.progress ?? 0.15;
+    final progress = (status?.progress ?? 0.15).clamp(0.0, 1.0);
     final percentInt = (progress * 100).toInt();
     final info = _playlistInfo;
 
@@ -550,77 +550,22 @@ class _ImportSpotifyPlaylistSheetState extends State<ImportSpotifyPlaylistSheet>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Centerpiece Artwork with Glowing Ring & Progress Badge
+          // Album Cover Art
           Center(
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Container(
-                  width: 96,
-                  height: 96,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: _paletteVibrant.withValues(alpha: 0.35),
-                        blurRadius: 24,
-                        spreadRadius: 2,
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(
-                  width: 96,
-                  height: 96,
-                  child: CircularProgressIndicator(
-                    value: progress > 0 ? progress : null,
-                    strokeWidth: 3.5,
-                    backgroundColor: Colors.white12,
-                    valueColor: AlwaysStoppedAnimation<Color>(_paletteVibrant),
-                  ),
-                ),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(40),
-                  child: CachedCoverArt(
-                    imageUrl: info?.coverUrl,
-                    width: 78,
-                    height: 78,
-                    borderRadius: 39,
-                    placeholderIcon: Icons.queue_music_rounded,
-                  ),
-                ),
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: _paletteVibrant,
-                      borderRadius: BorderRadius.circular(10),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Colors.black45,
-                          blurRadius: 4,
-                          offset: Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Text(
-                      '$percentInt%',
-                      style: const TextStyle(
-                        color: Colors.black,
-                        fontWeight: FontWeight.w900,
-                        fontSize: 10,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: CachedCoverArt(
+                imageUrl: info?.coverUrl,
+                width: 88,
+                height: 88,
+                borderRadius: 12,
+                placeholderIcon: Icons.queue_music_rounded,
+              ),
             ),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 16),
 
-          // Title & Progress Bar
+          // Playlist Name & Progress Count
           Text(
             info?.name ?? 'Syncing Playlist',
             textAlign: TextAlign.center,
@@ -630,95 +575,50 @@ class _ImportSpotifyPlaylistSheetState extends State<ImportSpotifyPlaylistSheet>
           ),
           const SizedBox(height: 4),
           Text(
-            'Transferring tracks & audio to library vault',
+            status?.message ?? 'Importing tracks to library...',
             textAlign: TextAlign.center,
-            style: AppTypography.bodySmall.copyWith(color: Colors.white60, fontSize: 12),
-          ),
-          const SizedBox(height: 14),
-
-          // Glowing Linear Progress Bar
-          ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: LinearProgressIndicator(
-              value: progress,
-              minHeight: 6,
-              backgroundColor: Colors.white12,
-              valueColor: AlwaysStoppedAnimation<Color>(_paletteVibrant),
-            ),
-          ),
-          const SizedBox(height: 14),
-
-          // Dynamic Live Status Card
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: _paletteSurface.withValues(alpha: 0.75),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: _paletteVibrant.withValues(alpha: 0.25), width: 1.2),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: _paletteVibrant,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: _paletteVibrant,
-                            blurRadius: 6,
-                            spreadRadius: 1,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        status?.message ?? 'Syncing tracks in progress...',
-                        style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-                if (status?.currentTrack != null) ...[
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      const Icon(Icons.graphic_eq_rounded, size: 14, color: Colors.white54),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          status!.currentTrack!,
-                          style: TextStyle(color: _paletteVibrant.withValues(alpha: 0.9), fontSize: 12, fontWeight: FontWeight.w500),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ],
-            ),
+            style: AppTypography.bodySmall.copyWith(color: Colors.white70, fontSize: 13),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 16),
 
-          // Pipeline Quality Badges
+          // Progress Bar & Percentage
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildFeaturePill(Icons.music_note_rounded, 'Hi-Fi Audio'),
-              _buildFeaturePill(Icons.image_rounded, 'HD Covers'),
-              _buildFeaturePill(Icons.subtitles_rounded, 'Synced Lyrics'),
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    minHeight: 4,
+                    backgroundColor: Colors.white12,
+                    valueColor: AlwaysStoppedAnimation<Color>(_paletteVibrant),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                '$percentInt%',
+                style: TextStyle(
+                  color: _paletteVibrant,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12,
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 16),
+          if (status?.currentTrack != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              status!.currentTrack!,
+              style: const TextStyle(color: Colors.white38, fontSize: 11),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+          const SizedBox(height: 20),
 
           // Run in Background Button
           PressableScale(
@@ -728,8 +628,7 @@ class _ImportSpotifyPlaylistSheetState extends State<ImportSpotifyPlaylistSheet>
               padding: const EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white12),
+                borderRadius: BorderRadius.circular(10),
               ),
               child: const Center(
                 child: Text(
@@ -745,20 +644,6 @@ class _ImportSpotifyPlaylistSheetState extends State<ImportSpotifyPlaylistSheet>
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildFeaturePill(IconData icon, String label) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 14, color: _paletteVibrant),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: const TextStyle(fontSize: 11, color: Colors.white60, fontWeight: FontWeight.w600),
-        ),
-      ],
     );
   }
 
