@@ -50,11 +50,12 @@ class AlbumCard extends StatelessWidget {
             Stack(
               alignment: Alignment.bottomRight,
               children: [
-                CachedCoverArt(
-                  imageUrl: coverUrl,
-                  width: double.infinity,
-                  height: 124,
-                  borderRadius: 8,
+                AspectRatio(
+                  aspectRatio: 1.0,
+                  child: CachedCoverArt(
+                    imageUrl: coverUrl,
+                    borderRadius: 8,
+                  ),
                 ),
                 if (onPlayTap != null)
                   Padding(

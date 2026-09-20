@@ -48,6 +48,9 @@ class CachedCoverArt extends StatelessWidget {
       return _buildFallback();
     }
 
+    final hasFiniteWidth = width != null && width!.isFinite;
+    final hasFiniteHeight = height != null && height!.isFinite;
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(borderRadius),
       child: CachedNetworkImage(
@@ -57,8 +60,8 @@ class CachedCoverArt extends StatelessWidget {
         fit: BoxFit.cover,
         maxWidthDiskCache: 600,
         maxHeightDiskCache: 600,
-        memCacheWidth: width != null ? (width! * 2).toInt().clamp(64, 600) : 300,
-        memCacheHeight: height != null ? (height! * 2).toInt().clamp(64, 600) : 300,
+        memCacheWidth: hasFiniteWidth ? (width! * 2).toInt().clamp(64, 600) : 300,
+        memCacheHeight: hasFiniteHeight ? (height! * 2).toInt().clamp(64, 600) : 300,
         placeholder: (context, url) => Container(
           width: width,
           height: height,
@@ -80,7 +83,8 @@ class CachedCoverArt extends StatelessWidget {
   }
 
   Widget _buildFallback() {
-    final computedSize = (width != null ? (width! * 0.4) : 24.0).clamp(16.0, 48.0);
+    final hasFiniteWidth = width != null && width!.isFinite;
+    final computedSize = (hasFiniteWidth ? (width! * 0.4) : 24.0).clamp(16.0, 48.0);
 
     return Container(
       width: width,
