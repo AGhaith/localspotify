@@ -87,5 +87,20 @@ void main() {
       expect(status.totalCount, equals(50));
       expect(status.currentTrack, equals('Midnight City'));
     });
+
+    test('SpotifyTrackItem preserves previewUrl and high-res coverUrl', () {
+      const track = SpotifyTrackItem(
+        title: 'Starboy',
+        artist: 'The Weeknd',
+        durationMs: 230000,
+        uri: 'spotify:track:456',
+        previewUrl: 'https://audio-ssl.itunes.apple.com/preview.m4a',
+        coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/600x600bb.jpg',
+        album: 'Starboy',
+      );
+
+      expect(track.previewUrl, equals('https://audio-ssl.itunes.apple.com/preview.m4a'));
+      expect(track.coverUrl, contains('600x600bb.jpg'));
+    });
   });
 }

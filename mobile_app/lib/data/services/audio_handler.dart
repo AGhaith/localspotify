@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:audio_service/audio_service.dart';
 import 'package:just_audio/just_audio.dart';
 
@@ -79,9 +80,46 @@ class LocalSpotifyAudioHandler extends BaseAudioHandler
     final localPath = item.extras?['localAudioPath'] as String?;
 
     if (isOffline && localPath != null && localPath.isNotEmpty) {
-      return AudioSource.uri(Uri.file(localPath), tag: item);
+      if (localPath.startsWith('http://') || localPath.startsWith('https://')) {
+        return AudioSource.uri(
+          Uri.parse(localPath),
+          tag: item,
+          headers: const {'User-Agent': 'LocalSpotify/1.0 (Android)'},
+        );
+      }
+      final file = File(localPath);
+      if (file.existsSync()) {
+        return AudioSource.file(localPath, tag: item);
+      }
     }
-    return AudioSource.uri(Uri.parse(url), tag: item);
+
+    if (url.isNotEmpty && (url.startsWith('http://') || url.startsWith('https://'))) {
+      return AudioSource.uri(
+        Uri.parse(url),
+        tag: item,
+        headers: const {'User-Agent': 'LocalSpotify/1.0 (Android)'},
+      );
+    }
+
+    if (localPath != null && localPath.isNotEmpty) {
+      if (localPath.startsWith('http://') || localPath.startsWith('https://')) {
+        return AudioSource.uri(
+          Uri.parse(localPath),
+          tag: item,
+          headers: const {'User-Agent': 'LocalSpotify/1.0 (Android)'},
+        );
+      }
+      final file = File(localPath);
+      if (file.existsSync()) {
+        return AudioSource.file(localPath, tag: item);
+      }
+    }
+
+    return AudioSource.uri(
+      Uri.parse(url.isNotEmpty ? url : 'https://itunes.apple.com'),
+      tag: item,
+      headers: const {'User-Agent': 'LocalSpotify/1.0 (Android)'},
+    );
   }
 
   Future<void> setTrackQueue({

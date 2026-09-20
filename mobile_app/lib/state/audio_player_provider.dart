@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../core/config/app_config.dart';
 import '../data/models/track.dart';
 import '../data/repositories/music_repository.dart';
 import '../data/services/audio_handler.dart';
@@ -237,9 +238,19 @@ class AudioPlayerProvider extends ChangeNotifier {
   }
 
   MediaItem _trackToMediaItem(Track t) {
-    final audioUrl = t.isOffline && t.localAudioPath != null
-        ? t.localAudioPath!
-        : _musicRepository.getStreamUrl(t.id);
+    String audioUrl;
+    if (t.isOffline && t.localAudioPath != null && t.localAudioPath!.isNotEmpty) {
+      audioUrl = t.localAudioPath!;
+    } else if (t.localAudioPath != null && t.localAudioPath!.isNotEmpty) {
+      audioUrl = t.localAudioPath!;
+    } else if (t.id.startsWith('spotify_') || t.id.startsWith('sp_')) {
+      final session = _musicRepository.session;
+      final serverUrl = session?.serverUrl ?? AppConfig.serverUrl;
+      final companionBase = serverUrl.replaceAll(':6767', ':6969');
+      audioUrl = '$companionBase/api/stream?title=${Uri.encodeComponent(t.title)}&artist=${Uri.encodeComponent(t.artist)}';
+    } else {
+      audioUrl = _musicRepository.getStreamUrl(t.id);
+    }
 
     final coverArtUrl = _musicRepository.getCoverArtUrl(t.coverArtId, size: 500);
 

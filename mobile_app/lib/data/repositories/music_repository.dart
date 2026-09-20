@@ -3,6 +3,7 @@ import '../models/artist.dart';
 import '../models/lyrics.dart';
 import '../models/playlist.dart';
 import '../models/track.dart';
+import '../models/user_session.dart';
 import '../services/subsonic_api_service.dart';
 import '../services/offline_storage_service.dart';
 import '../services/lyrics_service.dart';
@@ -395,6 +396,8 @@ class MusicRepository {
     );
   }
 
+  UserSession? get session => _apiService.session;
+
   // ================= Spotify Search & Catalog Sync =================
   Future<List<SpotifyTrackItem>> searchSpotifyTracks(String query) {
     return _spotifyService.searchTracks(query);
@@ -406,9 +409,11 @@ class MusicRepository {
     
     // Dispatch background sync request to server companion
     final session = _apiService.session;
+    String? companionStreamUrl;
     if (session != null) {
       try {
         final companionServer = session.serverUrl.replaceAll(':6767', ':6969');
+        companionStreamUrl = '$companionServer/api/stream?title=${Uri.encodeComponent(item.title)}&artist=${Uri.encodeComponent(item.artist)}';
         _spotifyImporterService.dio.post(
           '$companionServer/api/import-track',
           data: {
@@ -424,6 +429,14 @@ class MusicRepository {
       } catch (_) {}
     }
 
+    String? audioUrl = item.previewUrl;
+    if (audioUrl == null || audioUrl.isEmpty) {
+      audioUrl = await _spotifyService.resolvePreviewUrl(item.title, item.artist);
+    }
+    if ((audioUrl == null || audioUrl.isEmpty) && companionStreamUrl != null) {
+      audioUrl = companionStreamUrl;
+    }
+
     return Track(
       id: pseudoId,
       title: item.title,
@@ -432,7 +445,7 @@ class MusicRepository {
       albumId: 'sp_${item.album.hashCode.abs()}',
       duration: item.durationMs ~/ 1000,
       coverArtId: item.coverUrl,
-      localAudioPath: item.previewUrl,
+      localAudioPath: audioUrl,
     );
   }
 

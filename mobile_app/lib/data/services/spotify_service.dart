@@ -201,7 +201,7 @@ class SpotifyService {
           'term': clean,
           'media': 'music',
           'entity': 'song',
-          'limit': 25,
+          'limit': 30,
         },
         options: Options(
           receiveTimeout: const Duration(seconds: 8),
@@ -231,6 +231,62 @@ class SpotifyService {
     } catch (_) {
       return [];
     }
+  }
+
+  /// Resolves an audio stream/preview URL for a given title and artist
+  Future<String?> resolvePreviewUrl(String title, String artist) async {
+    try {
+      final response = await _dio.get(
+        'https://itunes.apple.com/search',
+        queryParameters: {
+          'term': '$title $artist',
+          'media': 'music',
+          'entity': 'song',
+          'limit': 5,
+        },
+        options: Options(
+          receiveTimeout: const Duration(seconds: 6),
+          sendTimeout: const Duration(seconds: 4),
+        ),
+      );
+      final data = response.data;
+      final Map<String, dynamic> jsonMap = data is String ? jsonDecode(data) : data;
+      final results = jsonMap['results'] as List? ?? [];
+      for (final r in results) {
+        final preview = r['previewUrl']?.toString();
+        if (preview != null && preview.isNotEmpty) {
+          return preview;
+        }
+      }
+    } catch (_) {}
+
+    // Fallback: search just title
+    try {
+      final response = await _dio.get(
+        'https://itunes.apple.com/search',
+        queryParameters: {
+          'term': title,
+          'media': 'music',
+          'entity': 'song',
+          'limit': 5,
+        },
+        options: Options(
+          receiveTimeout: const Duration(seconds: 6),
+          sendTimeout: const Duration(seconds: 4),
+        ),
+      );
+      final data = response.data;
+      final Map<String, dynamic> jsonMap = data is String ? jsonDecode(data) : data;
+      final results = jsonMap['results'] as List? ?? [];
+      for (final r in results) {
+        final preview = r['previewUrl']?.toString();
+        if (preview != null && preview.isNotEmpty) {
+          return preview;
+        }
+      }
+    } catch (_) {}
+
+    return null;
   }
 }
 

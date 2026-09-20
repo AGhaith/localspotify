@@ -520,23 +520,24 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                                     player.playTracks(tracks: playlist.tracks, initialIndex: index);
                                   }
                                 }
-                              : () {
+                              : () async {
                                   if (isTimedOut) {
                                     setState(() {
                                       _syncStartTimes[trackKey] = DateTime.now();
                                     });
                                     context.read<MusicProvider>().syncPlaylistWithVault(widget.playlistId);
                                   }
+                                  HapticFeedback.mediumImpact();
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
-                                      content: Text(isTimedOut
-                                          ? 'Retrying sync for "${t.title}"...'
-                                          : 'Syncing "${t.title}" into library vault...'),
+                                      content: Text('Playing "${t.title}" & syncing to vault...'),
                                       duration: const Duration(seconds: 2),
                                       behavior: SnackBarBehavior.floating,
                                       backgroundColor: AppColors.surface,
                                     ),
                                   );
+                                  final track = await context.read<MusicProvider>().convertAndSyncSpotifyTrack(t);
+                                  player.playTrack(track);
                                 },
                         );
                       },
