@@ -424,6 +424,24 @@ class MusicRepository {
   }
 
   Future<Track> createTrackFromSpotifyItem(SpotifyTrackItem item) async {
+    // 0. Quick check: Is this track already present in the server's Subsonic library?
+    try {
+      final searchResult = await _apiService.search('${item.title} ${item.artist}').timeout(const Duration(milliseconds: 500));
+      final serverTracks = (searchResult['tracks'] as List<Track>?) ?? [];
+      if (serverTracks.isNotEmpty) {
+        final cleanTitle = item.title.toLowerCase().trim();
+        final cleanArtist = item.artist.toLowerCase().trim();
+        for (final st in serverTracks) {
+          final tTitle = st.title.toLowerCase().trim();
+          final tArtist = st.artist.toLowerCase().trim();
+          if ((tTitle.contains(cleanTitle) || cleanTitle.contains(tTitle)) &&
+              (tArtist.contains(cleanArtist) || cleanArtist.contains(tArtist))) {
+            return st;
+          }
+        }
+      }
+    } catch (_) {}
+
     // Generate a consistent pseudo-ID for this track
     final pseudoId = 'spotify_${item.title.hashCode.abs()}_${item.artist.hashCode.abs()}';
     
