@@ -524,7 +524,6 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
         );
       case SpotifySyncState.idle:
-      default:
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(

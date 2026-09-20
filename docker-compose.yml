@@ -16,6 +16,15 @@ services:
       ND_LASTFM_ENABLED: "true"
       ND_LASTFM_APIKEY: "8cd4f9a0768e6bb7cf406566a7803a01"
       ND_LASTFM_SECRET: "a5664985efd44e5cc350f24fd6d401f3"
+      # High-performance bandwidth & compression optimizations
+      ND_TRANSCODING_ENABLE: "true"
+      ND_TRANSCODINGCACHESIZE: "2000MB"
+      ND_IMAGECACHESIZE: "500MB"
+      ND_IMAGECACHELENGTH: "720h"
+      ND_COVERARTCACHELENGTH: "720h"
+      ND_AUTOCOMPLETESIZE: "50"
+      ND_RESPONSECOMPRESSION: "true"
+      ND_DEFAULTDOWNLOADBITRATE: "160"
     volumes:
       - ./navidrome-data:/data
       - ./my-music:/music:ro

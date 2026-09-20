@@ -95,7 +95,7 @@ class LocalSpotifyAudioHandler extends BaseAudioHandler
 
     if (isOffline && localPath != null && localPath.isNotEmpty) {
       if (localPath.startsWith('http://') || localPath.startsWith('https://')) {
-        return AudioSource.uri(
+        return LockCachingAudioSource(
           Uri.parse(localPath),
           tag: item,
           headers: _getHeadersForUri(localPath),
@@ -108,7 +108,7 @@ class LocalSpotifyAudioHandler extends BaseAudioHandler
     }
 
     if (url.isNotEmpty && (url.startsWith('http://') || url.startsWith('https://'))) {
-      return AudioSource.uri(
+      return LockCachingAudioSource(
         Uri.parse(url),
         tag: item,
         headers: _getHeadersForUri(url),
@@ -117,7 +117,7 @@ class LocalSpotifyAudioHandler extends BaseAudioHandler
 
     if (localPath != null && localPath.isNotEmpty) {
       if (localPath.startsWith('http://') || localPath.startsWith('https://')) {
-        return AudioSource.uri(
+        return LockCachingAudioSource(
           Uri.parse(localPath),
           tag: item,
           headers: _getHeadersForUri(localPath),
@@ -129,7 +129,7 @@ class LocalSpotifyAudioHandler extends BaseAudioHandler
       }
     }
 
-    return AudioSource.uri(
+    return LockCachingAudioSource(
       Uri.parse(url.isNotEmpty ? url : 'https://itunes.apple.com'),
       tag: item,
       headers: _getHeadersForUri(url),

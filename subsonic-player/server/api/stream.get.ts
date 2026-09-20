@@ -79,6 +79,7 @@ export default defineEventHandler(async (event) => {
         'Accept-Ranges': 'bytes',
         'Content-Length': String(chunksize),
         'Content-Type': contentType,
+        'Cache-Control': 'public, max-age=31536000, immutable',
       });
       return sendStream(event, stream);
     } else {
@@ -86,6 +87,7 @@ export default defineEventHandler(async (event) => {
         'Content-Length': String(stat.size),
         'Content-Type': contentType,
         'Accept-Ranges': 'bytes',
+        'Cache-Control': 'public, max-age=31536000, immutable',
       });
       return sendStream(event, fs.createReadStream(matchedFile));
     }

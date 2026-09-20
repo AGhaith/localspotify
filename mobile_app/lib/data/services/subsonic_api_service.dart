@@ -18,6 +18,9 @@ class SubsonicApiService {
                 connectTimeout: const Duration(seconds: 12),
                 receiveTimeout: const Duration(seconds: 20),
                 responseType: ResponseType.json,
+                headers: const {
+                  'Accept-Encoding': 'gzip, deflate, br',
+                },
               ),
             );
 
@@ -453,7 +456,7 @@ class SubsonicApiService {
   }
 
   /// Get high-resolution cover art URL
-  String getCoverArtUrl(String? coverArtId, {int size = 500}) {
+  String getCoverArtUrl(String? coverArtId, {int size = 300}) {
     if (coverArtId == null || coverArtId.isEmpty || _session == null) return '';
     if (coverArtId.startsWith('http://') || coverArtId.startsWith('https://')) {
       return coverArtId;

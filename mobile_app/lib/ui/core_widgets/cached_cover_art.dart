@@ -55,6 +55,10 @@ class CachedCoverArt extends StatelessWidget {
         width: width,
         height: height,
         fit: BoxFit.cover,
+        maxWidthDiskCache: 600,
+        maxHeightDiskCache: 600,
+        memCacheWidth: width != null ? (width! * 2).toInt().clamp(64, 600) : 300,
+        memCacheHeight: height != null ? (height! * 2).toInt().clamp(64, 600) : 300,
         placeholder: (context, url) => Container(
           width: width,
           height: height,
