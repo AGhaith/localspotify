@@ -9,6 +9,7 @@ import '../services/offline_storage_service.dart';
 import '../services/lyrics_service.dart';
 import '../services/spotify_service.dart';
 import '../services/spotify_importer_service.dart';
+import '../services/audio_stream_resolver_service.dart';
 
 class MusicRepository {
   final SubsonicApiService _apiService;
@@ -16,6 +17,7 @@ class MusicRepository {
   final LyricsService _lyricsService;
   final SpotifyService _spotifyService;
   final SpotifyImporterService _spotifyImporterService;
+  final AudioStreamResolverService _streamResolver;
 
   MusicRepository({
     required SubsonicApiService apiService,
@@ -23,6 +25,7 @@ class MusicRepository {
     LyricsService? lyricsService,
     SpotifyService? spotifyService,
     SpotifyImporterService? spotifyImporterService,
+    AudioStreamResolverService? streamResolver,
   })  : _apiService = apiService,
         _storageService = storageService,
         _lyricsService = lyricsService ??
@@ -36,7 +39,8 @@ class MusicRepository {
               apiService: apiService,
               spotifyService: spotifyService,
               storageService: storageService,
-            );
+            ),
+        _streamResolver = streamResolver ?? AudioStreamResolverService();
 
   String getCoverArtUrl(
     String? coverArtId, {
@@ -347,8 +351,23 @@ class MusicRepository {
   }
 
   Future<Track> downloadTrack(Track track, {void Function(int, int)? onProgress}) async {
-    final streamUrl = _apiService.getStreamUrl(track.id);
-    final coverArtUrl = _apiService.getCoverArtUrl(track.coverArtId, size: 500);
+    String streamUrl = (track.localAudioPath != null && track.localAudioPath!.isNotEmpty)
+        ? track.localAudioPath!
+        : _apiService.getStreamUrl(track.id);
+
+    // If it's a Spotify track or an iTunes 30s preview URL, resolve the FULL studio song stream first
+    if (track.id.startsWith('spotify_') || streamUrl.contains('audio-ssl.itunes.apple.com') || streamUrl.contains('preview')) {
+      final resolvedFullStream = await _streamResolver.resolveFullAudioStream(
+        title: track.title,
+        artist: track.artist,
+        expectedDurationSec: track.duration,
+      );
+      if (resolvedFullStream != null && resolvedFullStream.isNotEmpty) {
+        streamUrl = resolvedFullStream;
+      }
+    }
+
+    final coverArtUrl = getCoverArtUrl(track.coverArtId, size: 500);
     // Pre-cache lyrics for offline playback
     try {
       await _lyricsService.getLyrics(track);
@@ -429,7 +448,17 @@ class MusicRepository {
       } catch (_) {}
     }
 
-    String? audioUrl = item.previewUrl;
+    // 1. Resolve full-length studio audio stream
+    String? audioUrl = await _streamResolver.resolveFullAudioStream(
+      title: item.title,
+      artist: item.artist,
+      expectedDurationSec: item.durationMs ~/ 1000,
+    );
+
+    // 2. Fallback to direct preview or companion stream if full resolution is unavailable
+    if (audioUrl == null || audioUrl.isEmpty) {
+      audioUrl = item.previewUrl;
+    }
     if (audioUrl == null || audioUrl.isEmpty) {
       audioUrl = await _spotifyService.resolvePreviewUrl(item.title, item.artist);
     }

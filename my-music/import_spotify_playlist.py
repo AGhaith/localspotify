@@ -267,10 +267,63 @@ def download_single_track(
         'retries': 3,
     }
 
-    query = f"ytsearch1:{artist} - {title} Audio"
+    expected_duration = track.get("duration_ms", 0) / 1000.0 if track.get("duration_ms") else 0
+    queries = [
+        f"ytsearch5:{artist} - {title} Official Audio",
+        f"ytsearch5:{artist} - {title} Topic",
+        f"ytsearch5:{artist} - {title}",
+    ]
+
+    selected_video_url = None
+    search_ydl_opts = {
+        'extract_flat': True,
+        'quiet': True,
+        'no_warnings': True,
+        'socket_timeout': 10,
+    }
+
+    for query in queries:
+        try:
+            with yt_dlp.YoutubeDL(search_ydl_opts) as ydl:
+                info = ydl.extract_info(query, download=False)
+                entries = info.get('entries', []) if info else []
+                for entry in entries:
+                    if not entry:
+                        continue
+                    v_title = entry.get('title', '').lower()
+                    v_duration = entry.get('duration', 0) or 0
+
+                    # Check duration match
+                    if expected_duration > 20 and v_duration > 0:
+                        if abs(v_duration - expected_duration) > 15:
+                            continue
+
+                    # Filter forbidden keywords unless present in target title
+                    t_lower = title.lower()
+                    if 'cover' not in t_lower and any(w in v_title for w in ['cover', 'karaoke', 'tutorial', 'parody', 'reaction']):
+                        continue
+                    if 'live' not in t_lower and any(w in v_title for w in ['live at', 'live in', 'live from', 'concert']):
+                        continue
+                    if 'remix' not in t_lower and any(w in v_title for w in ['remix', 'slowed', 'speed up', 'reverb', 'bass boosted']):
+                        continue
+                    if any(w in v_title for w in ['1 hour', '10 hour', 'loop', 'full album']):
+                        continue
+
+                    v_id = entry.get('id')
+                    if v_id:
+                        selected_video_url = f"https://www.youtube.com/watch?v={v_id}"
+                        break
+        except Exception:
+            pass
+
+        if selected_video_url:
+            break
+
+    download_target = selected_video_url or f"ytsearch1:{artist} - {title} Official Audio"
+
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([query])
+            ydl.download([download_target])
     except Exception as e:
         print(f"  Failed downloading '{title}' by {artist}: {e}")
         return None
