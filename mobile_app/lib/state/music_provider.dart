@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import '../data/models/album.dart';
 import '../data/models/artist.dart';
 import '../data/models/lyrics.dart';
@@ -9,6 +9,7 @@ import '../data/repositories/music_repository.dart';
 import '../data/services/spotify_service.dart';
 import '../data/services/spotify_importer_service.dart';
 import '../data/services/download_notification_service.dart';
+import '../ui/features/library/artist_detail_screen.dart';
 
 enum SpotifySyncState { idle, syncing, playing, error }
 
@@ -135,7 +136,7 @@ class MusicProvider extends ChangeNotifier {
       _recentAlbums = recent.isNotEmpty ? recent : newest;
       _frequentAlbums = frequent.isNotEmpty ? frequent : newest;
       _starredTracks = starred;
-      _artists = artists;
+      _artists = _sanitizeArtists(artists);
       _offlineTracks = _musicRepository.getDownloadedTracks();
     } catch (e) {
       _homeError = e.toString();
@@ -157,7 +158,7 @@ class MusicProvider extends ChangeNotifier {
       final starred = await _musicRepository.getStarredTracks();
 
       _playlists = playlists;
-      _artists = artists;
+      _artists = _sanitizeArtists(artists);
       _starredTracks = starred;
       _offlineTracks = _musicRepository.getDownloadedTracks();
     } catch (_) {
@@ -165,6 +166,44 @@ class MusicProvider extends ChangeNotifier {
       _isLoadingLibrary = false;
       notifyListeners();
     }
+  }
+
+  /// Decomposes compound artist entries (e.g. "dizzytooskinny, marwan pablo") into individual artists
+  List<Artist> _sanitizeArtists(List<Artist> rawArtists) {
+    final Map<String, Artist> cleanMap = {};
+    final separator = RegExp(r'\s*(?:,|/|;|&|\bfeat\.?|\bft\.?|\bwith\b)\s*', caseSensitive: false);
+
+    for (final artist in rawArtists) {
+      final name = artist.name.trim();
+      if (separator.hasMatch(name)) {
+        // Compound artist entry
+        final subNames = name
+            .split(separator)
+            .map((s) => s.trim())
+            .where((s) => s.isNotEmpty && !s.toLowerCase().startsWith('feat') && !s.toLowerCase().startsWith('ft'))
+            .toList();
+
+        for (final sub in subNames) {
+          final key = sub.toLowerCase();
+          if (!cleanMap.containsKey(key)) {
+            cleanMap[key] = Artist(
+              id: 'sub_${artist.id}_${sub.hashCode.abs()}',
+              name: sub,
+              coverArtId: artist.coverArtId,
+              artistImageUrl: artist.artistImageUrl,
+              albumCount: 1,
+            );
+          }
+        }
+      } else {
+        final key = name.toLowerCase();
+        if (!cleanMap.containsKey(key)) {
+          cleanMap[key] = artist;
+        }
+      }
+    }
+
+    return cleanMap.values.toList();
   }
 
   // In-memory detail caches to eliminate redundant network requests and UI flickering
@@ -186,9 +225,82 @@ class MusicProvider extends ChangeNotifier {
     if (!forceRefresh && _artistCache.containsKey(artistId)) {
       return _artistCache[artistId]!;
     }
-    final artist = await _musicRepository.getArtist(artistId);
-    _artistCache[artistId] = artist;
-    return artist;
+    try {
+      if (!artistId.startsWith('sub_')) {
+        final artist = await _musicRepository.getArtist(artistId);
+        _artistCache[artistId] = artist;
+        return artist;
+      }
+    } catch (_) {}
+
+    // Fallback for decomposed sub-artists: query tracks and albums matching artist name
+    final found = _artists.where((a) => a.id == artistId).firstOrNull;
+    String artistName = found?.name ?? '';
+    if (artistName.isEmpty) {
+      if (artistId.startsWith('sub_name_')) {
+        artistName = Uri.decodeComponent(artistId.substring('sub_name_'.length));
+      } else {
+        artistName = artistId;
+      }
+    }
+    try {
+      final searchRes = await _musicRepository.search(artistName);
+      final tracks = (searchRes['tracks'] as List<Track>?) ?? [];
+      final albums = (searchRes['albums'] as List<Album>?) ?? [];
+      final artist = Artist(
+        id: artistId,
+        name: artistName,
+        coverArtId: tracks.isNotEmpty ? tracks.first.coverArtId : null,
+        albumCount: albums.length,
+        albums: albums,
+        topTracks: tracks,
+      );
+      _artistCache[artistId] = artist;
+      return artist;
+    } catch (_) {
+      final fallback = Artist(id: artistId, name: artistName);
+      _artistCache[artistId] = fallback;
+      return fallback;
+    }
+  }
+
+  Future<void> openArtistByName(BuildContext context, String artistName) async {
+    final clean = artistName.trim();
+    if (clean.isEmpty) return;
+
+    // 1. Check if directly in _artists list
+    for (final a in _artists) {
+      if (a.name.toLowerCase() == clean.toLowerCase()) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => ArtistDetailScreen(artistId: a.id)),
+        );
+        return;
+      }
+    }
+
+    // 2. Search Subsonic for this artist entity
+    try {
+      final searchRes = await _musicRepository.search(clean);
+      final searchArtists = (searchRes['artists'] as List<Artist>?) ?? [];
+      if (searchArtists.isNotEmpty) {
+        final matched = searchArtists.firstWhere(
+          (a) => a.name.toLowerCase() == clean.toLowerCase(),
+          orElse: () => searchArtists.first,
+        );
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => ArtistDetailScreen(artistId: matched.id)),
+        );
+        return;
+      }
+    } catch (_) {}
+
+    // 3. Fallback: navigate using sub_name_ ID with artist name
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => ArtistDetailScreen(artistId: 'sub_name_${Uri.encodeComponent(clean)}')),
+    );
   }
 
   Future<Playlist> getPlaylistDetails(String playlistId, {bool forceRefresh = false}) async {

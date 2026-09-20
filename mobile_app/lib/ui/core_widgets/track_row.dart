@@ -345,7 +345,17 @@ class TrackRow extends StatelessWidget {
                       );
                     },
                   ),
-                if (track.artistId != null && track.artistId!.isNotEmpty)
+                if (track.individualArtists.length > 1) ...[
+                  for (final artistName in track.individualArtists)
+                    _buildActionTile(
+                      icon: Icons.person_rounded,
+                      title: 'View $artistName',
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        music.openArtistByName(context, artistName);
+                      },
+                    ),
+                ] else if (track.artistId != null && track.artistId!.isNotEmpty) ...[
                   _buildActionTile(
                     icon: Icons.person_rounded,
                     title: 'View Artist',
@@ -359,6 +369,16 @@ class TrackRow extends StatelessWidget {
                       );
                     },
                   ),
+                ] else if (track.artist.isNotEmpty) ...[
+                  _buildActionTile(
+                    icon: Icons.person_rounded,
+                    title: 'View ${track.artist}',
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      music.openArtistByName(context, track.artist);
+                    },
+                  ),
+                ],
                 _buildActionTile(
                   icon: Icons.info_outline_rounded,
                   title: 'Audio Specs & File Info',

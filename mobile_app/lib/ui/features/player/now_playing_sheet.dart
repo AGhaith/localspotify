@@ -13,7 +13,6 @@ import '../../core_widgets/cached_cover_art.dart';
 import '../../core_widgets/circular_download_button.dart';
 import '../../core_widgets/pressable_scale.dart';
 import '../library/album_detail_screen.dart';
-import '../library/artist_detail_screen.dart';
 import '../settings/audio_equalizer_screen.dart';
 import 'lyrics_view.dart';
 import 'queue_sheet.dart';
@@ -249,20 +248,42 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
                               const SizedBox(height: 4),
                               GestureDetector(
                                 onTap: () {
-                                  if (track.artistId != null && track.artistId!.isNotEmpty) {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => ArtistDetailScreen(artistId: track.artistId!),
-                                      ),
-                                    );
+                                  HapticFeedback.selectionClick();
+                                  if (track.individualArtists.length > 1) {
+                                    _showMultipleArtistsSheet(context, track);
+                                  } else {
+                                    context.read<MusicProvider>().openArtistByName(context, track.primaryArtist);
                                   }
                                 },
-                                child: Text(
-                                  track.artist,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: AppTypography.bodyLarge.copyWith(color: AppColors.textSecondary),
+                                child: Row(
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        track.artist,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: AppTypography.bodyLarge.copyWith(color: AppColors.textSecondary),
+                                      ),
+                                    ),
+                                    if (track.individualArtists.length > 1) ...[
+                                      const SizedBox(width: 6),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primary.withValues(alpha: 0.15),
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: Text(
+                                          '${track.individualArtists.length} Artists',
+                                          style: AppTypography.labelSmall.copyWith(
+                                            color: AppColors.primary,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
                                 ),
                               ),
                             ],
@@ -517,6 +538,79 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
           SnackBar(
             content: Text('Music will stop in $title'),
             duration: const Duration(seconds: 2),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showMultipleArtistsSheet(BuildContext context, Track track) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF181818),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.people_alt_rounded, color: AppColors.primary, size: 22),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Artists',
+                        style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                      const Spacer(),
+                      Text(
+                        '${track.individualArtists.length} found',
+                        style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(color: Color(0xFF2A2A2A)),
+                Flexible(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: track.individualArtists.length,
+                    itemBuilder: (context, index) {
+                      final artistName = track.individualArtists[index];
+                      return ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: AppColors.card,
+                          child: Text(
+                            artistName.isNotEmpty ? artistName[0].toUpperCase() : '?',
+                            style: AppTypography.titleMedium.copyWith(color: AppColors.primary),
+                          ),
+                        ),
+                        title: Text(
+                          artistName,
+                          style: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                        subtitle: Text(
+                          'View artist profile & tracks',
+                          style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
+                        ),
+                        trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted),
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          context.read<MusicProvider>().openArtistByName(context, artistName);
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },

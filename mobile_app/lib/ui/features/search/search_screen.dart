@@ -396,6 +396,14 @@ class _SearchScreenState extends State<SearchScreen> {
                                           style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
                                         ),
                                         trailing: _buildSpotifyTrackTrailing(item, syncState, syncProgress),
+                                        onLongPress: () {
+                                          HapticFeedback.selectionClick();
+                                          if (item.individualArtists.length > 1) {
+                                            _showSpotifyArtistsSheet(context, item, music);
+                                          } else {
+                                            music.openArtistByName(context, item.primaryArtist);
+                                          }
+                                        },
                                         onTap: () async {
                                           HapticFeedback.mediumImpact();
                                           final track = await music.convertAndSyncSpotifyTrack(item);
@@ -793,6 +801,79 @@ class _SearchScreenState extends State<SearchScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  void _showSpotifyArtistsSheet(BuildContext context, SpotifyTrackItem item, MusicProvider music) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF181818),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.people_alt_rounded, color: AppColors.primary, size: 22),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Artists',
+                        style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                      const Spacer(),
+                      Text(
+                        '${item.individualArtists.length} found',
+                        style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(color: Color(0xFF2A2A2A)),
+                Flexible(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: item.individualArtists.length,
+                    itemBuilder: (context, index) {
+                      final artistName = item.individualArtists[index];
+                      return ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: AppColors.card,
+                          child: Text(
+                            artistName.isNotEmpty ? artistName[0].toUpperCase() : '?',
+                            style: AppTypography.titleMedium.copyWith(color: AppColors.primary),
+                          ),
+                        ),
+                        title: Text(
+                          artistName,
+                          style: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                        subtitle: Text(
+                          'View artist profile & tracks',
+                          style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
+                        ),
+                        trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted),
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          music.openArtistByName(context, artistName);
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

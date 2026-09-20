@@ -43,6 +43,21 @@ class Track {
     this.localCoverArtPath,
   });
 
+  /// Returns list of individual artists separated by comma, slash, semicolon, &, or feat/ft
+  List<String> get individualArtists {
+    if (artist.trim().isEmpty) return [];
+    final pattern = RegExp(r'\s*(?:,|/|;|&|\bfeat\.?|\bft\.?|\bwith\b)\s*', caseSensitive: false);
+    final parts = artist
+        .split(pattern)
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty && !s.toLowerCase().startsWith('feat') && !s.toLowerCase().startsWith('ft'))
+        .toList();
+    return parts.isNotEmpty ? parts : [artist];
+  }
+
+  /// Primary or lead artist
+  String get primaryArtist => individualArtists.isNotEmpty ? individualArtists.first : artist;
+
   Track copyWith({
     String? id,
     String? title,

@@ -22,6 +22,21 @@ class SpotifyTrackItem {
 
   String get id => uri.isNotEmpty ? uri : '${artist}_$title';
 
+  /// Returns list of individual artists separated by comma, slash, semicolon, &, or feat/ft
+  List<String> get individualArtists {
+    if (artist.trim().isEmpty) return [];
+    final pattern = RegExp(r'\s*(?:,|/|;|&|\bfeat\.?|\bft\.?|\bwith\b)\s*', caseSensitive: false);
+    final parts = artist
+        .split(pattern)
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty && !s.toLowerCase().startsWith('feat') && !s.toLowerCase().startsWith('ft'))
+        .toList();
+    return parts.isNotEmpty ? parts : [artist];
+  }
+
+  /// Primary or lead artist
+  String get primaryArtist => individualArtists.isNotEmpty ? individualArtists.first : artist;
+
   String get durationFormatted {
     final minutes = durationMs ~/ 60000;
     final seconds = ((durationMs % 60000) ~/ 1000).toString().padLeft(2, '0');
@@ -191,47 +206,143 @@ class SpotifyService {
     throw Exception('Unable to fetch Spotify playlist details.');
   }
 
-  /// Search global music catalog (Spotify/iTunes) for tracks
+  /// Search global music catalog with Egyptian storefront optimization and Deezer Arabic integration
   Future<List<SpotifyTrackItem>> searchTracks(String query) async {
     final clean = query.trim();
     if (clean.isEmpty) return [];
 
+    final results = <SpotifyTrackItem>[];
+    final seenKeys = <String>{};
+
+    void addTrack(SpotifyTrackItem item) {
+      final key = '${item.title.toLowerCase().trim()}:::${item.artist.toLowerCase().trim()}';
+      if (seenKeys.add(key)) {
+        results.add(item);
+      }
+    }
+
     try {
-      final response = await _dio.get(
+      // Launch parallel requests:
+      // 1. Apple iTunes with Egypt storefront (country=EG)
+      final itunesEgyptFuture = _dio.get(
+        'https://itunes.apple.com/search',
+        queryParameters: {
+          'term': clean,
+          'country': 'EG',
+          'media': 'music',
+          'entity': 'song',
+          'limit': 25,
+        },
+        options: Options(receiveTimeout: const Duration(seconds: 5), sendTimeout: const Duration(seconds: 4)),
+      ).catchError((_) => Response(requestOptions: RequestOptions(path: '')));
+
+      // 2. Deezer API (comprehensive Arabic & Egyptian rap/pop catalogue)
+      final deezerFuture = _dio.get(
+        'https://api.deezer.com/search',
+        queryParameters: {
+          'q': clean,
+          'limit': 25,
+        },
+        options: Options(receiveTimeout: const Duration(seconds: 5), sendTimeout: const Duration(seconds: 4)),
+      ).catchError((_) => Response(requestOptions: RequestOptions(path: '')));
+
+      // 3. Apple iTunes Global (fallback)
+      final itunesGlobalFuture = _dio.get(
         'https://itunes.apple.com/search',
         queryParameters: {
           'term': clean,
           'media': 'music',
           'entity': 'song',
-          'limit': 30,
+          'limit': 15,
         },
-        options: Options(
-          receiveTimeout: const Duration(seconds: 8),
-          sendTimeout: const Duration(seconds: 5),
-        ),
-      );
+        options: Options(receiveTimeout: const Duration(seconds: 5), sendTimeout: const Duration(seconds: 4)),
+      ).catchError((_) => Response(requestOptions: RequestOptions(path: '')));
 
-      final data = response.data;
-      final Map<String, dynamic> jsonMap = data is String ? jsonDecode(data) : data;
-      final results = jsonMap['results'] as List? ?? [];
+      final responses = await Future.wait([itunesEgyptFuture, deezerFuture, itunesGlobalFuture]);
 
-      return results.map((r) {
-        final rawArtwork = r['artworkUrl100']?.toString();
-        final highResArtwork = rawArtwork?.replaceAll('100x100bb', '600x600bb');
-        final duration = (r['trackTimeMillis'] as num?)?.toInt() ?? 180000;
+      // Parse iTunes Egypt results first
+      final itunesEgResp = responses[0];
+      if (itunesEgResp.data != null) {
+        try {
+          final data = itunesEgResp.data is String ? jsonDecode(itunesEgResp.data) : itunesEgResp.data;
+          final items = (data['results'] as List?) ?? [];
+          for (final r in items) {
+            final rawArtwork = r['artworkUrl100']?.toString();
+            final highResArtwork = rawArtwork?.replaceAll('100x100bb', '600x600bb');
+            final duration = (r['trackTimeMillis'] as num?)?.toInt() ?? 180000;
+            addTrack(
+              SpotifyTrackItem(
+                title: r['trackName']?.toString() ?? 'Unknown Track',
+                artist: r['artistName']?.toString() ?? 'Unknown Artist',
+                durationMs: duration,
+                uri: r['trackViewUrl']?.toString() ?? '',
+                previewUrl: r['previewUrl']?.toString(),
+                coverUrl: highResArtwork,
+                album: r['collectionName']?.toString(),
+              ),
+            );
+          }
+        } catch (_) {}
+      }
 
-        return SpotifyTrackItem(
-          title: r['trackName']?.toString() ?? 'Unknown Track',
-          artist: r['artistName']?.toString() ?? 'Unknown Artist',
-          durationMs: duration,
-          uri: r['trackViewUrl']?.toString() ?? '',
-          previewUrl: r['previewUrl']?.toString(),
-          coverUrl: highResArtwork,
-          album: r['collectionName']?.toString(),
-        );
-      }).toList();
+      // Parse Deezer results
+      final deezerResp = responses[1];
+      if (deezerResp.data != null) {
+        try {
+          final data = deezerResp.data is String ? jsonDecode(deezerResp.data) : deezerResp.data;
+          final items = (data['data'] as List?) ?? [];
+          for (final d in items) {
+            final title = d['title']?.toString() ?? 'Unknown Track';
+            final artist = d['artist']?['name']?.toString() ?? 'Unknown Artist';
+            final durationSec = (d['duration'] as num?)?.toInt() ?? 180;
+            final preview = d['preview']?.toString();
+            final cover = d['album']?['cover_big']?.toString() ?? d['album']?['cover_medium']?.toString();
+            final album = d['album']?['title']?.toString();
+            final link = d['link']?.toString() ?? '';
+
+            addTrack(
+              SpotifyTrackItem(
+                title: title,
+                artist: artist,
+                durationMs: durationSec * 1000,
+                uri: link,
+                previewUrl: preview,
+                coverUrl: cover,
+                album: album,
+              ),
+            );
+          }
+        } catch (_) {}
+      }
+
+      // Parse Global iTunes fallback
+      final itunesGlobalResp = responses[2];
+      if (itunesGlobalResp.data != null) {
+        try {
+          final data = itunesGlobalResp.data is String ? jsonDecode(itunesGlobalResp.data) : itunesGlobalResp.data;
+          final items = (data['results'] as List?) ?? [];
+          for (final r in items) {
+            final rawArtwork = r['artworkUrl100']?.toString();
+            final highResArtwork = rawArtwork?.replaceAll('100x100bb', '600x600bb');
+            final duration = (r['trackTimeMillis'] as num?)?.toInt() ?? 180000;
+            addTrack(
+              SpotifyTrackItem(
+                title: r['trackName']?.toString() ?? 'Unknown Track',
+                artist: r['artistName']?.toString() ?? 'Unknown Artist',
+                durationMs: duration,
+                uri: r['trackViewUrl']?.toString() ?? '',
+                previewUrl: r['previewUrl']?.toString(),
+                coverUrl: highResArtwork,
+                album: r['collectionName']?.toString(),
+              ),
+            );
+          }
+        } catch (_) {}
+      }
+
+      return results;
     } catch (_) {
-      return [];
+      return results;
     }
   }
 
