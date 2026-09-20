@@ -199,21 +199,33 @@ class MusicProvider extends ChangeNotifier {
   }
 
   // ================= Search =================
+  int _activeSearchId = 0;
+  int _activeSpotifySearchId = 0;
+
   void searchDebounced(String query) {
     _searchDebounce?.cancel();
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) {
+      search('');
+      return;
+    }
     _searchDebounce = Timer(const Duration(milliseconds: 350), () {
       search(query);
     });
   }
 
   Future<void> search(String query) async {
+    final currentId = ++_activeSearchId;
     final trimmed = query.trim();
+    _spotifySearchTracks = []; // Clear previous Spotify results immediately!
+
     if (trimmed.isEmpty) {
       _searchTracks = [];
       _searchAlbums = [];
       _searchArtists = [];
       _searchPlaylists = [];
       _isSearching = false;
+      _isSearchingSpotify = false;
       notifyListeners();
       return;
     }
@@ -221,8 +233,13 @@ class MusicProvider extends ChangeNotifier {
     _isSearching = true;
     notifyListeners();
 
+    // Trigger fresh Spotify catalog search in parallel for this query
+    searchSpotify(trimmed);
+
     try {
       final res = await _musicRepository.search(trimmed);
+      if (_activeSearchId != currentId) return;
+
       _searchTracks = res['songs'] as List<Track>? ?? [];
       _searchAlbums = res['albums'] as List<Album>? ?? [];
       _searchArtists = res['artists'] as List<Artist>? ?? [];
@@ -235,22 +252,21 @@ class MusicProvider extends ChangeNotifier {
       // Record to recent searches
       await _musicRepository.addRecentSearch(trimmed);
       _recentSearches = _musicRepository.getRecentSearches();
-
-      // If local search returns very few songs, automatically trigger Spotify catalog search in background
-      if (_searchTracks.isEmpty) {
-        searchSpotify(trimmed);
-      }
     } catch (_) {
     } finally {
-      _isSearching = false;
-      notifyListeners();
+      if (_activeSearchId == currentId) {
+        _isSearching = false;
+        notifyListeners();
+      }
     }
   }
 
   Future<void> searchSpotify(String query) async {
+    final currentId = ++_activeSpotifySearchId;
     final trimmed = query.trim();
+    _spotifySearchTracks = []; // Always clear before new query
+
     if (trimmed.isEmpty) {
-      _spotifySearchTracks = [];
       _isSearchingSpotify = false;
       notifyListeners();
       return;
@@ -260,12 +276,18 @@ class MusicProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _spotifySearchTracks = await _musicRepository.searchSpotifyTracks(trimmed);
+      final results = await _musicRepository.searchSpotifyTracks(trimmed);
+      if (_activeSpotifySearchId != currentId) return; // Discard stale responses
+      _spotifySearchTracks = results;
     } catch (_) {
-      _spotifySearchTracks = [];
+      if (_activeSpotifySearchId == currentId) {
+        _spotifySearchTracks = [];
+      }
     } finally {
-      _isSearchingSpotify = false;
-      notifyListeners();
+      if (_activeSpotifySearchId == currentId) {
+        _isSearchingSpotify = false;
+        notifyListeners();
+      }
     }
   }
 
