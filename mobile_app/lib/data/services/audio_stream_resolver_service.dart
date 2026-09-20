@@ -59,15 +59,19 @@ class AudioStreamResolverService {
         'https://pipedapi.kavin.rocks',
         'https://api.piped.private.coffee',
         'https://piped-api.lunar.icu',
+        'https://inv.tux.pizza/api/v1',
+        'https://invidious.nerdvpn.de/api/v1',
       ];
 
       for (final instance in pipedInstances) {
         try {
+          final isPiped = !instance.contains('api/v1');
+          final endpoint = isPiped ? '$instance/search' : '$instance/search';
           final resp = await _dio.get(
-            '$instance/search',
+            endpoint,
             queryParameters: {
               'q': '$cleanArtist $cleanTitle',
-              'filter': 'music_songs',
+              if (isPiped) 'filter': 'music_songs',
             },
             options: Options(
               receiveTimeout: const Duration(seconds: 4),
@@ -75,27 +79,27 @@ class AudioStreamResolverService {
             ),
           );
 
-          final items = resp.data['items'] as List? ?? [];
-          for (final item in items.take(4)) {
-            final durationSec = (item['duration'] as num?)?.toInt() ?? 0;
-            if (expectedDurationSec != null && expectedDurationSec > 0 && durationSec > 0) {
-              if ((durationSec - expectedDurationSec).abs() > 15) continue;
+          final items = resp.data is List ? resp.data as List : (resp.data['items'] as List? ?? []);
+          for (final item in items.take(5)) {
+            final durationSec = (item['duration'] as num?)?.toInt() ?? (item['lengthSeconds'] as num?)?.toInt() ?? 0;
+            if (expectedDurationSec != null && expectedDurationSec > 20 && durationSec > 0) {
+              if ((durationSec - expectedDurationSec).abs() > 25) continue;
             }
 
-            final videoUrl = item['url']?.toString() ?? '';
-            final videoId = videoUrl.replaceAll('/watch?v=', '').trim();
+            final videoId = (item['videoId'] ?? item['url']?.toString().replaceAll('/watch?v=', ''))?.toString().trim() ?? '';
             if (videoId.isNotEmpty) {
+              final streamEndpoint = isPiped ? '$instance/streams/$videoId' : '$instance/videos/$videoId';
               final streamResp = await _dio.get(
-                '$instance/streams/$videoId',
+                streamEndpoint,
                 options: Options(
                   receiveTimeout: const Duration(seconds: 4),
                   sendTimeout: const Duration(seconds: 3),
                 ),
               );
-              final audioStreams = streamResp.data['audioStreams'] as List? ?? [];
+              final audioStreams = (streamResp.data['audioStreams'] as List? ?? streamResp.data['adaptiveFormats'] as List? ?? []);
               if (audioStreams.isNotEmpty) {
-                // Pick highest quality stream
-                audioStreams.sort((a, b) => ((b['bitrate'] as num?) ?? 0).compareTo((a['bitrate'] as num?) ?? 0));
+                audioStreams.sort((a, b) => ((b['bitrate'] as num?) ?? (b['averageBitrate'] as num?) ?? 0)
+                    .compareTo((a['bitrate'] as num?) ?? (a['averageBitrate'] as num?) ?? 0));
                 final url = audioStreams.first['url']?.toString();
                 if (url != null && url.isNotEmpty) {
                   _memoryCache[key] = url;
@@ -105,6 +109,21 @@ class AudioStreamResolverService {
             }
           }
         } catch (_) {}
+      }
+    } catch (_) {}
+
+    // 3. Last-ditch YouTube Explode unconstrained search
+    try {
+      final searchResults = await _yt.search.search('$cleanArtist $cleanTitle').timeout(const Duration(seconds: 4));
+      if (searchResults.isNotEmpty) {
+        final first = searchResults.first;
+        final manifest = await _yt.videos.streams.getManifest(first.id).timeout(const Duration(seconds: 4));
+        final audioStream = manifest.audioOnly.withHighestBitrate();
+        final url = audioStream.url.toString();
+        if (url.isNotEmpty) {
+          _memoryCache[key] = url;
+          return url;
+        }
       }
     } catch (_) {}
 

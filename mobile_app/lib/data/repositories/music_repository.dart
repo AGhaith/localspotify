@@ -456,15 +456,12 @@ class MusicRepository {
       expectedDurationSec: item.durationMs ~/ 1000,
     );
 
-    // 2. Fallback to direct preview or companion stream if full resolution is unavailable
-    if (audioUrl == null || audioUrl.isEmpty) {
-      audioUrl = item.previewUrl;
-    }
-    if (audioUrl == null || audioUrl.isEmpty) {
-      audioUrl = await _spotifyService.resolvePreviewUrl(item.title, item.artist);
-    }
+    // 2. Fallback to server companion stream endpoint or direct stream if available (never 30s preview)
     if ((audioUrl == null || audioUrl.isEmpty) && companionStreamUrl != null) {
       audioUrl = companionStreamUrl;
+    }
+    if (audioUrl == null || audioUrl.isEmpty) {
+      audioUrl = item.previewUrl;
     }
 
     return Track(
