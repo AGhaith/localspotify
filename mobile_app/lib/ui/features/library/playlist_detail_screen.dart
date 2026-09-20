@@ -537,7 +537,9 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                                     ),
                                   );
                                   final track = await context.read<MusicProvider>().convertAndSyncSpotifyTrack(t);
-                                  player.playTrack(track);
+                                  if (track != null) {
+                                    player.playTrack(track);
+                                  }
                                 },
                         );
                       },

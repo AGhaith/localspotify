@@ -5,6 +5,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../state/audio_player_provider.dart';
 import '../../../state/music_provider.dart';
+import '../../../data/services/spotify_service.dart';
 import '../../core_widgets/album_card.dart';
 import '../../core_widgets/cached_cover_art.dart';
 import '../../core_widgets/track_row.dart';
