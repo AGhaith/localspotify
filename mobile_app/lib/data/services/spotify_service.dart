@@ -20,6 +20,8 @@ class SpotifyTrackItem {
     this.album,
   });
 
+  String get id => uri.isNotEmpty ? uri : '${artist}_$title';
+
   String get durationFormatted {
     final minutes = durationMs ~/ 60000;
     final seconds = ((durationMs % 60000) ~/ 1000).toString().padLeft(2, '0');

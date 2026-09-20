@@ -10,6 +10,8 @@ import '../data/services/spotify_service.dart';
 import '../data/services/spotify_importer_service.dart';
 import '../data/services/download_notification_service.dart';
 
+enum SpotifySyncState { idle, syncing, playing, error }
+
 class MusicProvider extends ChangeNotifier {
   final MusicRepository _musicRepository;
 
@@ -291,9 +293,56 @@ class MusicProvider extends ChangeNotifier {
     }
   }
 
-  Future<Track> convertAndSyncSpotifyTrack(SpotifyTrackItem spotifyItem) async {
-    final track = await _musicRepository.createTrackFromSpotifyItem(spotifyItem);
-    return track;
+  final Map<String, SpotifySyncState> _spotifyTrackSyncStates = {};
+  final Map<String, double> _spotifyTrackSyncProgress = {};
+  final Map<String, String> _spotifyTrackSyncMessages = {};
+  SpotifyTrackItem? _activeSyncingItem;
+
+  SpotifySyncState getSpotifySyncState(String trackId) => _spotifyTrackSyncStates[trackId] ?? SpotifySyncState.idle;
+  double getSpotifySyncProgress(String trackId) => _spotifyTrackSyncProgress[trackId] ?? 0.0;
+  String? getSpotifySyncMessage(String trackId) => _spotifyTrackSyncMessages[trackId];
+  SpotifyTrackItem? get activeSyncingItem => _activeSyncingItem;
+
+  Future<Track?> convertAndSyncSpotifyTrack(SpotifyTrackItem spotifyItem) async {
+    final trackId = spotifyItem.id;
+    _spotifyTrackSyncStates[trackId] = SpotifySyncState.syncing;
+    _spotifyTrackSyncProgress[trackId] = 0.25;
+    _spotifyTrackSyncMessages[trackId] = 'Syncing "${spotifyItem.title}" with server vault...';
+    _activeSyncingItem = spotifyItem;
+    notifyListeners();
+
+    try {
+      _spotifyTrackSyncProgress[trackId] = 0.60;
+      _spotifyTrackSyncMessages[trackId] = 'Resolving studio stream for "${spotifyItem.title}"...';
+      notifyListeners();
+
+      final track = await _musicRepository.createTrackFromSpotifyItem(spotifyItem);
+
+      _spotifyTrackSyncProgress[trackId] = 1.0;
+      _spotifyTrackSyncStates[trackId] = SpotifySyncState.playing;
+      _spotifyTrackSyncMessages[trackId] = 'Streaming & Syncing in background...';
+      notifyListeners();
+
+      // Clear active banner after brief feedback
+      Future.delayed(const Duration(seconds: 4), () {
+        if (_activeSyncingItem?.id == trackId) {
+          _activeSyncingItem = null;
+          notifyListeners();
+        }
+      });
+
+      return track;
+    } catch (e) {
+      _spotifyTrackSyncStates[trackId] = SpotifySyncState.error;
+      _spotifyTrackSyncMessages[trackId] = 'Failed to load audio. Tap to retry.';
+      notifyListeners();
+      return null;
+    }
+  }
+
+  void dismissActiveSyncBanner() {
+    _activeSyncingItem = null;
+    notifyListeners();
   }
 
   Future<void> removeRecentSearch(String query) async {

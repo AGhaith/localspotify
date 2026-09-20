@@ -74,6 +74,20 @@ class LocalSpotifyAudioHandler extends BaseAudioHandler
     );
   }
 
+  Map<String, String>? _getHeadersForUri(String uriStr) {
+    if (uriStr.contains('googlevideo.com') ||
+        uriStr.contains('youtube.com') ||
+        uriStr.contains('ytimg.com') ||
+        uriStr.contains('scdn.co') ||
+        uriStr.contains('spotify.com') ||
+        uriStr.contains('audio-ak-spotify-com')) {
+      return {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      };
+    }
+    return const {'User-Agent': 'LocalSpotify/1.0 (Android)'};
+  }
+
   AudioSource _createAudioSource(MediaItem item) {
     final url = item.extras?['url'] as String? ?? '';
     final isOffline = item.extras?['isOffline'] as bool? ?? false;
@@ -84,7 +98,7 @@ class LocalSpotifyAudioHandler extends BaseAudioHandler
         return AudioSource.uri(
           Uri.parse(localPath),
           tag: item,
-          headers: const {'User-Agent': 'LocalSpotify/1.0 (Android)'},
+          headers: _getHeadersForUri(localPath),
         );
       }
       final file = File(localPath);
@@ -97,7 +111,7 @@ class LocalSpotifyAudioHandler extends BaseAudioHandler
       return AudioSource.uri(
         Uri.parse(url),
         tag: item,
-        headers: const {'User-Agent': 'LocalSpotify/1.0 (Android)'},
+        headers: _getHeadersForUri(url),
       );
     }
 
@@ -106,7 +120,7 @@ class LocalSpotifyAudioHandler extends BaseAudioHandler
         return AudioSource.uri(
           Uri.parse(localPath),
           tag: item,
-          headers: const {'User-Agent': 'LocalSpotify/1.0 (Android)'},
+          headers: _getHeadersForUri(localPath),
         );
       }
       final file = File(localPath);
@@ -118,7 +132,7 @@ class LocalSpotifyAudioHandler extends BaseAudioHandler
     return AudioSource.uri(
       Uri.parse(url.isNotEmpty ? url : 'https://itunes.apple.com'),
       tag: item,
-      headers: const {'User-Agent': 'LocalSpotify/1.0 (Android)'},
+      headers: _getHeadersForUri(url),
     );
   }
 

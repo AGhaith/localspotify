@@ -33,91 +33,80 @@ class AudioStreamResolverService {
     final queries = [
       '$cleanArtist - $cleanTitle Official Audio',
       '$cleanArtist $cleanTitle Topic',
-      '$cleanArtist - $cleanTitle',
+      '$cleanArtist $cleanTitle',
     ];
 
     for (final q in queries) {
       try {
-        final searchResults = await _yt.search.search(q).timeout(const Duration(seconds: 5));
+        final searchResults = await _yt.search.search(q).timeout(const Duration(milliseconds: 3500));
         for (final video in searchResults.take(6)) {
           if (_isValidMatch(video, cleanTitle, cleanArtist, expectedDurationSec)) {
-            final manifest = await _yt.videos.streams.getManifest(video.id).timeout(const Duration(seconds: 4));
-            final audioStream = manifest.audioOnly.withHighestBitrate();
-            final streamUrl = audioStream.url.toString();
-            if (streamUrl.isNotEmpty) {
-              _memoryCache[key] = streamUrl;
-              return streamUrl;
-            }
+            try {
+              final manifest = await _yt.videos.streams.getManifest(video.id).timeout(const Duration(milliseconds: 3000));
+              final audioStream = manifest.audioOnly.withHighestBitrate();
+              final streamUrl = audioStream.url.toString();
+              if (streamUrl.isNotEmpty) {
+                _memoryCache[key] = streamUrl;
+                return streamUrl;
+              }
+            } catch (_) {}
           }
         }
       } catch (_) {}
     }
 
-    // 2. Fallback: Piped API music search
-    try {
-      final pipedInstances = [
-        'https://pipedapi.kavin.rocks',
-        'https://api.piped.private.coffee',
-        'https://piped-api.lunar.icu',
-        'https://inv.tux.pizza/api/v1',
-        'https://invidious.nerdvpn.de/api/v1',
-      ];
+    // 2. Fallback: Fast Invidious / Piped API audio search
+    final publicInstances = [
+      'https://yewtu.be/api/v1',
+      'https://invidious.projectsegfau.lt/api/v1',
+      'https://invidious.drgns.space/api/v1',
+      'https://vid.priv.au/api/v1',
+      'https://invidious.privacydev.net/api/v1',
+    ];
 
-      for (final instance in pipedInstances) {
-        try {
-          final isPiped = !instance.contains('api/v1');
-          final endpoint = isPiped ? '$instance/search' : '$instance/search';
-          final resp = await _dio.get(
-            endpoint,
-            queryParameters: {
-              'q': '$cleanArtist $cleanTitle',
-              if (isPiped) 'filter': 'music_songs',
-            },
-            options: Options(
-              receiveTimeout: const Duration(seconds: 4),
-              sendTimeout: const Duration(seconds: 3),
-            ),
-          );
+    for (final instance in publicInstances) {
+      try {
+        final resp = await _dio.get(
+          '$instance/search',
+          queryParameters: {
+            'q': '$cleanArtist $cleanTitle',
+            'type': 'video',
+          },
+          options: Options(
+            receiveTimeout: const Duration(milliseconds: 2500),
+            sendTimeout: const Duration(milliseconds: 2000),
+          ),
+        );
 
-          final items = resp.data is List ? resp.data as List : (resp.data['items'] as List? ?? []);
-          for (final item in items.take(5)) {
-            final durationSec = (item['duration'] as num?)?.toInt() ?? (item['lengthSeconds'] as num?)?.toInt() ?? 0;
-            if (expectedDurationSec != null && expectedDurationSec > 20 && durationSec > 0) {
-              if ((durationSec - expectedDurationSec).abs() > 25) continue;
-            }
-
-            final videoId = (item['videoId'] ?? item['url']?.toString().replaceAll('/watch?v=', ''))?.toString().trim() ?? '';
-            if (videoId.isNotEmpty) {
-              final streamEndpoint = isPiped ? '$instance/streams/$videoId' : '$instance/videos/$videoId';
-              final streamResp = await _dio.get(
-                streamEndpoint,
-                options: Options(
-                  receiveTimeout: const Duration(seconds: 4),
-                  sendTimeout: const Duration(seconds: 3),
-                ),
-              );
-              final audioStreams = (streamResp.data['audioStreams'] as List? ?? streamResp.data['adaptiveFormats'] as List? ?? []);
-              if (audioStreams.isNotEmpty) {
-                audioStreams.sort((a, b) => ((b['bitrate'] as num?) ?? (b['averageBitrate'] as num?) ?? 0)
-                    .compareTo((a['bitrate'] as num?) ?? (a['averageBitrate'] as num?) ?? 0));
-                final url = audioStreams.first['url']?.toString();
-                if (url != null && url.isNotEmpty) {
-                  _memoryCache[key] = url;
-                  return url;
-                }
-              }
-            }
+        final items = resp.data is List ? resp.data as List : (resp.data['items'] as List? ?? []);
+        for (final item in items.take(4)) {
+          final durationSec = (item['lengthSeconds'] as num?)?.toInt() ?? (item['duration'] as num?)?.toInt() ?? 0;
+          if (expectedDurationSec != null && expectedDurationSec > 20 && durationSec > 0) {
+            if ((durationSec - expectedDurationSec).abs() > 35) continue;
           }
-        } catch (_) {}
-      }
-    } catch (_) {}
+
+          final videoId = (item['videoId'] ?? item['url']?.toString().replaceAll('/watch?v=', ''))?.toString().trim() ?? '';
+          if (videoId.isNotEmpty) {
+            try {
+              final manifest = await _yt.videos.streams.getManifest(videoId).timeout(const Duration(milliseconds: 3000));
+              final audioStream = manifest.audioOnly.withHighestBitrate();
+              final streamUrl = audioStream.url.toString();
+              if (streamUrl.isNotEmpty) {
+                _memoryCache[key] = streamUrl;
+                return streamUrl;
+              }
+            } catch (_) {}
+          }
+        }
+      } catch (_) {}
+    }
 
     // 3. Last-ditch YouTube Explode unconstrained search
     try {
-      final searchResults = await _yt.search.search('$cleanArtist $cleanTitle').timeout(const Duration(seconds: 4));
+      final searchResults = await _yt.search.search('$cleanArtist $cleanTitle').timeout(const Duration(milliseconds: 3000));
       if (searchResults.isNotEmpty) {
         final first = searchResults.first;
-        final manifest = await _yt.videos.streams.getManifest(first.id).timeout(const Duration(seconds: 4));
+        final manifest = await _yt.videos.streams.getManifest(first.id).timeout(const Duration(milliseconds: 3000));
         final audioStream = manifest.audioOnly.withHighestBitrate();
         final url = audioStream.url.toString();
         if (url.isNotEmpty) {
@@ -139,10 +128,10 @@ class AudioStreamResolverService {
     final vTitle = video.title.toLowerCase();
     final vDuration = video.duration?.inSeconds ?? 0;
 
-    // Check duration match within ±14 seconds
+    // Check duration match within ±32 seconds (music video intro/outro buffer)
     if (expectedDurationSec != null && expectedDurationSec > 20 && vDuration > 0) {
       final diff = (vDuration - expectedDurationSec).abs();
-      if (diff > 14) {
+      if (diff > 32) {
         return false;
       }
     }
@@ -153,16 +142,16 @@ class AudioStreamResolverService {
     final hasLiveTarget = targetTitleLower.contains('live');
 
     // Forbidden keywords if target doesn't ask for them
-    if (!hasRemixTarget && (vTitle.contains('remix') || vTitle.contains('slowed') || vTitle.contains('speed up'))) {
+    if (!hasRemixTarget && (vTitle.contains('slowed') || vTitle.contains('speed up') || vTitle.contains('bass boosted') || vTitle.contains('nightcore'))) {
       return false;
     }
-    if (!hasCoverTarget && (vTitle.contains('cover') || vTitle.contains('karaoke') || vTitle.contains('tutorial') || vTitle.contains('parody'))) {
+    if (!hasCoverTarget && (vTitle.contains('karaoke') || vTitle.contains('tutorial') || vTitle.contains('parody') || vTitle.contains('how to play'))) {
       return false;
     }
     if (!hasLiveTarget && (vTitle.contains('live at') || vTitle.contains('live in') || vTitle.contains('reaction'))) {
       return false;
     }
-    if (vTitle.contains('1 hour') || vTitle.contains('10 hour') || vTitle.contains('loop')) {
+    if (vTitle.contains('1 hour') || vTitle.contains('10 hour') || vTitle.contains('loop') || vTitle.contains('full album')) {
       return false;
     }
 
