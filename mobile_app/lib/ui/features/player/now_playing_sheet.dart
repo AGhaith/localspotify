@@ -367,16 +367,9 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
                           child: Container(
                             width: 64,
                             height: 64,
-                            decoration: BoxDecoration(
+                            decoration: const BoxDecoration(
                               color: AppColors.primary,
                               shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.primary.withValues(alpha: 0.45),
-                                  offset: const Offset(0, 6),
-                                  blurRadius: 18,
-                                ),
-                              ],
                             ),
                             child: Center(
                               child: Icon(

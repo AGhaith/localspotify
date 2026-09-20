@@ -50,21 +50,6 @@ class NeoButton extends StatelessWidget {
             color: borderColor == AppColors.primary ? Colors.transparent : borderColor,
             width: 1.0,
           ),
-          boxShadow: enabled && backgroundColor == AppColors.primary
-              ? [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.35),
-                    offset: const Offset(0, 4),
-                    blurRadius: 14,
-                  ),
-                ]
-              : [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.2),
-                    offset: const Offset(0, 2),
-                    blurRadius: 8,
-                  ),
-                ],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
