@@ -189,14 +189,16 @@ def find_existing_track_in_vault(title: str, artist: str, music_folder: str) -> 
     """Scan music folder to find any existing audio file matching artist/title."""
     if not music_folder or not os.path.exists(music_folder):
         return None
-    clean_title = sanitize_name(title).lower()
-    clean_artist = sanitize_name(artist).lower()
+    clean_title = sanitize_name(title).lower().strip()
+    clean_artist = sanitize_name(artist).lower().strip()
 
     for root, _, files in os.walk(music_folder):
         for f in files:
             lower_f = f.lower()
             if any(lower_f.endswith(ext) for ext in ['.m4a', '.mp3', '.flac', '.ogg', '.opus', '.wav']):
-                if clean_title in lower_f and (clean_artist in lower_f or clean_artist in root.lower()):
+                name_no_ext = os.path.splitext(lower_f)[0].strip()
+                expected_named = f"{clean_artist} - {clean_title}"
+                if name_no_ext == expected_named or name_no_ext == clean_title or (clean_title in name_no_ext and len(clean_title) >= 6 and (clean_artist in name_no_ext or clean_artist in root.lower())):
                     return os.path.join(root, f)
     return None
 

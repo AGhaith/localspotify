@@ -186,10 +186,11 @@ class OfflineStorageService {
 
     // 2. Download offline cover art if available
     String? localCoverPath;
-    if (coverArtUrl != null && coverArtUrl.isNotEmpty && track.coverArtId != null) {
+    if (coverArtUrl != null && coverArtUrl.isNotEmpty) {
       try {
         final coversDir = await _coversDirectory;
-        final coverFilePath = '${coversDir.path}/${track.coverArtId}.jpg';
+        final safeCoverId = track.id.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
+        final coverFilePath = '${coversDir.path}/cover_$safeCoverId.jpg';
         final coverFile = File(coverFilePath);
         if (!await coverFile.exists()) {
           await _dio.download(coverArtUrl, coverFilePath);
@@ -224,6 +225,12 @@ class OfflineStorageService {
         final file = File(track.localAudioPath!);
         if (await file.exists()) {
           await file.delete();
+        }
+      }
+      if (track.localCoverArtPath != null) {
+        final coverFile = File(track.localCoverArtPath!);
+        if (await coverFile.exists()) {
+          await coverFile.delete();
         }
       }
       existing.removeAt(index);

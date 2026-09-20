@@ -61,14 +61,6 @@ class MusicRepository {
       final custom = _storageService.getPlaylistCover(playlistName);
       if (custom != null && custom.isNotEmpty) return custom;
     }
-    if (albumName != null) {
-      final custom = _storageService.getPlaylistCover(albumName);
-      if (custom != null && custom.isNotEmpty) return custom;
-    }
-    if (coverArtId != null) {
-      final custom = _storageService.getPlaylistCover(coverArtId);
-      if (custom != null && custom.isNotEmpty) return custom;
-    }
     // If it's a playlist with 0 songs, NEVER return Navidrome's default vinyl cover art!
     if (songCount == 0 && (coverArtId?.startsWith('pl-') ?? false)) {
       return '';
@@ -197,14 +189,15 @@ class MusicRepository {
       }
 
       SpotifyTrackItem? match;
-      final cleanTitle = title.toLowerCase().trim();
+      final cleanTitle = title.toLowerCase().replaceAll(RegExp(r'[^\w\s]'), '').trim();
       final fullRaw = t.title.toLowerCase().trim();
       for (final imp in imported) {
-        final impTitle = imp.title.toLowerCase().trim();
+        final impTitle = imp.title.toLowerCase().replaceAll(RegExp(r'[^\w\s]'), '').trim();
+        final impRaw = imp.title.toLowerCase().trim();
         if (impTitle == cleanTitle ||
-            cleanTitle.contains(impTitle) ||
-            impTitle.contains(cleanTitle) ||
-            fullRaw.contains(impTitle)) {
+            impRaw == cleanTitle ||
+            fullRaw == '${imp.artist.toLowerCase()} - $impRaw' ||
+            (cleanTitle.length >= 6 && impTitle.length >= 6 && (impTitle.contains(cleanTitle) || cleanTitle.contains(impTitle)))) {
           match = imp;
           break;
         }
@@ -426,16 +419,22 @@ class MusicRepository {
   Future<Track> createTrackFromSpotifyItem(SpotifyTrackItem item) async {
     // 0. Quick check: Is this track already present in the server's Subsonic library?
     try {
-      final searchResult = await _apiService.search('${item.title} ${item.artist}').timeout(const Duration(milliseconds: 500));
+      final searchResult = await _apiService.search('${item.title} ${item.artist}').timeout(const Duration(milliseconds: 600));
       final serverTracks = (searchResult['tracks'] as List<Track>?) ?? [];
       if (serverTracks.isNotEmpty) {
-        final cleanTitle = item.title.toLowerCase().trim();
-        final cleanArtist = item.artist.toLowerCase().trim();
+        final cleanTitle = item.title.toLowerCase().replaceAll(RegExp(r'[^\w\s]'), '').trim();
+        final cleanArtist = item.primaryArtist.toLowerCase().replaceAll(RegExp(r'[^\w\s]'), '').trim();
         for (final st in serverTracks) {
-          final tTitle = st.title.toLowerCase().trim();
-          final tArtist = st.artist.toLowerCase().trim();
-          if ((tTitle.contains(cleanTitle) || cleanTitle.contains(tTitle)) &&
-              (tArtist.contains(cleanArtist) || cleanArtist.contains(tArtist))) {
+          final tTitle = st.title.toLowerCase().replaceAll(RegExp(r'[^\w\s]'), '').trim();
+          final tArtist = st.artist.toLowerCase().replaceAll(RegExp(r'[^\w\s]'), '').trim();
+          // STRICT TITLE MATCH: require exact normalized title match
+          if (tTitle == cleanTitle &&
+              (tArtist == cleanArtist || tArtist.contains(cleanArtist) || cleanArtist.contains(tArtist))) {
+            // If matched server track has no cover art or unknown cover, preserve the pristine Spotify/iTunes cover
+            if (item.coverUrl != null && item.coverUrl!.isNotEmpty &&
+                (st.coverArtId == null || st.coverArtId!.isEmpty || st.coverArtId!.contains('unknown') || st.coverArtId!.startsWith('pl-'))) {
+              return st.copyWith(coverArtId: item.coverUrl);
+            }
             return st;
           }
         }
