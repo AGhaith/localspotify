@@ -5,6 +5,7 @@ import '../../../core/config/app_config.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../state/auth_provider.dart';
+import '../../core_widgets/app_logo.dart';
 import '../../core_widgets/google_auth_button.dart';
 import '../../core_widgets/neo_button.dart';
 
@@ -149,26 +150,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // Header Badge
-                Center(
-                  child: Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: const BoxDecoration(
-                      color: AppColors.primary,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.shadow,
-                          offset: Offset(3, 3),
-                          blurRadius: 0,
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.person_add_alt_1_rounded,
-                      color: AppColors.textDark,
-                      size: 32,
-                    ),
-                  ),
+                const Center(
+                  child: AppLogo(size: 64),
                 ),
                 const SizedBox(height: 18),
                 Text(

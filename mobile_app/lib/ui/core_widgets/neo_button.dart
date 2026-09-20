@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import 'pressable_scale.dart';
 
-class NeoButton extends StatefulWidget {
+class NeoButton extends StatelessWidget {
   final String text;
   final IconData? icon;
   final VoidCallback? onPressed;
@@ -22,52 +23,46 @@ class NeoButton extends StatefulWidget {
     this.backgroundColor = AppColors.primary,
     this.textColor = AppColors.textDark,
     this.borderColor = AppColors.primary,
-    this.height = 46,
+    this.height = 48,
     this.isLoading = false,
     this.borderRadius = 9999, // Pill by default
   });
 
   @override
-  State<NeoButton> createState() => _NeoButtonState();
-}
-
-class _NeoButtonState extends State<NeoButton> {
-  bool _isPressed = false;
-
-  @override
   Widget build(BuildContext context) {
-    final enabled = widget.onPressed != null && !widget.isLoading;
+    final enabled = onPressed != null && !isLoading;
 
-    return GestureDetector(
-      onTapDown: enabled
-          ? (_) {
+    return PressableScale(
+      onTap: enabled
+          ? () {
               HapticFeedback.lightImpact();
-              setState(() => _isPressed = true);
+              onPressed?.call();
             }
           : null,
-      onTapUp: enabled ? (_) => setState(() => _isPressed = false) : null,
-      onTapCancel: enabled ? () => setState(() => _isPressed = false) : null,
-      onTap: enabled ? widget.onPressed : null,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 70),
-        height: widget.height,
-        transform: Matrix4.translationValues(
-          _isPressed ? 2.0 : 0.0,
-          _isPressed ? 2.0 : 0.0,
-          0.0,
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+      scaleFactor: 0.96,
+      child: Container(
+        height: height,
+        padding: const EdgeInsets.symmetric(horizontal: 24),
         decoration: BoxDecoration(
-          color: enabled ? widget.backgroundColor : widget.backgroundColor.withValues(alpha: 0.5),
-          borderRadius: BorderRadius.circular(widget.borderRadius),
-          border: Border.all(color: widget.borderColor, width: 1.5),
-          boxShadow: _isPressed
-              ? []
+          color: enabled ? backgroundColor : backgroundColor.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(borderRadius),
+          border: Border.all(
+            color: borderColor == AppColors.primary ? Colors.transparent : borderColor,
+            width: 1.0,
+          ),
+          boxShadow: enabled && backgroundColor == AppColors.primary
+              ? [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.35),
+                    offset: const Offset(0, 4),
+                    blurRadius: 14,
+                  ),
+                ]
               : [
-                  const BoxShadow(
-                    color: AppColors.shadow,
-                    offset: Offset(3, 3),
-                    blurRadius: 0,
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    offset: const Offset(0, 2),
+                    blurRadius: 8,
                   ),
                 ],
         ),
@@ -75,25 +70,26 @@ class _NeoButtonState extends State<NeoButton> {
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (widget.isLoading) ...[
+            if (isLoading) ...[
               SizedBox(
                 width: 18,
                 height: 18,
                 child: CircularProgressIndicator(
                   strokeWidth: 2.2,
-                  color: widget.textColor,
+                  color: textColor,
                 ),
               ),
               const SizedBox(width: 10),
-            ] else if (widget.icon != null) ...[
-              Icon(widget.icon, color: widget.textColor, size: 20),
+            ] else if (icon != null) ...[
+              Icon(icon, color: textColor, size: 20),
               const SizedBox(width: 8),
             ],
             Text(
-              widget.text,
+              text,
               style: AppTypography.labelLarge.copyWith(
-                color: widget.textColor,
-                fontWeight: FontWeight.w800,
+                color: textColor,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.2,
               ),
             ),
           ],

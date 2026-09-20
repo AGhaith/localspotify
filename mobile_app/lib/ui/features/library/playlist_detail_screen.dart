@@ -27,9 +27,12 @@ class PlaylistDetailScreen extends StatefulWidget {
 }
 
 class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
-  late Future<Playlist> _playlistFuture;
+  Playlist? _cachedPlaylist;
+  bool _isLoading = true;
+  String? _errorMessage;
   Timer? _autoSyncTimer;
   bool _isAutoSyncing = false;
+  final Map<String, DateTime> _syncStartTimes = {};
 
   @override
   void initState() {
@@ -43,17 +46,39 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
     super.dispose();
   }
 
-  void _loadPlaylist({bool force = false}) {
-    _playlistFuture = context.read<MusicProvider>().getPlaylistDetails(
-      widget.playlistId,
-      forceRefresh: force,
-    );
+  Future<void> _loadPlaylist({bool force = false}) async {
+    if (_cachedPlaylist == null) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+    }
+    try {
+      final pl = await context.read<MusicProvider>().getPlaylistDetails(
+        widget.playlistId,
+        forceRefresh: force,
+      );
+      if (mounted) {
+        setState(() {
+          _cachedPlaylist = pl;
+          _isLoading = false;
+          _errorMessage = null;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          if (_cachedPlaylist == null) {
+            _errorMessage = 'Failed to load playlist: $e';
+          }
+        });
+      }
+    }
   }
 
   void _retry() {
-    setState(() {
-      _loadPlaylist(force: true);
-    });
+    _loadPlaylist(force: true);
   }
 
   void _setupAutoSync(Playlist currentPlaylist, int totalExpected) {
@@ -77,7 +102,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
         final updated = await music.syncPlaylistWithVault(widget.playlistId);
         if (mounted) {
           setState(() {
-            _playlistFuture = Future.value(updated);
+            _cachedPlaylist = updated;
           });
           if (updated.tracks.length >= totalExpected) {
             timer.cancel();
@@ -97,59 +122,56 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
     final player = context.watch<AudioPlayerProvider>();
     final isDownloading = music.downloadingEntityId == widget.playlistId;
 
-    return FutureBuilder<Playlist>(
-      future: _playlistFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Scaffold(
-            backgroundColor: AppColors.background,
-            appBar: AppBar(
-              backgroundColor: AppColors.background,
-              elevation: 0,
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
-                onPressed: () => Navigator.maybePop(context),
-              ),
-            ),
-            bottomNavigationBar: player.hasTrack
-                ? const SafeArea(top: false, child: MiniPlayerBar())
-                : null,
-            body: const Center(child: CircularProgressIndicator(color: AppColors.primary)),
-          );
-        }
+    if (_isLoading && _cachedPlaylist == null) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          backgroundColor: AppColors.background,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+            onPressed: () => Navigator.maybePop(context),
+          ),
+        ),
+        bottomNavigationBar: player.hasTrack
+            ? const MiniPlayerBar(isStandalone: true)
+            : null,
+        body: const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+      );
+    }
 
-        if (snapshot.hasError || !snapshot.hasData) {
-          return Scaffold(
-            backgroundColor: AppColors.background,
-            appBar: AppBar(
-              backgroundColor: AppColors.background,
-              elevation: 0,
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
-                onPressed: () => Navigator.maybePop(context),
+    if (_errorMessage != null && _cachedPlaylist == null) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          backgroundColor: AppColors.background,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+            onPressed: () => Navigator.maybePop(context),
+          ),
+        ),
+        bottomNavigationBar: player.hasTrack
+            ? const MiniPlayerBar(isStandalone: true)
+            : null,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(_errorMessage!, style: AppTypography.bodyMedium),
+              const SizedBox(height: 12),
+              NeoButton(
+                text: 'Retry',
+                icon: Icons.refresh_rounded,
+                onPressed: _retry,
               ),
-            ),
-            bottomNavigationBar: player.hasTrack
-                ? const SafeArea(top: false, child: MiniPlayerBar())
-                : null,
-            body: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text('Failed to load playlist', style: AppTypography.bodyMedium),
-                  const SizedBox(height: 12),
-                  NeoButton(
-                    text: 'Retry',
-                    icon: Icons.refresh_rounded,
-                    onPressed: _retry,
-                  ),
-                ],
-              ),
-            ),
-          );
-        }
+            ],
+          ),
+        ),
+      );
+    }
 
-        final playlist = snapshot.data!;
+    final playlist = _cachedPlaylist!;
         final coverUrl = music.getCoverArtUrl(
           playlist.coverArtId,
           size: 500,
@@ -178,7 +200,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
         return Scaffold(
           backgroundColor: AppColors.background,
           bottomNavigationBar: player.hasTrack
-              ? const SafeArea(top: false, child: MiniPlayerBar())
+              ? const MiniPlayerBar(isStandalone: true)
               : null,
           body: CustomScrollView(
             physics: const BouncingScrollPhysics(),
@@ -389,6 +411,15 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                         final Track? matchedTrack = _findMatchedTrack(playlist.tracks, t);
                         final isReady = matchedTrack != null;
 
+                        final trackKey = '${t.title}_${t.artist}'.toLowerCase();
+                        if (!isReady && !_syncStartTimes.containsKey(trackKey)) {
+                          _syncStartTimes[trackKey] = DateTime.now();
+                        }
+                        final syncStartTime = _syncStartTimes[trackKey];
+                        final isTimedOut = !isReady &&
+                            syncStartTime != null &&
+                            DateTime.now().difference(syncStartTime).inSeconds >= 30;
+
                         return ListTile(
                           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                           leading: SizedBox(
@@ -396,42 +427,92 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                             child: Center(
                               child: isReady
                                   ? const Icon(Icons.check_circle_rounded, color: AppColors.primary, size: 18)
-                                  : Text(
-                                      '${i + 1}',
-                                      style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
-                                    ),
+                                  : isTimedOut
+                                      ? const Icon(Icons.error_outline_rounded, color: AppColors.error, size: 18)
+                                      : Text(
+                                          '${i + 1}',
+                                          style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
+                                        ),
                             ),
                           ),
                           title: Text(
                             t.title,
                             style: AppTypography.titleMedium.copyWith(
-                              color: isReady ? Colors.white : Colors.white70,
+                              color: isReady
+                                  ? Colors.white
+                                  : isTimedOut
+                                      ? Colors.white54
+                                      : Colors.white70,
                               fontWeight: isReady ? FontWeight.w600 : FontWeight.normal,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                           subtitle: Text(
-                            t.artist,
-                            style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
+                            isTimedOut ? '${t.artist} • Unavailable (Timed out)' : t.artist,
+                            style: AppTypography.bodySmall.copyWith(
+                              color: isTimedOut ? AppColors.error.withValues(alpha: 0.8) : AppColors.textSecondary,
+                            ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                t.durationFormatted,
-                                style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
-                              ),
-                              const SizedBox(width: 8),
-                              Icon(
-                                isReady ? Icons.play_arrow_rounded : Icons.sync_rounded,
-                                size: 18,
-                                color: isReady ? AppColors.primary : AppColors.textMuted,
-                              ),
-                            ],
-                          ),
+                          trailing: isTimedOut
+                              ? PressableScale(
+                                  onTap: () {
+                                    HapticFeedback.mediumImpact();
+                                    setState(() {
+                                      _syncStartTimes[trackKey] = DateTime.now();
+                                    });
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Retrying sync for "${t.title}"...'),
+                                        duration: const Duration(seconds: 2),
+                                        behavior: SnackBarBehavior.floating,
+                                        backgroundColor: AppColors.surface,
+                                      ),
+                                    );
+                                    context.read<MusicProvider>().syncPlaylistWithVault(widget.playlistId);
+                                  },
+                                  scaleFactor: 0.90,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary.withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
+                                    ),
+                                    child: const Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.refresh_rounded, color: AppColors.primary, size: 14),
+                                        SizedBox(width: 4),
+                                        Text(
+                                          'Retry',
+                                          style: TextStyle(
+                                            color: AppColors.primary,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                )
+                              : Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      t.durationFormatted,
+                                      style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Icon(
+                                      isReady ? Icons.play_arrow_rounded : Icons.sync_rounded,
+                                      size: 18,
+                                      color: isReady ? AppColors.primary : AppColors.textMuted,
+                                    ),
+                                  ],
+                                ),
                           onTap: isReady
                               ? () {
                                   final index = playlist.tracks.indexOf(matchedTrack);
@@ -440,9 +521,17 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                                   }
                                 }
                               : () {
+                                  if (isTimedOut) {
+                                    setState(() {
+                                      _syncStartTimes[trackKey] = DateTime.now();
+                                    });
+                                    context.read<MusicProvider>().syncPlaylistWithVault(widget.playlistId);
+                                  }
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
-                                      content: Text('Syncing "${t.title}" into library vault...'),
+                                      content: Text(isTimedOut
+                                          ? 'Retrying sync for "${t.title}"...'
+                                          : 'Syncing "${t.title}" into library vault...'),
                                       duration: const Duration(seconds: 2),
                                       behavior: SnackBarBehavior.floating,
                                       backgroundColor: AppColors.surface,
@@ -496,8 +585,6 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
             ],
           ),
         );
-      },
-    );
   }
 
   Track? _findMatchedTrack(List<Track> tracks, SpotifyTrackItem imported) {

@@ -129,12 +129,12 @@ class _FullScreenLyricsScreenState extends State<FullScreenLyricsScreen> {
                         colors: [Color(0xFF32125A), Color(0xFF120824)],
                       ),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.white24, width: 1.5),
-                  boxShadow: const [
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.12), width: 1.0),
+                  boxShadow: [
                     BoxShadow(
-                      color: AppColors.shadow,
-                      offset: Offset(4, 4),
-                      blurRadius: 0,
+                      color: Colors.black.withValues(alpha: 0.35),
+                      offset: const Offset(0, 6),
+                      blurRadius: 18,
                     ),
                   ],
                 ),

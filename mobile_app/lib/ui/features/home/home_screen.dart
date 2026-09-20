@@ -31,20 +31,6 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  void _onRadioPillTapped(MusicProvider music, AudioPlayerProvider player) async {
-    music.setFilter('radio');
-    HapticFeedback.heavyImpact();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Generating continuous radio station...'),
-        duration: Duration(seconds: 1),
-      ),
-    );
-    final radioTracks = await music.getRandomMix(size: 40);
-    if (radioTracks.isNotEmpty) {
-      player.playTracks(tracks: radioTracks, initialIndex: 0);
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -94,18 +80,11 @@ class _HomeScreenState extends State<HomeScreen> {
                             onTap: () => _showUserMenu(context, auth),
                             scaleFactor: 0.90,
                             child: Container(
-                              width: 38,
-                              height: 38,
+                              width: 36,
+                              height: 36,
                               decoration: const BoxDecoration(
                                 color: AppColors.primary,
                                 shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppColors.shadow,
-                                    offset: Offset(2, 2),
-                                    blurRadius: 0,
-                                  ),
-                                ],
                               ),
                               child: Center(
                                 child: Text(
@@ -120,39 +99,11 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ),
                           ),
-                          const SizedBox(width: 10),
-                          // Filter Pills
-                          Expanded(
-                            child: SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              physics: const BouncingScrollPhysics(),
-                              child: Row(
-                                children: [
-                                  _buildPill(music, 'all', 'All', () => music.setFilter('all')),
-                                  const SizedBox(width: 8),
-                                  _buildPill(music, 'music', 'Music', () => music.setFilter('music')),
-                                  const SizedBox(width: 8),
-                                  _buildPill(music, 'downloaded', 'Downloaded', () => music.setFilter('downloaded')),
-                                  const SizedBox(width: 8),
-                                  _buildPill(music, 'radio', 'Instant Radio', () => _onRadioPillTapped(music, player)),
-                                ],
-                              ),
-                            ),
-                          ),
-                          // Settings Button
-                          PressableScale(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (_) => const SettingsScreen()),
-                              );
-                            },
-                            scaleFactor: 0.88,
-                            child: const Padding(
-                              padding: EdgeInsets.all(8.0),
-                              child: Icon(Icons.settings_outlined, color: AppColors.textPrimary, size: 24),
-                            ),
-                          ),
+                          const SizedBox(width: 12),
+                          // Fixed Filter Pills (All & Downloaded only)
+                          _buildPill(music, 'all', 'All', () => music.setFilter('all')),
+                          const SizedBox(width: 8),
+                          _buildPill(music, 'downloaded', 'Downloaded', () => music.setFilter('downloaded')),
                         ],
                       ),
                       const SizedBox(height: 20),
@@ -175,12 +126,12 @@ class _HomeScreenState extends State<HomeScreen> {
                               colors: [Color(0xFF2E0249), Color(0xFF570A57)],
                             ),
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.border, width: 1.5),
-                            boxShadow: const [
+                            border: Border.all(color: Colors.white.withValues(alpha: 0.1), width: 1.0),
+                            boxShadow: [
                               BoxShadow(
-                                color: AppColors.shadow,
-                                offset: Offset(3, 3),
-                                blurRadius: 0,
+                                color: const Color(0xFF570A57).withValues(alpha: 0.3),
+                                offset: const Offset(0, 4),
+                                blurRadius: 14,
                               ),
                             ],
                           ),
@@ -448,30 +399,20 @@ class _HomeScreenState extends State<HomeScreen> {
     return PressableScale(
       onTap: onTap,
       scaleFactor: 0.92,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: active ? AppColors.primary : const Color(0xFF222430),
+          color: active ? AppColors.primary : const Color(0xFF282828),
           borderRadius: BorderRadius.circular(99),
-          border: Border.all(
-            color: active ? AppColors.primary : AppColors.border,
-            width: 1.5,
-          ),
-          boxShadow: const [
-            BoxShadow(
-              color: AppColors.shadow,
-              offset: Offset(2, 2),
-              blurRadius: 0,
-            ),
-          ],
         ),
         child: Center(
           child: Text(
             label,
             style: AppTypography.labelLarge.copyWith(
-              color: active ? AppColors.textDark : AppColors.textPrimary,
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
+              color: active ? Colors.black : Colors.white,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),

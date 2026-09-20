@@ -120,6 +120,14 @@ class LocalSpotifyAudioHandler extends BaseAudioHandler
   }
 
   @override
+  Future<void> addQueueItems(List<MediaItem> mediaItems) async {
+    if (mediaItems.isEmpty) return;
+    final newQueue = List<MediaItem>.from(queue.value)..addAll(mediaItems);
+    queue.add(newQueue);
+    await _playlist.addAll(mediaItems.map(_createAudioSource).toList());
+  }
+
+  @override
   Future<void> insertQueueItem(int index, MediaItem mediaItem) async {
     final newQueue = List<MediaItem>.from(queue.value)..insert(index, mediaItem);
     queue.add(newQueue);

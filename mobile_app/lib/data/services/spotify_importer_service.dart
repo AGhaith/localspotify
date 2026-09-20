@@ -50,6 +50,8 @@ class SpotifyImporterService {
         _storageService = storageService,
         _dio = dio ?? Dio();
 
+  Dio get dio => _dio;
+
   /// Executes full Spotify playlist import pipeline
   Future<Playlist?> importPlaylist({
     required String spotifyUrl,

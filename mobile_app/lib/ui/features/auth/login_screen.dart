@@ -4,6 +4,7 @@ import '../../../core/config/app_config.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../state/auth_provider.dart';
+import '../../core_widgets/app_logo.dart';
 import '../../core_widgets/google_auth_button.dart';
 import '../../core_widgets/neo_button.dart';
 import 'create_account_screen.dart';
@@ -31,10 +32,10 @@ class _LoginScreenState extends State<LoginScreen> {
     final username = _usernameController.text.trim();
     final password = _passwordController.text;
 
-    if (username.isEmpty) {
+    if (username.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please enter your username'),
+          content: Text('Please enter both username and password'),
           backgroundColor: AppColors.error,
         ),
       );
@@ -42,16 +43,16 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     final auth = context.read<AuthProvider>();
-    final ok = await auth.login(
+    final success = await auth.login(
       serverUrl: AppConfig.serverUrl,
       username: username,
       password: password,
     );
 
-    if (!ok && mounted) {
+    if (!success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(auth.errorMessage ?? 'Login failed. Check your credentials.'),
+          content: Text(auth.errorMessage ?? 'Authentication failed'),
           backgroundColor: AppColors.error,
         ),
       );
@@ -59,20 +60,20 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _onGoogleLogin() {
-    GoogleOAuthSheet.show(
+    GoogleAccountSelectorSheet.show(
       context,
-      onSelected: (email, displayName) async {
+      onSelected: (email, name) async {
         final auth = context.read<AuthProvider>();
-        final ok = await auth.loginWithGoogle(
+        final success = await auth.loginWithGoogle(
           serverUrl: AppConfig.serverUrl,
           email: email,
-          displayName: displayName,
+          displayName: name,
         );
 
-        if (!ok && mounted) {
+        if (!success && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(auth.errorMessage ?? 'Google authentication failed.'),
+              content: Text(auth.errorMessage ?? 'Google authentication failed'),
               backgroundColor: AppColors.error,
             ),
           );
@@ -97,26 +98,8 @@ class _LoginScreenState extends State<LoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // Logo & Header
-                Center(
-                  child: Container(
-                    padding: const EdgeInsets.all(18),
-                    decoration: const BoxDecoration(
-                      color: AppColors.primary,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.shadow,
-                          offset: Offset(4, 4),
-                          blurRadius: 0,
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.music_note_rounded,
-                      color: AppColors.textDark,
-                      size: 44,
-                    ),
-                  ),
+                const Center(
+                  child: AppLogo(size: 72),
                 ),
                 const SizedBox(height: 24),
                 Text(

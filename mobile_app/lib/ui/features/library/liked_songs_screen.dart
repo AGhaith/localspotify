@@ -35,7 +35,7 @@ class _LikedSongsScreenState extends State<LikedSongsScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       bottomNavigationBar: player.hasTrack
-          ? const SafeArea(top: false, child: MiniPlayerBar())
+          ? const MiniPlayerBar(isStandalone: true)
           : null,
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),

@@ -27,17 +27,17 @@ class GoogleAuthButton extends StatelessWidget {
       child: Container(
         height: 52,
         decoration: BoxDecoration(
-          color: const Color(0xFF1B1D28),
+          color: const Color(0xFF1E202B),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: Colors.white.withValues(alpha: 0.18),
-            width: 1.5,
+            color: Colors.white.withValues(alpha: 0.12),
+            width: 1.0,
           ),
-          boxShadow: const [
+          boxShadow: [
             BoxShadow(
-              color: AppColors.shadow,
-              offset: Offset(3, 3),
-              blurRadius: 0,
+              color: Colors.black.withValues(alpha: 0.25),
+              offset: const Offset(0, 4),
+              blurRadius: 10,
             ),
           ],
         ),

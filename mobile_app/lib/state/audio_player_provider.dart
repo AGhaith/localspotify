@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../data/models/track.dart';
 import '../data/repositories/music_repository.dart';
 import '../data/services/audio_handler.dart';
@@ -27,6 +29,9 @@ class AudioPlayerProvider extends ChangeNotifier {
   Timer? _sleepTimer;
   DateTime? _sleepTimerTarget;
 
+  // Position Save Debounce Timer
+  Timer? _savePositionTimer;
+
   // Stream Subscriptions
   StreamSubscription? _playerStateSub;
   StreamSubscription? _positionSub;
@@ -41,6 +46,7 @@ class AudioPlayerProvider extends ChangeNotifier {
   })  : _audioHandler = audioHandler,
         _musicRepository = musicRepository {
     _listenStreams();
+    _restorePlaybackState();
   }
 
   Track? get currentTrack => _currentTrack;
@@ -85,6 +91,81 @@ class AudioPlayerProvider extends ChangeNotifier {
     return (_position.inMilliseconds / _duration.inMilliseconds).clamp(0.0, 1.0);
   }
 
+  // ================= State Persistence & Restoration =================
+  Future<void> _restorePlaybackState() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final trackJson = prefs.getString('last_played_track');
+      final queueJson = prefs.getString('last_played_queue');
+      final posMs = prefs.getInt('last_played_position_ms') ?? 0;
+      final index = prefs.getInt('last_played_index') ?? 0;
+      _crossfadeDurationSeconds = (prefs.getDouble('crossfade_seconds') ?? 0.0).toInt();
+
+      if (trackJson != null) {
+        final track = Track.fromJson(jsonDecode(trackJson) as Map<String, dynamic>);
+        List<Track> restoredQueue = [track];
+        if (queueJson != null) {
+          try {
+            final list = jsonDecode(queueJson) as List<dynamic>;
+            restoredQueue = list.map((e) => Track.fromJson(e as Map<String, dynamic>)).toList();
+          } catch (_) {}
+        }
+        _currentTrack = track;
+        _queue = restoredQueue;
+        _currentIndex = index.clamp(0, restoredQueue.length - 1);
+        _position = Duration(milliseconds: posMs);
+        _duration = Duration(seconds: track.duration);
+        notifyListeners();
+
+        // Queue in audio handler without auto-playing so user can immediately press play
+        final mediaItems = restoredQueue.map(_trackToMediaItem).toList();
+        await _audioHandler.setTrackQueue(
+          items: mediaItems,
+          initialIndex: _currentIndex,
+          autoPlay: false,
+        );
+        if (posMs > 0) {
+          await _audioHandler.seek(Duration(milliseconds: posMs));
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('[AudioPlayerProvider] Failed to restore playback state: $e');
+      }
+    }
+  }
+
+  Future<void> _savePlaybackState() async {
+    if (_currentTrack == null) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('last_played_track', jsonEncode(_currentTrack!.toJson()));
+      await prefs.setInt('last_played_position_ms', _position.inMilliseconds);
+      await prefs.setInt('last_played_index', _currentIndex);
+      if (_queue.isNotEmpty) {
+        await prefs.setString('last_played_queue', jsonEncode(_queue.map((t) => t.toJson()).toList()));
+      }
+    } catch (_) {}
+  }
+
+  void _scheduleSavePosition() {
+    _savePositionTimer?.cancel();
+    _savePositionTimer = Timer(const Duration(seconds: 3), () {
+      _savePlaybackState();
+    });
+  }
+
+  // ================= Crossfade Engine =================
+  Future<void> _fadeVolume({required double from, required double to, required Duration duration}) async {
+    const steps = 8;
+    final stepDuration = Duration(milliseconds: (duration.inMilliseconds / steps).round());
+    for (int i = 1; i <= steps; i++) {
+      final v = from + (to - from) * (i / steps);
+      await _audioHandler.player.setVolume(v.clamp(0.0, 1.0));
+      await Future.delayed(stepDuration);
+    }
+  }
+
   void _listenStreams() {
     _playbackStateSub = _audioHandler.playbackState.listen((state) {
       final playing = state.playing;
@@ -95,6 +176,9 @@ class AudioPlayerProvider extends ChangeNotifier {
         _isPlaying = playing;
         _isBuffering = buffering;
         notifyListeners();
+        if (!playing) {
+          _savePlaybackState();
+        }
       }
     });
 
@@ -115,13 +199,19 @@ class AudioPlayerProvider extends ChangeNotifier {
         if (_currentIndex == -1) _currentIndex = 0;
         _duration = item.duration ?? Duration.zero;
         _hasScrobbledCurrent = false;
+        if (_userQueuedCount > 0) {
+          _userQueuedCount--;
+        }
         notifyListeners();
+        _savePlaybackState();
+        _ensureMinimumQueue(10);
       }
     });
 
     _positionSub = _audioHandler.player.positionStream.listen((pos) {
       _position = pos;
       notifyListeners();
+      _scheduleSavePosition();
 
       // Scrobble at 50% or 4 minutes
       if (!_hasScrobbledCurrent && _currentTrack != null && _duration.inSeconds > 0) {
@@ -159,12 +249,59 @@ class AudioPlayerProvider extends ChangeNotifier {
     );
   }
 
+  bool _isBackfillingQueue = false;
+  int _userQueuedCount = 0;
+
+  /// Ensures that there are always at least [minRemaining] songs upcoming in the queue
+  Future<void> _ensureMinimumQueue([int minRemaining = 10]) async {
+    if (_isBackfillingQueue || _currentTrack == null) return;
+    final remaining = _queue.length - (_currentIndex + 1);
+    if (remaining >= minRemaining) return;
+
+    _isBackfillingQueue = true;
+    try {
+      final current = _currentTrack!;
+      final existingIds = _queue.map((t) => t.id).toSet();
+
+      List<Track> candidateRecommendations = [];
+      try {
+        candidateRecommendations = await _musicRepository.getSimilarSongs(current.id, count: 20);
+      } catch (_) {}
+
+      if (candidateRecommendations.isEmpty) {
+        try {
+          candidateRecommendations = await _musicRepository.getRandomSongs(size: 20);
+        } catch (_) {}
+      }
+
+      final freshTracks = candidateRecommendations.where((t) => !existingIds.contains(t.id)).toList();
+      final needed = (minRemaining - remaining + 5).clamp(1, 20);
+      final toAdd = freshTracks.take(needed).toList();
+
+      if (toAdd.isNotEmpty) {
+        _queue.addAll(toAdd);
+        notifyListeners();
+        final mediaItems = toAdd.map(_trackToMediaItem).toList();
+        await _audioHandler.addQueueItems(mediaItems);
+      }
+    } catch (_) {
+    } finally {
+      _isBackfillingQueue = false;
+    }
+  }
+
+  // ================= Playback Start & Set =================
   Future<void> playTracks({
     required List<Track> tracks,
     int initialIndex = 0,
   }) async {
     if (tracks.isEmpty) return;
 
+    if (_crossfadeDurationSeconds > 0 && _isPlaying) {
+      await _fadeVolume(from: 1.0, to: 0.1, duration: const Duration(milliseconds: 300));
+    }
+
+    _userQueuedCount = 0;
     _queue = List.from(tracks);
     _currentIndex = initialIndex.clamp(0, tracks.length - 1);
     _currentTrack = _queue[_currentIndex];
@@ -178,6 +315,15 @@ class AudioPlayerProvider extends ChangeNotifier {
       initialIndex: _currentIndex,
       autoPlay: true,
     );
+
+    _savePlaybackState();
+
+    if (_crossfadeDurationSeconds > 0) {
+      await _fadeVolume(from: 0.1, to: 1.0, duration: const Duration(milliseconds: 400));
+    }
+
+    // Auto-backfill to guarantee minimum 10 upcoming tracks
+    _ensureMinimumQueue(10);
   }
 
   Future<void> playTrack(Track track) async {
@@ -186,9 +332,13 @@ class AudioPlayerProvider extends ChangeNotifier {
 
   // ================= Queue Manipulation =================
   Future<void> addToQueue(Track track) async {
-    _queue.add(track);
+    final insertIndex = (_currentIndex + 1 + _userQueuedCount).clamp(0, _queue.length);
+    _queue.insert(insertIndex, track);
+    _userQueuedCount++;
     notifyListeners();
-    await _audioHandler.addQueueItem(_trackToMediaItem(track));
+    await _audioHandler.insertQueueItem(insertIndex, _trackToMediaItem(track));
+    _savePlaybackState();
+    _ensureMinimumQueue(10);
   }
 
   Future<void> playNext(Track track) async {
@@ -198,8 +348,11 @@ class AudioPlayerProvider extends ChangeNotifier {
     }
     final insertIndex = (_currentIndex + 1).clamp(0, _queue.length);
     _queue.insert(insertIndex, track);
+    _userQueuedCount++;
     notifyListeners();
     await _audioHandler.insertQueueItem(insertIndex, _trackToMediaItem(track));
+    _savePlaybackState();
+    _ensureMinimumQueue(10);
   }
 
   Future<void> removeFromQueue(int index) async {
@@ -213,6 +366,8 @@ class AudioPlayerProvider extends ChangeNotifier {
       }
       notifyListeners();
       await _audioHandler.removeQueueItemAt(index);
+      _savePlaybackState();
+      _ensureMinimumQueue(10);
     }
   }
 
@@ -230,6 +385,7 @@ class AudioPlayerProvider extends ChangeNotifier {
     }
     notifyListeners();
     await _audioHandler.moveQueueItem(oldIndex, newIndex);
+    _savePlaybackState();
   }
 
   Future<void> clearQueue() async {
@@ -237,13 +393,16 @@ class AudioPlayerProvider extends ChangeNotifier {
     _queue.clear();
     _currentTrack = null;
     _currentIndex = 0;
+    _userQueuedCount = 0;
     notifyListeners();
+    _savePlaybackState();
   }
 
   // ================= Playback Controls =================
   Future<void> togglePlay() async {
     if (_isPlaying) {
       await _audioHandler.pause();
+      _savePlaybackState();
     } else {
       await _audioHandler.play();
     }
@@ -251,6 +410,7 @@ class AudioPlayerProvider extends ChangeNotifier {
 
   Future<void> seek(Duration position) async {
     await _audioHandler.seek(position);
+    _savePlaybackState();
   }
 
   Future<void> seekPercent(double percent) async {
@@ -261,11 +421,23 @@ class AudioPlayerProvider extends ChangeNotifier {
   }
 
   Future<void> skipNext() async {
-    await _audioHandler.skipToNext();
+    if (_crossfadeDurationSeconds > 0 && _isPlaying) {
+      await _fadeVolume(from: 1.0, to: 0.15, duration: const Duration(milliseconds: 250));
+      await _audioHandler.skipToNext();
+      await _fadeVolume(from: 0.15, to: 1.0, duration: const Duration(milliseconds: 350));
+    } else {
+      await _audioHandler.skipToNext();
+    }
   }
 
   Future<void> skipPrevious() async {
-    await _audioHandler.skipToPrevious();
+    if (_crossfadeDurationSeconds > 0 && _isPlaying) {
+      await _fadeVolume(from: 1.0, to: 0.15, duration: const Duration(milliseconds: 250));
+      await _audioHandler.skipToPrevious();
+      await _fadeVolume(from: 0.15, to: 1.0, duration: const Duration(milliseconds: 350));
+    } else {
+      await _audioHandler.skipToPrevious();
+    }
   }
 
   Future<void> skipToQueueItem(int index) async {
@@ -274,6 +446,7 @@ class AudioPlayerProvider extends ChangeNotifier {
       _currentTrack = _queue[index];
       notifyListeners();
       await _audioHandler.skipToQueueItem(index);
+      _savePlaybackState();
     }
   }
 
@@ -325,6 +498,7 @@ class AudioPlayerProvider extends ChangeNotifier {
   @override
   void dispose() {
     _sleepTimer?.cancel();
+    _savePositionTimer?.cancel();
     _playerStateSub?.cancel();
     _positionSub?.cancel();
     _bufferedSub?.cancel();

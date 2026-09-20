@@ -8,6 +8,7 @@ import '../data/models/track.dart';
 import '../data/repositories/music_repository.dart';
 import '../data/services/spotify_service.dart';
 import '../data/services/spotify_importer_service.dart';
+import '../data/services/download_notification_service.dart';
 
 class MusicProvider extends ChangeNotifier {
   final MusicRepository _musicRepository;
@@ -26,8 +27,10 @@ class MusicProvider extends ChangeNotifier {
   List<Album> _searchAlbums = [];
   List<Artist> _searchArtists = [];
   List<Playlist> _searchPlaylists = [];
+  List<SpotifyTrackItem> _spotifySearchTracks = [];
   List<String> _recentSearches = [];
   bool _isSearching = false;
+  bool _isSearchingSpotify = false;
   Timer? _searchDebounce;
 
   // Active Pill
@@ -59,8 +62,10 @@ class MusicProvider extends ChangeNotifier {
   List<Album> get searchAlbums => _searchAlbums;
   List<Artist> get searchArtists => _searchArtists;
   List<Playlist> get searchPlaylists => _searchPlaylists;
+  List<SpotifyTrackItem> get spotifySearchTracks => _spotifySearchTracks;
   List<String> get recentSearches => _recentSearches;
   bool get isSearching => _isSearching;
+  bool get isSearchingSpotify => _isSearchingSpotify;
   String get activeFilter => _activeFilter;
   bool get isLoadingHome => _isLoadingHome;
   bool get isLoadingLibrary => _isLoadingLibrary;
@@ -230,6 +235,11 @@ class MusicProvider extends ChangeNotifier {
       // Record to recent searches
       await _musicRepository.addRecentSearch(trimmed);
       _recentSearches = _musicRepository.getRecentSearches();
+
+      // If local search returns very few songs, automatically trigger Spotify catalog search in background
+      if (_searchTracks.isEmpty) {
+        searchSpotify(trimmed);
+      }
     } catch (_) {
     } finally {
       _isSearching = false;
@@ -237,9 +247,37 @@ class MusicProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> searchSpotify(String query) async {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) {
+      _spotifySearchTracks = [];
+      _isSearchingSpotify = false;
+      notifyListeners();
+      return;
+    }
+
+    _isSearchingSpotify = true;
+    notifyListeners();
+
+    try {
+      _spotifySearchTracks = await _musicRepository.searchSpotifyTracks(trimmed);
+    } catch (_) {
+      _spotifySearchTracks = [];
+    } finally {
+      _isSearchingSpotify = false;
+      notifyListeners();
+    }
+  }
+
+  Future<Track> convertAndSyncSpotifyTrack(SpotifyTrackItem spotifyItem) async {
+    final track = await _musicRepository.createTrackFromSpotifyItem(spotifyItem);
+    return track;
+  }
+
   Future<void> clearRecentSearches() async {
     await _musicRepository.clearRecentSearches();
     _recentSearches = [];
+    _spotifySearchTracks = [];
     notifyListeners();
   }
 
@@ -370,13 +408,55 @@ class MusicProvider extends ChangeNotifier {
 
   // ================= Offline Downloads =================
   Future<void> downloadTrack(Track track) async {
+    _downloadingEntityId = track.id;
+    _downloadingProgress = 0.05;
+    notifyListeners();
+
+    // Initial notification
+    await DownloadNotificationService.updateProgress(
+      id: track.id,
+      title: track.title,
+      artist: track.artist,
+      progress: 5,
+      isIndeterminate: true,
+    );
+
     try {
-      final offlineTrack = await _musicRepository.downloadTrack(track);
+      final offlineTrack = await _musicRepository.downloadTrack(
+        track,
+        onProgress: (received, total) {
+          if (total > 0) {
+            final p = (received / total).clamp(0.05, 1.0);
+            _downloadingProgress = p;
+            notifyListeners();
+            final percent = (p * 100).toInt();
+            DownloadNotificationService.updateProgress(
+              id: track.id,
+              title: track.title,
+              artist: track.artist,
+              progress: percent,
+              isIndeterminate: false,
+            );
+          }
+        },
+      );
       _offlineTracks.removeWhere((t) => t.id == track.id);
       _offlineTracks.insert(0, offlineTrack);
-      notifyListeners();
+
+      await DownloadNotificationService.complete(
+        id: track.id,
+        title: track.title,
+        artist: track.artist,
+      );
     } catch (e) {
       print('[MusicProvider] Failed to download track: $e');
+      await DownloadNotificationService.cancel(track.id);
+    } finally {
+      if (_downloadingEntityId == track.id) {
+        _downloadingEntityId = null;
+        _downloadingProgress = 0.0;
+      }
+      notifyListeners();
     }
   }
 

@@ -188,4 +188,49 @@ class SpotifyService {
     }
     throw Exception('Unable to fetch Spotify playlist details.');
   }
+
+  /// Search global music catalog (Spotify/iTunes) for tracks
+  Future<List<SpotifyTrackItem>> searchTracks(String query) async {
+    final clean = query.trim();
+    if (clean.isEmpty) return [];
+
+    try {
+      final response = await _dio.get(
+        'https://itunes.apple.com/search',
+        queryParameters: {
+          'term': clean,
+          'media': 'music',
+          'entity': 'song',
+          'limit': 25,
+        },
+        options: Options(
+          receiveTimeout: const Duration(seconds: 8),
+          sendTimeout: const Duration(seconds: 5),
+        ),
+      );
+
+      final data = response.data;
+      final Map<String, dynamic> jsonMap = data is String ? jsonDecode(data) : data;
+      final results = jsonMap['results'] as List? ?? [];
+
+      return results.map((r) {
+        final rawArtwork = r['artworkUrl100']?.toString();
+        final highResArtwork = rawArtwork?.replaceAll('100x100bb', '600x600bb');
+        final duration = (r['trackTimeMillis'] as num?)?.toInt() ?? 180000;
+
+        return SpotifyTrackItem(
+          title: r['trackName']?.toString() ?? 'Unknown Track',
+          artist: r['artistName']?.toString() ?? 'Unknown Artist',
+          durationMs: duration,
+          uri: r['trackViewUrl']?.toString() ?? '',
+          previewUrl: r['previewUrl']?.toString(),
+          coverUrl: highResArtwork,
+          album: r['collectionName']?.toString(),
+        );
+      }).toList();
+    } catch (_) {
+      return [];
+    }
+  }
 }
+

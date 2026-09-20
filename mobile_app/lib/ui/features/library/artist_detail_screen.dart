@@ -58,7 +58,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
               ),
             ),
             bottomNavigationBar: player.hasTrack
-                ? const SafeArea(top: false, child: MiniPlayerBar())
+                ? const MiniPlayerBar(isStandalone: true)
                 : null,
             body: const Center(
               child: CircularProgressIndicator(color: AppColors.primary),
@@ -78,7 +78,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
               ),
             ),
             bottomNavigationBar: player.hasTrack
-                ? const SafeArea(top: false, child: MiniPlayerBar())
+                ? const MiniPlayerBar(isStandalone: true)
                 : null,
             body: Center(
               child: Column(
@@ -104,7 +104,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
         return Scaffold(
           backgroundColor: AppColors.background,
           bottomNavigationBar: player.hasTrack
-              ? const SafeArea(top: false, child: MiniPlayerBar())
+              ? const MiniPlayerBar(isStandalone: true)
               : null,
           body: CustomScrollView(
             physics: const BouncingScrollPhysics(),

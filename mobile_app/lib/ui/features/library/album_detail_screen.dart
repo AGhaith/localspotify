@@ -60,7 +60,7 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
               ),
             ),
             bottomNavigationBar: player.hasTrack
-                ? const SafeArea(top: false, child: MiniPlayerBar())
+                ? const MiniPlayerBar(isStandalone: true)
                 : null,
             body: const Center(child: CircularProgressIndicator(color: AppColors.primary)),
           );
@@ -78,7 +78,7 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
               ),
             ),
             bottomNavigationBar: player.hasTrack
-                ? const SafeArea(top: false, child: MiniPlayerBar())
+                ? const MiniPlayerBar(isStandalone: true)
                 : null,
             body: Center(
               child: Column(
@@ -105,7 +105,7 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
         return Scaffold(
           backgroundColor: AppColors.background,
           bottomNavigationBar: player.hasTrack
-              ? const SafeArea(top: false, child: MiniPlayerBar())
+              ? const MiniPlayerBar(isStandalone: true)
               : null,
           body: CustomScrollView(
             physics: const BouncingScrollPhysics(),

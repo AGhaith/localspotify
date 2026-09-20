@@ -8,11 +8,13 @@ import '../../../core/utils/duration_formatter.dart';
 import '../../../data/models/track.dart';
 import '../../../state/audio_player_provider.dart';
 import '../../../state/music_provider.dart';
+import '../../core_widgets/animated_like_button.dart';
 import '../../core_widgets/cached_cover_art.dart';
+import '../../core_widgets/circular_download_button.dart';
 import '../../core_widgets/pressable_scale.dart';
 import '../library/album_detail_screen.dart';
 import '../library/artist_detail_screen.dart';
-import 'equalizer_sheet.dart';
+import '../settings/audio_equalizer_screen.dart';
 import 'lyrics_view.dart';
 import 'queue_sheet.dart';
 
@@ -205,17 +207,17 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
                           child: Container(
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: AppColors.borderStrong, width: 2),
+                              border: Border.all(color: Colors.white.withValues(alpha: 0.12), width: 1.0),
                               boxShadow: [
                                 BoxShadow(
                                   color: (_paletteColors?.ambientTop ?? AppColors.primary).withValues(alpha: 0.35),
-                                  offset: const Offset(0, 10),
-                                  blurRadius: 30,
+                                  offset: const Offset(0, 14),
+                                  blurRadius: 36,
                                 ),
-                                const BoxShadow(
-                                  color: AppColors.shadow,
-                                  offset: Offset(6, 6),
-                                  blurRadius: 0,
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.4),
+                                  offset: const Offset(0, 6),
+                                  blurRadius: 18,
                                 ),
                               ],
                             ),
@@ -266,81 +268,11 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
                             ],
                           ),
                         ),
-                        // Offline Download Button
-                        if (music.downloadingEntityId == track.id)
-                          const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 10),
-                            child: SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2.2,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                          )
-                        else
-                          IconButton(
-                            icon: Icon(
-                              music.isDownloaded(track.id)
-                                  ? Icons.arrow_circle_down_rounded
-                                  : Icons.arrow_circle_down_outlined,
-                              color: music.isDownloaded(track.id)
-                                  ? AppColors.primary
-                                  : AppColors.textSecondary,
-                              size: 26,
-                            ),
-                            tooltip: music.isDownloaded(track.id)
-                                ? 'Downloaded (Tap to remove)'
-                                : 'Download for offline playback',
-                            onPressed: () async {
-                              HapticFeedback.lightImpact();
-                              if (music.isDownloaded(track.id)) {
-                                await music.deleteOfflineTrack(track.id);
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Removed track from offline downloads'),
-                                      duration: Duration(seconds: 2),
-                                      behavior: SnackBarBehavior.floating,
-                                      backgroundColor: AppColors.surface,
-                                    ),
-                                  );
-                                }
-                              } else {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Downloading "${track.title}" for offline playback...'),
-                                    duration: const Duration(seconds: 2),
-                                    behavior: SnackBarBehavior.floating,
-                                    backgroundColor: AppColors.surface,
-                                  ),
-                                );
-                                await music.downloadTrack(track);
-                              }
-                            },
-                          ),
-                        // Like / Favorite Button
-                        Builder(
-                          builder: (context) {
-                            final isStarred = music.isTrackStarred(track.id);
-                            return PressableScale(
-                              onTap: () {
-                                HapticFeedback.lightImpact();
-                                music.toggleStar(track);
-                              },
-                              scaleFactor: 0.88,
-                              child: Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Icon(
-                                  isStarred ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                                  color: isStarred ? AppColors.primary : AppColors.textSecondary,
-                                  size: 28,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
+                        // Circular Download Button with real-time progress ring
+                        CircularDownloadButton(track: track, size: 34),
+                        const SizedBox(width: 8),
+                        // Instagram-style Popping Like Button
+                        AnimatedLikeButton(track: track, size: 28),
                       ],
                     ),
 
@@ -435,14 +367,14 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
                           child: Container(
                             width: 64,
                             height: 64,
-                            decoration: const BoxDecoration(
+                            decoration: BoxDecoration(
                               color: AppColors.primary,
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppColors.shadow,
-                                  offset: Offset(3, 3),
-                                  blurRadius: 0,
+                                  color: AppColors.primary.withValues(alpha: 0.45),
+                                  offset: const Offset(0, 6),
+                                  blurRadius: 18,
                                 ),
                               ],
                             ),
@@ -509,11 +441,8 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
   }
 
   void _showEqualizerSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => const EqualizerSheet(),
+    Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute(builder: (_) => const AudioEqualizerScreen()),
     );
   }
 

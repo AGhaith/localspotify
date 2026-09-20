@@ -395,6 +395,47 @@ class MusicRepository {
     );
   }
 
+  // ================= Spotify Search & Catalog Sync =================
+  Future<List<SpotifyTrackItem>> searchSpotifyTracks(String query) {
+    return _spotifyService.searchTracks(query);
+  }
+
+  Future<Track> createTrackFromSpotifyItem(SpotifyTrackItem item) async {
+    // Generate a consistent pseudo-ID for this track
+    final pseudoId = 'spotify_${item.title.hashCode.abs()}_${item.artist.hashCode.abs()}';
+    
+    // Dispatch background sync request to server companion
+    final session = _apiService.session;
+    if (session != null) {
+      try {
+        final companionServer = session.serverUrl.replaceAll(':6767', ':6969');
+        _spotifyImporterService.dio.post(
+          '$companionServer/api/import-track',
+          data: {
+            'title': item.title,
+            'artist': item.artist,
+            'album': item.album ?? item.title,
+            'durationMs': item.durationMs,
+            'coverUrl': item.coverUrl,
+            'uri': item.uri,
+            'username': session.username,
+          },
+        ).then((_) {}).catchError((_) => null);
+      } catch (_) {}
+    }
+
+    return Track(
+      id: pseudoId,
+      title: item.title,
+      artist: item.artist,
+      album: item.album ?? 'Spotify Release',
+      albumId: 'sp_${item.album.hashCode.abs()}',
+      duration: item.durationMs ~/ 1000,
+      coverArtId: item.coverUrl,
+      localAudioPath: item.previewUrl,
+    );
+  }
+
   Future<Map<String, dynamic>?> startServerScan() => _apiService.startScan();
   Future<Map<String, dynamic>?> getServerScanStatus() => _apiService.getScanStatus();
 }

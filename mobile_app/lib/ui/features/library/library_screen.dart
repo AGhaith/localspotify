@@ -6,6 +6,7 @@ import '../../../core/theme/app_typography.dart';
 import '../../../state/audio_player_provider.dart';
 import '../../../state/music_provider.dart';
 import '../../core_widgets/cached_cover_art.dart';
+import '../../core_widgets/pressable_scale.dart';
 import '../offline/offline_screen.dart';
 import 'artist_detail_screen.dart';
 import 'import_spotify_playlist_sheet.dart';
@@ -103,7 +104,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
           backgroundColor: AppColors.card,
           onRefresh: () => music.loadLibrary(),
           child: CustomScrollView(
-            physics: const BouncingScrollPhysics(),
+            physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
             slivers: [
               // Header
               SliverToBoxAdapter(
@@ -488,6 +489,9 @@ class _LibraryScreenState extends State<LibraryScreen> {
                       ),
                     ),
                   ),
+                const SliverToBoxAdapter(
+                  child: SizedBox(height: 140),
+                ),
               ],
             ],
           ),
@@ -498,35 +502,35 @@ class _LibraryScreenState extends State<LibraryScreen> {
 
   Widget _buildFilterPill(String id, String label) {
     final active = _selectedFilter == id;
-    return GestureDetector(
+    return PressableScale(
       onTap: () {
         HapticFeedback.selectionClick();
         setState(() => _selectedFilter = id);
       },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
+      scaleFactor: 0.94,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: active ? AppColors.primary : const Color(0xFF222430),
+          color: active ? AppColors.primary : const Color(0xFF282828),
           borderRadius: BorderRadius.circular(99),
-          border: Border.all(
-            color: active ? AppColors.primary : AppColors.border,
-            width: 1.5,
-          ),
-          boxShadow: const [
-            BoxShadow(
-              color: AppColors.shadow,
-              offset: Offset(2, 2),
-              blurRadius: 0,
-            ),
-          ],
+          boxShadow: active
+              ? [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
         ),
         child: Center(
           child: Text(
             label,
             style: AppTypography.labelLarge.copyWith(
-              color: active ? AppColors.textDark : AppColors.textPrimary,
+              color: active ? Colors.black : Colors.white,
               fontSize: 12,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ),

@@ -236,6 +236,149 @@ class _SearchScreenState extends State<SearchScreen> {
                               ),
                             ],
 
+                            // 5. Spotify Global Catalog Section (On-Demand Sync & Play)
+                            SliverToBoxAdapter(
+                              child: Padding(
+                                padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.public_rounded, color: AppColors.primary, size: 18),
+                                        const SizedBox(width: 8),
+                                        Text('Spotify Catalog', style: AppTypography.titleLarge),
+                                      ],
+                                    ),
+                                    if (music.isSearchingSpotify)
+                                      const SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                                      )
+                                    else if (music.spotifySearchTracks.isEmpty && _searchController.text.isNotEmpty)
+                                      GestureDetector(
+                                        onTap: () {
+                                          HapticFeedback.lightImpact();
+                                          music.searchSpotify(_searchController.text);
+                                        },
+                                        child: Text(
+                                          'Get More Results',
+                                          style: AppTypography.labelSmall.copyWith(
+                                            color: AppColors.primary,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ),
+
+                            if (music.spotifySearchTracks.isNotEmpty)
+                              SliverPadding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                sliver: SliverList(
+                                  delegate: SliverChildBuilderDelegate(
+                                    (ctx, i) {
+                                      final item = music.spotifySearchTracks[i];
+                                      return ListTile(
+                                        contentPadding: const EdgeInsets.symmetric(vertical: 2),
+                                        leading: ClipRRect(
+                                          borderRadius: BorderRadius.circular(6),
+                                          child: item.coverUrl != null
+                                              ? Image.network(
+                                                  item.coverUrl!,
+                                                  width: 48,
+                                                  height: 48,
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder: (_, __, ___) => Container(
+                                                    width: 48,
+                                                    height: 48,
+                                                    color: AppColors.card,
+                                                    child: const Icon(Icons.music_note_rounded, color: AppColors.primary),
+                                                  ),
+                                                )
+                                              : Container(
+                                                  width: 48,
+                                                  height: 48,
+                                                  color: AppColors.card,
+                                                  child: const Icon(Icons.music_note_rounded, color: AppColors.primary),
+                                                ),
+                                        ),
+                                        title: Text(
+                                          item.title,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: AppTypography.titleMedium.copyWith(fontSize: 15),
+                                        ),
+                                        subtitle: Text(
+                                          '${item.artist} • ${item.durationFormatted}',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
+                                        ),
+                                        trailing: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.primary.withValues(alpha: 0.15),
+                                            borderRadius: BorderRadius.circular(20),
+                                            border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              const Icon(Icons.play_arrow_rounded, color: AppColors.primary, size: 16),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                'Play & Sync',
+                                                style: AppTypography.labelSmall.copyWith(
+                                                  color: AppColors.primary,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        onTap: () async {
+                                          HapticFeedback.mediumImpact();
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text('Syncing "${item.title}" to server vault & playing...'),
+                                              duration: const Duration(seconds: 2),
+                                            ),
+                                          );
+                                          final track = await music.convertAndSyncSpotifyTrack(item);
+                                          player.playTrack(track);
+                                        },
+                                      );
+                                    },
+                                    childCount: music.spotifySearchTracks.length,
+                                  ),
+                                ),
+                              )
+                            else if (!music.isSearchingSpotify && music.searchTracks.isEmpty && _searchController.text.isNotEmpty)
+                              SliverToBoxAdapter(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(24.0),
+                                  child: Center(
+                                    child: OutlinedButton.icon(
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: AppColors.primary,
+                                        side: const BorderSide(color: AppColors.primary),
+                                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                      ),
+                                      icon: const Icon(Icons.cloud_download_rounded),
+                                      label: const Text('Search Spotify Catalog for tracks'),
+                                      onPressed: () {
+                                        HapticFeedback.lightImpact();
+                                        music.searchSpotify(_searchController.text);
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              ),
+
                             const SliverToBoxAdapter(child: SizedBox(height: 100)),
                           ],
                         ),

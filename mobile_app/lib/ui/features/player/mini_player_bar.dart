@@ -5,12 +5,18 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../state/audio_player_provider.dart';
 import '../../../state/music_provider.dart';
+import '../../core_widgets/animated_like_button.dart';
 import '../../core_widgets/cached_cover_art.dart';
 import '../../core_widgets/pressable_scale.dart';
 import 'now_playing_sheet.dart';
 
 class MiniPlayerBar extends StatelessWidget {
-  const MiniPlayerBar({super.key});
+  final bool isStandalone;
+
+  const MiniPlayerBar({
+    super.key,
+    this.isStandalone = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -20,15 +26,18 @@ class MiniPlayerBar extends StatelessWidget {
 
     if (track == null) return const SizedBox.shrink();
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+    final content = Container(
+      margin: EdgeInsets.symmetric(
+        horizontal: 10,
+        vertical: isStandalone ? 4 : 6,
+      ),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: const Color(0xFF1E1E1E),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderStrong, width: 1.5),
+        border: Border.all(color: const Color(0xFF2E2E2E), width: 1.0),
         boxShadow: const [
           BoxShadow(
-            color: AppColors.shadow,
+            color: Colors.black54,
             offset: Offset(0, 4),
             blurRadius: 16,
           ),
@@ -78,7 +87,7 @@ class MiniPlayerBar extends StatelessWidget {
                                 track.artist,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: AppTypography.bodySmall,
+                                style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
                               ),
                             ],
                           ),
@@ -87,27 +96,9 @@ class MiniPlayerBar extends StatelessWidget {
                     ),
                   ),
                 ),
-                // Like Button
-                Builder(
-                  builder: (context) {
-                    final isStarred = music.isTrackStarred(track.id);
-                    return PressableScale(
-                      onTap: () {
-                        HapticFeedback.lightImpact();
-                        music.toggleStar(track);
-                      },
-                      scaleFactor: 0.85,
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Icon(
-                          isStarred ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                          color: isStarred ? AppColors.primary : AppColors.textSecondary,
-                          size: 22,
-                        ),
-                      ),
-                    );
-                  },
-                ),
+                // Instagram-style Like Button
+                AnimatedLikeButton(track: track, size: 22),
+                const SizedBox(width: 4),
                 // Play / Pause Button
                 PressableScale(
                   onTap: () {
@@ -140,5 +131,16 @@ class MiniPlayerBar extends StatelessWidget {
         ],
       ),
     );
+
+    if (isStandalone) {
+      return SafeArea(
+        top: false,
+        bottom: true,
+        minimum: const EdgeInsets.only(bottom: 12),
+        child: content,
+      );
+    }
+
+    return content;
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
+import 'pressable_scale.dart';
 
 class NeoCard extends StatelessWidget {
   final Widget child;
@@ -17,30 +18,40 @@ class NeoCard extends StatelessWidget {
     this.padding = const EdgeInsets.all(12),
     this.backgroundColor = AppColors.card,
     this.borderColor = AppColors.border,
-    this.borderRadius = 12,
+    this.borderRadius = 14,
     this.shadowOffset = 3,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: padding,
-        decoration: BoxDecoration(
-          color: backgroundColor,
-          borderRadius: BorderRadius.circular(borderRadius),
-          border: Border.all(color: borderColor, width: 1.5),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.shadow,
-              offset: Offset(shadowOffset, shadowOffset),
-              blurRadius: 0,
-            ),
-          ],
+    final cardContent = Container(
+      padding: padding,
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(borderRadius),
+        border: Border.all(
+          color: borderColor == AppColors.border ? Colors.white.withValues(alpha: 0.08) : borderColor,
+          width: 1.0,
         ),
-        child: child,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.3),
+            offset: const Offset(0, 4),
+            blurRadius: 12,
+          ),
+        ],
       ),
+      child: child,
     );
+
+    if (onTap != null) {
+      return PressableScale(
+        onTap: onTap,
+        scaleFactor: 0.97,
+        child: cardContent,
+      );
+    }
+
+    return cardContent;
   }
 }
