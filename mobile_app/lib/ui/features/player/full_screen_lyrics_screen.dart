@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
@@ -13,6 +12,7 @@ import '../../../state/audio_player_provider.dart';
 import '../../../state/music_provider.dart';
 import '../../core_widgets/cached_cover_art.dart';
 import '../../core_widgets/pressable_scale.dart';
+import 'synced_lyrics_list.dart';
 
 class FullScreenLyricsScreen extends StatefulWidget {
   final Track track;
@@ -24,17 +24,12 @@ class FullScreenLyricsScreen extends StatefulWidget {
 }
 
 class _FullScreenLyricsScreenState extends State<FullScreenLyricsScreen> {
-  final ScrollController _scrollController = ScrollController();
   int _lastActiveIndex = -1;
   Future<Lyrics?>? _lyricsFuture;
-  List<GlobalKey> _itemKeys = [];
-  bool _isUserScrolling = false;
-  Timer? _userScrollTimer;
+  Lyrics? _cachedLyrics;
   double? _dragValue;
   PaletteColors? _paletteColors;
   String? _lastTrackId;
-
-  Lyrics? _cachedLyrics;
 
   @override
   void initState() {
@@ -47,9 +42,6 @@ class _FullScreenLyricsScreenState extends State<FullScreenLyricsScreen> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.track.id != widget.track.id) {
       _lastActiveIndex = -1;
-      _itemKeys = [];
-      _isUserScrolling = false;
-      _userScrollTimer?.cancel();
       _cachedLyrics = null;
       _lastTrackId = null;
       _loadLyrics();
@@ -74,41 +66,6 @@ class _FullScreenLyricsScreenState extends State<FullScreenLyricsScreen> {
     ).then((palette) {
       if (mounted) setState(() => _paletteColors = palette);
     });
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    _userScrollTimer?.cancel();
-    super.dispose();
-  }
-
-  void _onUserScrolled() {
-    _isUserScrolling = true;
-    _userScrollTimer?.cancel();
-    _userScrollTimer = Timer(const Duration(milliseconds: 3500), () {
-      if (mounted) {
-        setState(() => _isUserScrolling = false);
-      }
-    });
-  }
-
-  void _scrollToActive(int activeIndex) {
-    if (_isUserScrolling) return;
-    if (activeIndex < 0 || activeIndex >= _itemKeys.length) return;
-    if (activeIndex == _lastActiveIndex) return;
-    _lastActiveIndex = activeIndex;
-
-    final keyContext = _itemKeys[activeIndex].currentContext;
-    if (keyContext != null) {
-      Scrollable.ensureVisible(
-        keyContext,
-        duration: const Duration(milliseconds: 380),
-        curve: Curves.easeOutCubic,
-        alignment: 0.35,
-        alignmentPolicy: ScrollPositionAlignmentPolicy.explicit,
-      );
-    }
   }
 
   void _showShareLyricsCard(BuildContext context, Track track, Lyrics? lyrics, int activeIndex) {
@@ -350,157 +307,18 @@ class _FullScreenLyricsScreenState extends State<FullScreenLyricsScreen> {
                       );
                     }
 
-                    // 1. Synced Lyrics
-                    if (lyrics.isSynced && lyrics.lines.isNotEmpty) {
-                      if (_itemKeys.length != lyrics.lines.length) {
-                        _itemKeys = List.generate(lyrics.lines.length, (_) => GlobalKey());
-                      }
-
-                      int activeIndex = -1;
-                      for (int i = 0; i < lyrics.lines.length; i++) {
-                        if (lyrics.lines[i].timestamp <= currentPosition) {
-                          activeIndex = i;
-                        } else {
-                          break;
-                        }
-                      }
-
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        _scrollToActive(activeIndex);
-                      });
-
-                      return Stack(
-                        children: [
-                          NotificationListener<UserScrollNotification>(
-                            onNotification: (notification) {
-                              if (notification.direction != ScrollDirection.idle) {
-                                _onUserScrolled();
-                              }
-                              return false;
-                            },
-                            child: ListView.builder(
-                              controller: _scrollController,
-                              physics: const BouncingScrollPhysics(),
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-                              itemCount: lyrics.lines.length,
-                              itemBuilder: (ctx, i) {
-                                final line = lyrics.lines[i];
-                                final isActive = i == activeIndex;
-                                final isArabic = AppTypography.isArabicText(line.text);
-
-                                final lineStyle = AppTypography.lyricsLineStyle(
-                                  text: line.text,
-                                  isActive: isActive,
-                                  fontSize: 22.5,
-                                  activeColor: Colors.white,
-                                  inactiveColor: Colors.white.withValues(alpha: 0.32),
-                                );
-
-                                return PressableScale(
-                                  key: _itemKeys[i],
-                                  onTap: () {
-                                    HapticFeedback.selectionClick();
-                                    player.seek(line.timestamp);
-                                    _isUserScrolling = false;
-                                    _scrollToActive(i);
-                                  },
-                                  scaleFactor: 0.98,
-                                  child: AnimatedContainer(
-                                    duration: const Duration(milliseconds: 240),
-                                    curve: Curves.easeOutCubic,
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 10,
-                                      horizontal: 12,
-                                    ),
-                                    margin: const EdgeInsets.symmetric(vertical: 3),
-                                    decoration: BoxDecoration(
-                                      color: isActive
-                                          ? Colors.white.withValues(alpha: 0.08)
-                                          : Colors.transparent,
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Align(
-                                      alignment: isArabic ? Alignment.centerRight : Alignment.centerLeft,
-                                      child: AnimatedDefaultTextStyle(
-                                        duration: const Duration(milliseconds: 240),
-                                        curve: Curves.easeOutCubic,
-                                        style: lineStyle,
-                                        child: Text(
-                                          line.text.isEmpty ? '...' : line.text,
-                                          textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
-                                          textAlign: isArabic ? TextAlign.right : TextAlign.left,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-
-                          // Floating Sync Re-alignment button if user scrolled away
-                          if (_isUserScrolling && activeIndex >= 0)
-                            Positioned(
-                              bottom: 16,
-                              right: 24,
-                              child: PressableScale(
-                                onTap: () {
-                                  HapticFeedback.mediumImpact();
-                                  setState(() => _isUserScrolling = false);
-                                  _lastActiveIndex = -1;
-                                  _scrollToActive(activeIndex);
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primary,
-                                    borderRadius: BorderRadius.circular(20),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(alpha: 0.4),
-                                        blurRadius: 10,
-                                        offset: const Offset(0, 4),
-                                      ),
-                                    ],
-                                  ),
-                                  child: const Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(Icons.sync_rounded, color: Colors.black, size: 16),
-                                      SizedBox(width: 6),
-                                      Text(
-                                        'Sync to song',
-                                        style: TextStyle(
-                                          color: Colors.black,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                        ],
-                      );
-                    }
-
-                    // 2. Plain Text Lyrics
-                    final isArabic = AppTypography.isArabicText(lyrics.rawText);
-                    return SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-                      child: Text(
-                        lyrics.rawText,
-                        textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
-                        textAlign: isArabic ? TextAlign.right : TextAlign.left,
-                        style: AppTypography.lyricsLineStyle(
-                          text: lyrics.rawText,
-                          isActive: true,
-                          fontSize: 19,
-                          activeColor: Colors.white.withValues(alpha: 0.88),
-                        ),
-                      ),
+                    return SyncedLyricsList(
+                      lyrics: lyrics,
+                      currentPosition: currentPosition,
+                      accentColor: _paletteColors?.primaryAccent ?? AppColors.primary,
+                      backgroundColor: _paletteColors?.ambientTop ?? const Color(0xFF140827),
+                      textSize: 25.0,
+                      onSeek: (timestamp) => player.seek(timestamp),
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      showSyncButton: true,
+                      onActiveIndexChanged: (index) {
+                        _lastActiveIndex = index;
+                      },
                     );
                   },
                 ),
