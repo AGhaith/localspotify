@@ -418,21 +418,17 @@ class MusicProvider extends ChangeNotifier {
   Future<Track?> convertAndSyncSpotifyTrack(SpotifyTrackItem spotifyItem) async {
     final trackId = spotifyItem.id;
     _spotifyTrackSyncStates[trackId] = SpotifySyncState.syncing;
-    _spotifyTrackSyncProgress[trackId] = 0.40;
+    _spotifyTrackSyncProgress[trackId] = 0.0;
     _spotifyTrackSyncMessages[trackId] = 'Syncing "${spotifyItem.title}"...';
     _activeSyncingItem = spotifyItem;
     notifyListeners();
 
     try {
-      _spotifyTrackSyncProgress[trackId] = 0.75;
-      _spotifyTrackSyncMessages[trackId] = 'Connecting stream...';
-      notifyListeners();
-
       final track = await _musicRepository.createTrackFromSpotifyItem(spotifyItem);
 
       _spotifyTrackSyncProgress[trackId] = 1.0;
       _spotifyTrackSyncStates[trackId] = SpotifySyncState.playing;
-      _spotifyTrackSyncMessages[trackId] = 'Playing • Syncing in background';
+      _spotifyTrackSyncMessages[trackId] = 'Playing';
       notifyListeners();
 
       // Clear active banner after brief feedback

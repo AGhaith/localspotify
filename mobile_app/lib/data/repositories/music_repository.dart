@@ -9,7 +9,7 @@ import '../services/offline_storage_service.dart';
 import '../services/lyrics_service.dart';
 import '../services/spotify_service.dart';
 import '../services/spotify_importer_service.dart';
-import '../services/audio_stream_resolver_service.dart';
+import 'package:dio/dio.dart';
 
 class MusicRepository {
   final SubsonicApiService _apiService;
@@ -17,7 +17,6 @@ class MusicRepository {
   final LyricsService _lyricsService;
   final SpotifyService _spotifyService;
   final SpotifyImporterService _spotifyImporterService;
-  final AudioStreamResolverService _streamResolver;
 
   MusicRepository({
     required SubsonicApiService apiService,
@@ -25,7 +24,6 @@ class MusicRepository {
     LyricsService? lyricsService,
     SpotifyService? spotifyService,
     SpotifyImporterService? spotifyImporterService,
-    AudioStreamResolverService? streamResolver,
   })  : _apiService = apiService,
         _storageService = storageService,
         _lyricsService = lyricsService ??
@@ -39,8 +37,7 @@ class MusicRepository {
               apiService: apiService,
               spotifyService: spotifyService,
               storageService: storageService,
-            ),
-        _streamResolver = streamResolver ?? AudioStreamResolverService();
+            );
 
   String getCoverArtUrl(
     String? coverArtId, {
@@ -348,15 +345,19 @@ class MusicRepository {
         ? track.localAudioPath!
         : _apiService.getStreamUrl(track.id);
 
-    // If it's a Spotify track or an iTunes 30s preview URL, resolve the FULL studio song stream first
+    // If it's a Spotify track or an iTunes 30s preview URL, ensure full audio via server companion
     if (track.id.startsWith('spotify_') || streamUrl.contains('audio-ssl.itunes.apple.com') || streamUrl.contains('preview')) {
-      final resolvedFullStream = await _streamResolver.resolveFullAudioStream(
-        title: track.title,
-        artist: track.artist,
-        expectedDurationSec: track.duration,
-      );
-      if (resolvedFullStream != null && resolvedFullStream.isNotEmpty) {
-        streamUrl = resolvedFullStream;
+      if (!streamUrl.contains('/api/stream?file=')) {
+        final resolvedStream = await _requestCompanionTrackImport(
+          title: track.title,
+          artist: track.artist,
+          album: track.album,
+          durationMs: track.duration > 0 ? track.duration * 1000 : null,
+          coverUrl: track.coverArtId,
+        );
+        if (resolvedStream != null && resolvedStream.isNotEmpty) {
+          streamUrl = resolvedStream;
+        }
       }
     }
 
@@ -371,6 +372,61 @@ class MusicRepository {
       coverArtUrl: coverArtUrl,
       onProgress: onProgress,
     );
+  }
+
+  /// Asks backend companion to import track, waiting until status is ready.
+  /// Returns the server stream URL on success, or falls back to legacy lookup stream URL.
+  Future<String?> _requestCompanionTrackImport({
+    required String title,
+    required String artist,
+    String? album,
+    int? durationMs,
+    String? coverUrl,
+    String? uri,
+  }) async {
+    final session = _apiService.session;
+    if (session == null) {
+      return null;
+    }
+
+    final companionServer = session.serverUrl.replaceAll(':6767', ':6969');
+    final cleanBase = companionServer.endsWith('/')
+        ? companionServer.substring(0, companionServer.length - 1)
+        : companionServer;
+    final fallbackUrl =
+        '$cleanBase/api/stream?title=${Uri.encodeComponent(title)}&artist=${Uri.encodeComponent(artist)}';
+
+    try {
+      final response = await _spotifyImporterService.dio.post(
+        '$cleanBase/api/import-track',
+        data: {
+          'title': title,
+          'artist': artist,
+          'album': album ?? title,
+          'durationMs': durationMs,
+          'coverUrl': coverUrl,
+          'uri': uri,
+          'username': session.username,
+        },
+        options: Options(
+          receiveTimeout: const Duration(minutes: 3),
+          sendTimeout: const Duration(minutes: 3),
+        ),
+      );
+
+      if (response.statusCode == 200 && response.data is Map) {
+        final data = response.data as Map;
+        final streamPath = data['streamUrl'] as String?;
+        if (streamPath != null && streamPath.isNotEmpty) {
+          final cleanPath = streamPath.startsWith('/') ? streamPath : '/$streamPath';
+          return '$cleanBase$cleanPath';
+        }
+      }
+    } catch (_) {
+      // Fall back to companion legacy stream query on failure
+    }
+
+    return fallbackUrl;
   }
 
   Future<void> deleteDownloadedTrack(String trackId) {
@@ -443,40 +499,18 @@ class MusicRepository {
 
     // Generate a consistent pseudo-ID for this track
     final pseudoId = 'spotify_${item.title.hashCode.abs()}_${item.artist.hashCode.abs()}';
-    
-    // Dispatch background sync request to server companion
-    final session = _apiService.session;
-    String? companionStreamUrl;
-    if (session != null) {
-      try {
-        final companionServer = session.serverUrl.replaceAll(':6767', ':6969');
-        companionStreamUrl = '$companionServer/api/stream?title=${Uri.encodeComponent(item.title)}&artist=${Uri.encodeComponent(item.artist)}';
-        _spotifyImporterService.dio.post(
-          '$companionServer/api/import-track',
-          data: {
-            'title': item.title,
-            'artist': item.artist,
-            'album': item.album ?? item.title,
-            'durationMs': item.durationMs,
-            'coverUrl': item.coverUrl,
-            'uri': item.uri,
-            'username': session.username,
-          },
-        ).then((_) {}).catchError((_) => null);
-      } catch (_) {}
-    }
 
-    // 1. Resolve full-length studio audio stream
-    String? audioUrl = await _streamResolver.resolveFullAudioStream(
+    // Await server import or fallback to companion stream
+    String? audioUrl = await _requestCompanionTrackImport(
       title: item.title,
       artist: item.artist,
-      expectedDurationSec: item.durationMs ~/ 1000,
+      album: item.album ?? item.title,
+      durationMs: item.durationMs,
+      coverUrl: item.coverUrl,
+      uri: item.uri,
     );
 
-    // 2. Fallback to server companion stream endpoint or direct stream if available (never 30s preview)
-    if ((audioUrl == null || audioUrl.isEmpty) && companionStreamUrl != null) {
-      audioUrl = companionStreamUrl;
-    }
+    // Fall back to previewUrl only as last resort if session is null
     if (audioUrl == null || audioUrl.isEmpty) {
       audioUrl = item.previewUrl;
     }

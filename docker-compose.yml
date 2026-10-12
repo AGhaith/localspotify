@@ -43,6 +43,15 @@ services:
       timeout: 5s
       retries: 5
 
+  downloader:
+    build:
+      context: ./downloader
+    restart: unless-stopped
+    volumes:
+      - ./my-music:/music
+    environment:
+      MUSIC_DIR: /music
+
   subsonic-player:
     build:
       context: ./subsonic-player
@@ -59,6 +68,9 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - MUSIC_FOLDER=/music
+      - DOWNLOADER_URL=http://downloader:8000
     depends_on:
       redis:
         condition: service_healthy
+      downloader:
+        condition: service_started

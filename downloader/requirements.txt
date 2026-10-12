@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+yt-dlp>=2024.0.0
+ytmusicapi
+mutagen>=1.47.0
+Pillow>=10.0.0
+syncedlyrics>=0.6.0

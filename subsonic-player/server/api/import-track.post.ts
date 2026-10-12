@@ -1,10 +1,6 @@
-import { spawn } from 'child_process';
-import fs from 'fs';
-import path from 'path';
-
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
-  const { title, artist, album, coverUrl, durationMs, durationSec, username } = body || {};
+  const { title, artist, album, durationMs, coverUrl, uri } = body || {};
 
   if (!title || !artist) {
     throw createError({
@@ -13,57 +9,30 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  // Look for import script in /music or host path
-  const scriptCandidates = [
-    '/music/import_spotify_playlist.py',
-    path.resolve(process.cwd(), '../my-music/import_spotify_playlist.py'),
-    path.resolve(process.cwd(), './scripts/import_spotify_playlist.py'),
-    path.resolve(process.cwd(), './import_spotify_playlist.py'),
-  ];
-  const scriptPath = scriptCandidates.find((p) => fs.existsSync(p));
+  try {
+    const result = await $fetch<{ status: string; file: string }>(
+      `${process.env.DOWNLOADER_URL || 'http://localhost:8000'}/download`,
+      {
+        method: 'POST',
+        body: { title, artist, album, durationMs, coverUrl, uri },
+        timeout: 180_000,
+      },
+    );
 
-  const musicDir = process.env.MUSIC_FOLDER || '/music';
-  const serverUrl = process.env.NUXT_PUBLIC_SERVER_URL || 'http://localhost:6767';
-  const targetDir = fs.existsSync(musicDir)
-    ? musicDir
-    : path.resolve(process.cwd(), '../my-music');
-
-  if (scriptPath) {
-    const args = [
-      scriptPath,
-      '--track-title',
-      title,
-      '--track-artist',
-      artist,
-      '--track-album',
-      album || 'Singles',
-      '--music-dir',
-      targetDir,
-      '--server',
-      serverUrl,
-    ];
-
-    if (coverUrl) {
-      args.push('--track-cover', coverUrl);
-    }
-    const ms = durationMs || (durationSec ? durationSec * 1000 : 0);
-    if (ms > 0) {
-      args.push('--track-duration-ms', String(ms));
+    if (result.status !== 'ready' || !result.file) {
+      throw new Error('Downloader did not return a ready file');
     }
 
-    // Spawn download worker in background
-    const child = spawn('python3', args, {
-      detached: true,
-      stdio: 'ignore',
+    return {
+      success: true,
+      status: 'ready',
+      file: result.file,
+      streamUrl: `/api/stream?file=${encodeURIComponent(result.file)}`,
+    };
+  } catch (error) {
+    throw createError({
+      statusCode: 502,
+      statusMessage: error instanceof Error ? error.message : 'Download failed',
     });
-    child.unref();
   }
-
-  return {
-    success: true,
-    status: 'downloading',
-    title,
-    artist,
-    timestamp: new Date().toISOString(),
-  };
 });

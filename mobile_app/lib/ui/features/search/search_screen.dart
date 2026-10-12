@@ -405,6 +405,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                           }
                                         },
                                         onTap: () async {
+                                          if (syncState == SpotifySyncState.syncing) return;
                                           HapticFeedback.mediumImpact();
                                           final track = await music.convertAndSyncSpotifyTrack(item);
                                           if (track != null) {
