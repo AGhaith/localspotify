@@ -3,15 +3,34 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
-import '../../../state/audio_player_provider.dart';
+import '../../../data/models/artist.dart';
+import '../../../data/models/playlist.dart';
 import '../../../state/music_provider.dart';
 import '../../core_widgets/cached_cover_art.dart';
 import '../../core_widgets/pressable_scale.dart';
-import '../offline/offline_screen.dart';
 import 'artist_detail_screen.dart';
 import 'import_spotify_playlist_sheet.dart';
 import 'liked_songs_screen.dart';
 import 'playlist_detail_screen.dart';
+
+sealed class _LibraryEntry {
+  final String title;
+  const _LibraryEntry(this.title);
+}
+
+class _LikedSongsEntry extends _LibraryEntry {
+  const _LikedSongsEntry() : super('Liked Songs');
+}
+
+class _PlaylistEntry extends _LibraryEntry {
+  final Playlist playlist;
+  _PlaylistEntry(this.playlist) : super(playlist.name);
+}
+
+class _ArtistEntry extends _LibraryEntry {
+  final Artist artist;
+  _ArtistEntry(this.artist) : super(artist.name);
+}
 
 class LibraryScreen extends StatefulWidget {
   const LibraryScreen({super.key});
@@ -21,13 +40,61 @@ class LibraryScreen extends StatefulWidget {
 }
 
 class _LibraryScreenState extends State<LibraryScreen> {
-  String _selectedFilter = 'All'; // 'All', 'Playlists', 'Artists', 'Downloaded'
+  String? _selectedFilter; // null = all, 'Playlists', 'Artists'
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<MusicProvider>().loadLibrary();
     });
+  }
+
+  void _showAddBottomSheet(BuildContext context, MusicProvider music) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF242424),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.only(top: 8, bottom: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.symmetric(vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.music_note_rounded, color: Colors.white, size: 24),
+                title: Text('Playlist', style: AppTypography.titleMedium),
+                subtitle: Text('Create a playlist with songs', style: AppTypography.bodySmall),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _showCreatePlaylistDialog(context, music);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.download_rounded, color: Color(0xFF1DB954), size: 24),
+                title: Text('Import from Spotify', style: AppTypography.titleMedium),
+                subtitle: Text('Sync a Spotify playlist into your library', style: AppTypography.bodySmall),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  ImportSpotifyPlaylistSheet.show(context);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   void _showCreatePlaylistDialog(BuildContext context, MusicProvider music) {
@@ -46,20 +113,6 @@ class _LibraryScreenState extends State<LibraryScreen> {
               autofocus: true,
               style: AppTypography.bodyLarge,
               decoration: const InputDecoration(hintText: 'My Favorite Mix'),
-            ),
-            const SizedBox(height: 14),
-            OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF1DB954),
-                side: const BorderSide(color: Color(0xFF1DB954)),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-              icon: const Icon(Icons.download_rounded, size: 16),
-              label: const Text('Import from Spotify instead'),
-              onPressed: () {
-                Navigator.pop(ctx);
-                ImportSpotifyPlaylistSheet.show(context);
-              },
             ),
           ],
         ),
@@ -95,6 +148,36 @@ class _LibraryScreenState extends State<LibraryScreen> {
   Widget build(BuildContext context) {
     final music = context.watch<MusicProvider>();
 
+    final List<_LibraryEntry> items = [];
+    if (_selectedFilter == 'Artists') {
+      final sortedArtists = List<Artist>.from(music.artists)
+        ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+      for (final artist in sortedArtists) {
+        items.add(_ArtistEntry(artist));
+      }
+    } else if (_selectedFilter == 'Playlists') {
+      items.add(const _LikedSongsEntry());
+      final sortedPlaylists = List<Playlist>.from(music.playlists)
+        ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+      for (final pl in sortedPlaylists) {
+        items.add(_PlaylistEntry(pl));
+      }
+    } else {
+      // All (no filter)
+      items.add(const _LikedSongsEntry());
+      final List<_LibraryEntry> otherEntries = [];
+      for (final pl in music.playlists) {
+        otherEntries.add(_PlaylistEntry(pl));
+      }
+      for (final artist in music.artists) {
+        otherEntries.add(_ArtistEntry(artist));
+      }
+      otherEntries.sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+      items.addAll(otherEntries);
+    }
+
+    final showEmptyPlaylists = music.playlists.isEmpty && (_selectedFilter == null || _selectedFilter == 'Playlists');
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -109,31 +192,22 @@ class _LibraryScreenState extends State<LibraryScreen> {
               // Header
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text('Your Library', style: AppTypography.displayMedium),
-                      Row(
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.playlist_add_check_rounded, color: Color(0xFF1DB954), size: 26),
-                            tooltip: 'Import Spotify Playlist',
-                            onPressed: () => ImportSpotifyPlaylistSheet.show(context),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.add_rounded, color: AppColors.primary, size: 28),
-                            tooltip: 'Create New Playlist',
-                            onPressed: () => _showCreatePlaylistDialog(context, music),
-                          ),
-                        ],
+                      IconButton(
+                        icon: const Icon(Icons.add_rounded, color: AppColors.textPrimary, size: 28),
+                        tooltip: 'Create or import',
+                        onPressed: () => _showAddBottomSheet(context, music),
                       ),
                     ],
                   ),
                 ),
               ),
 
-              // Filter Pills
+              // Filter Chips
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -142,359 +216,93 @@ class _LibraryScreenState extends State<LibraryScreen> {
                     physics: const BouncingScrollPhysics(),
                     child: Row(
                       children: [
-                        _buildFilterPill('All', 'All'),
-                        const SizedBox(width: 8),
-                        _buildFilterPill('Playlists', 'Playlists'),
-                        const SizedBox(width: 8),
-                        _buildFilterPill('Artists', 'Artists'),
-                        const SizedBox(width: 8),
-                        _buildFilterPill('Downloaded', 'Downloaded'),
+                        if (_selectedFilter != null) ...[
+                          _buildClearFilterChip(),
+                          const SizedBox(width: 8),
+                          _buildFilterPill(_selectedFilter!, _selectedFilter!),
+                        ] else ...[
+                          _buildFilterPill('Playlists', 'Playlists'),
+                          const SizedBox(width: 8),
+                          _buildFilterPill('Artists', 'Artists'),
+                        ],
                       ],
                     ),
                   ),
                 ),
               ),
 
-              // Pinned Shortcuts (Liked Songs & Offline Downloads) - Show if 'All'
-              if (_selectedFilter == 'All')
+              // Unified Single Vertical List
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                sliver: SliverList.separated(
+                  itemCount: items.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  itemBuilder: (ctx, i) {
+                    final entry = items[i];
+                    return switch (entry) {
+                      _LikedSongsEntry() => _buildLikedSongsRow(context, music),
+                      _PlaylistEntry(:final playlist) => _buildPlaylistRow(context, music, playlist),
+                      _ArtistEntry(:final artist) => _buildArtistRow(context, music, artist),
+                    };
+                  },
+                ),
+              ),
+
+              // Empty state when there are no playlists
+              if (showEmptyPlaylists)
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Column(
-                      children: [
-                        // Liked Songs
-                        ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: Container(
-                            width: 52,
-                            height: 52,
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFF450AF5), Color(0xFF8E8EE5)],
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Center(
+                      child: InkWell(
+                        onTap: () => _showAddBottomSheet(context, music),
+                        borderRadius: BorderRadius.circular(8),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.add_rounded, color: AppColors.textMuted, size: 18),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Create your first playlist',
+                                style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
                               ),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Icon(Icons.favorite_rounded, color: Colors.white, size: 26),
-                          ),
-                          title: Text('Liked Songs', style: AppTypography.titleMedium),
-                          subtitle: Text('${music.starredTracks.length} songs', style: AppTypography.bodySmall),
-                          trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted),
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const LikedSongsScreen()),
-                          ),
-                        ),
-                        const Divider(),
-                        // Offline Downloads
-                        ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: Container(
-                            width: 52,
-                            height: 52,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF1E293B),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Icon(Icons.arrow_circle_down_rounded, color: AppColors.primary, size: 26),
-                          ),
-                          title: Text('Downloaded Music', style: AppTypography.titleMedium),
-                          subtitle: Text('${music.offlineTracks.length} tracks available offline', style: AppTypography.bodySmall),
-                          trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted),
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const OfflineScreen()),
+                            ],
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                ),
-
-              // Playlists Section - Show if 'All' or 'Playlists'
-              if (_selectedFilter == 'All' || _selectedFilter == 'Playlists') ...[
-                // Playlists Header
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Playlists', style: AppTypography.titleLarge),
-                        Row(
-                          children: [
-                            TextButton.icon(
-                              icon: const Icon(Icons.download_rounded, size: 16, color: Color(0xFF1DB954)),
-                              label: Text('Import Spotify', style: AppTypography.labelMedium.copyWith(color: const Color(0xFF1DB954))),
-                              onPressed: () => ImportSpotifyPlaylistSheet.show(context),
-                            ),
-                            const SizedBox(width: 4),
-                            TextButton.icon(
-                              icon: const Icon(Icons.add_rounded, size: 18, color: AppColors.primary),
-                              label: Text('New', style: AppTypography.labelMedium.copyWith(color: AppColors.primary)),
-                              onPressed: () => _showCreatePlaylistDialog(context, music),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                // Spotify Import Highlight Card
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                    child: GestureDetector(
-                      onTap: () => ImportSpotifyPlaylistSheet.show(context),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF132018),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFF1DB954).withValues(alpha: 0.35)),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF1DB954),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Icon(Icons.playlist_add_check_rounded, color: Colors.black, size: 22),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Import Spotify Playlist',
-                                    style: AppTypography.titleMedium.copyWith(fontSize: 14, color: Colors.white),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Sync Spotify tracks into your library vault',
-                                    style: AppTypography.bodySmall.copyWith(color: Colors.white60, fontSize: 11),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const Icon(Icons.arrow_forward_ios_rounded, size: 13, color: Color(0xFF1DB954)),
-                          ],
-                        ),
                       ),
                     ),
                   ),
                 ),
 
-                // Playlists List
-                if (music.playlists.isEmpty)
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text('No playlists found on server', style: AppTypography.bodySmall),
-                    ),
-                  )
-                else
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (ctx, i) {
-                          final pl = music.playlists[i];
-                          final coverUrl = music.getCoverArtUrl(
-                            pl.coverArtId,
-                            size: 150,
-                            playlistId: pl.id,
-                            playlistName: pl.name,
-                            songCount: pl.songCount,
-                          );
-                          final importedTracks = music.getImportedPlaylistTracks(pl.id).isNotEmpty
-                              ? music.getImportedPlaylistTracks(pl.id)
-                              : music.getImportedPlaylistTracks(pl.name);
-                          final effectiveCount = pl.songCount > 0 ? pl.songCount : importedTracks.length;
-                          return ListTile(
-                            contentPadding: const EdgeInsets.symmetric(vertical: 4),
-                            leading: CachedCoverArt(
-                              imageUrl: coverUrl,
-                              width: 50,
-                              height: 50,
-                              borderRadius: 8,
-                              placeholderIcon: Icons.queue_music_rounded,
-                            ),
-                            title: Text(pl.name, style: AppTypography.titleMedium),
-                            subtitle: Text(
-                              effectiveCount > 0
-                                  ? (pl.songCount == 0 ? '$effectiveCount songs • Syncing...' : '$effectiveCount songs')
-                                  : '0 songs',
-                              style: AppTypography.bodySmall.copyWith(
-                                color: pl.songCount == 0 && effectiveCount > 0 ? AppColors.primary : AppColors.textSecondary,
-                              ),
-                            ),
-                            trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted),
-                            onTap: () {
-                              HapticFeedback.selectionClick();
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => PlaylistDetailScreen(playlistId: pl.id),
-                                ),
-                              );
-                            },
-                          );
-                        },
-                        childCount: music.playlists.length,
-                      ),
-                    ),
-                  ),
-              ],
-
-              // Artists Section - Show if 'All' or 'Artists'
-              if (_selectedFilter == 'All' || _selectedFilter == 'Artists') ...[
-                // Artists Header
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
-                    child: Text('Artists', style: AppTypography.titleLarge),
-                  ),
-                ),
-
-                // Artists List
-                SliverPadding(
-                  padding: EdgeInsets.fromLTRB(16, 0, 16, _selectedFilter == 'Artists' ? 100 : 24),
-                  sliver: SliverToBoxAdapter(
-                    child: SizedBox(
-                      height: 120,
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        physics: const BouncingScrollPhysics(),
-                        itemCount: music.artists.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 14),
-                        itemBuilder: (ctx, i) {
-                          final artist = music.artists[i];
-                          return GestureDetector(
-                            onTap: () {
-                              HapticFeedback.selectionClick();
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => ArtistDetailScreen(artistId: artist.id),
-                                ),
-                              );
-                            },
-                            child: Column(
-                              children: [
-                                CachedCoverArt(
-                                  imageUrl: music.getCoverArtUrl(artist.coverArtId, size: 150),
-                                  width: 76,
-                                  height: 76,
-                                  borderRadius: 99,
-                                  placeholderIcon: Icons.person_rounded,
-                                ),
-                                const SizedBox(height: 6),
-                                SizedBox(
-                                  width: 80,
-                                  child: Text(
-                                    artist.name,
-                                    maxLines: 1,
-                                    textAlign: TextAlign.center,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: AppTypography.bodySmall,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-
-              // Downloaded Only Section
-              if (_selectedFilter == 'Downloaded') ...[
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Downloaded Tracks', style: AppTypography.titleLarge),
-                        Text(
-                          '${music.offlineTracks.length} tracks',
-                          style: AppTypography.bodySmall.copyWith(color: AppColors.primary),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                if (music.offlineTracks.isEmpty)
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-                      child: Container(
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          color: AppColors.card,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppColors.border, width: 1.5),
-                        ),
-                        child: Column(
-                          children: [
-                            const Icon(Icons.cloud_off_rounded, size: 48, color: AppColors.textMuted),
-                            const SizedBox(height: 12),
-                            Text('No downloaded tracks', style: AppTypography.titleMedium),
-                            const SizedBox(height: 6),
-                            Text(
-                              'Download songs or albums to enjoy your music offline anywhere.',
-                              style: AppTypography.bodySmall,
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  )
-                else
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
-                    sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (ctx, i) {
-                          final track = music.offlineTracks[i];
-                          return ListTile(
-                            contentPadding: const EdgeInsets.symmetric(vertical: 4),
-                            leading: CachedCoverArt(
-                              imageUrl: music.getCoverArtUrl(track.coverArtId, size: 100),
-                              localImagePath: track.localCoverArtPath,
-                              width: 48,
-                              height: 48,
-                              borderRadius: 8,
-                            ),
-                            title: Text(track.title, style: AppTypography.titleMedium, maxLines: 1),
-                            subtitle: Text(track.artist, style: AppTypography.bodySmall, maxLines: 1),
-                            trailing: const Icon(Icons.arrow_circle_down_rounded, color: AppColors.primary, size: 20),
-                            onTap: () {
-                              HapticFeedback.lightImpact();
-                              context.read<AudioPlayerProvider>().playTracks(
-                                    tracks: music.offlineTracks,
-                                    initialIndex: i,
-                                  );
-                            },
-                          );
-                        },
-                        childCount: music.offlineTracks.length,
-                      ),
-                    ),
-                  ),
-                const SliverToBoxAdapter(
-                  child: SizedBox(height: 140),
-                ),
-              ],
+              // Bottom padding so mini-player does not cover last row
+              const SliverToBoxAdapter(
+                child: SizedBox(height: 140),
+              ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildClearFilterChip() {
+    return PressableScale(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        setState(() => _selectedFilter = null);
+      },
+      scaleFactor: 0.94,
+      child: Container(
+        width: 32,
+        height: 32,
+        decoration: const BoxDecoration(
+          color: Color(0xFF282828),
+          shape: BoxShape.circle,
+        ),
+        child: const Center(
+          child: Icon(Icons.close_rounded, color: Colors.white, size: 16),
         ),
       ),
     );
@@ -505,7 +313,13 @@ class _LibraryScreenState extends State<LibraryScreen> {
     return PressableScale(
       onTap: () {
         HapticFeedback.selectionClick();
-        setState(() => _selectedFilter = id);
+        setState(() {
+          if (_selectedFilter == id) {
+            _selectedFilter = null;
+          } else {
+            _selectedFilter = id;
+          }
+        });
       },
       scaleFactor: 0.94,
       child: AnimatedContainer(
@@ -526,6 +340,140 @@ class _LibraryScreenState extends State<LibraryScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildRow({
+    required Widget leading,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+    Color? subtitleColor,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: SizedBox(
+        height: 64,
+        child: Row(
+          children: [
+            leading,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: AppTypography.titleMedium,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: AppTypography.bodySmall.copyWith(
+                      color: subtitleColor ?? AppColors.textSecondary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLikedSongsRow(BuildContext context, MusicProvider music) {
+    final count = music.starredTracks.length;
+    final countText = '$count ${count == 1 ? 'song' : 'songs'}';
+    return _buildRow(
+      leading: Container(
+        width: 56,
+        height: 56,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF450AF5), Color(0xFF8E8EE5)],
+          ),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: const Icon(Icons.favorite_rounded, color: Colors.white, size: 26),
+      ),
+      title: 'Liked Songs',
+      subtitle: 'Playlist • $countText',
+      onTap: () {
+        HapticFeedback.selectionClick();
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const LikedSongsScreen()),
+        );
+      },
+    );
+  }
+
+  Widget _buildPlaylistRow(BuildContext context, MusicProvider music, Playlist pl) {
+    final coverUrl = music.getCoverArtUrl(
+      pl.coverArtId,
+      size: 150,
+      playlistId: pl.id,
+      playlistName: pl.name,
+      songCount: pl.songCount,
+    );
+    final importedTracks = music.getImportedPlaylistTracks(pl.id).isNotEmpty
+        ? music.getImportedPlaylistTracks(pl.id)
+        : music.getImportedPlaylistTracks(pl.name);
+    final effectiveCount = pl.songCount > 0 ? pl.songCount : importedTracks.length;
+    final countText = '$effectiveCount ${effectiveCount == 1 ? 'song' : 'songs'}';
+    final isSyncing = pl.songCount == 0 && effectiveCount > 0;
+    final subtitle = isSyncing ? 'Playlist • $countText • Syncing...' : 'Playlist • $countText';
+
+    return _buildRow(
+      leading: CachedCoverArt(
+        imageUrl: coverUrl,
+        width: 56,
+        height: 56,
+        borderRadius: 4,
+        placeholderIcon: Icons.queue_music_rounded,
+      ),
+      title: pl.name,
+      subtitle: subtitle,
+      subtitleColor: isSyncing ? AppColors.primary : AppColors.textSecondary,
+      onTap: () {
+        HapticFeedback.selectionClick();
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PlaylistDetailScreen(playlistId: pl.id),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildArtistRow(BuildContext context, MusicProvider music, Artist artist) {
+    return _buildRow(
+      leading: CachedCoverArt(
+        imageUrl: music.getCoverArtUrl(artist.coverArtId, size: 150),
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        placeholderIcon: Icons.person_rounded,
+      ),
+      title: artist.name,
+      subtitle: 'Artist',
+      onTap: () {
+        HapticFeedback.selectionClick();
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ArtistDetailScreen(artistId: artist.id),
+          ),
+        );
+      },
     );
   }
 }
