@@ -49,10 +49,13 @@ class _FullScreenLyricsScreenState extends State<FullScreenLyricsScreen> {
   }
 
   void _loadLyrics() {
-    _lyricsFuture = context.read<MusicProvider>().getLyrics(widget.track).then((l) {
+    _lyricsFuture = context.read<MusicProvider>().getLyrics(widget.track).timeout(
+      const Duration(seconds: 5),
+      onTimeout: () => null,
+    ).then((l) {
       if (mounted) setState(() => _cachedLyrics = l);
       return l;
-    });
+    }).catchError((_) => null);
   }
 
   void _loadPalette(Track track, MusicProvider music) {
@@ -301,7 +304,10 @@ class _FullScreenLyricsScreenState extends State<FullScreenLyricsScreen> {
                           children: [
                             const Icon(Icons.lyrics_rounded, color: AppColors.textMuted, size: 48),
                             const SizedBox(height: 12),
-                            Text('No lyrics found for this song', style: AppTypography.titleMedium),
+                            Text(
+                              'No lyrics for this song',
+                              style: AppTypography.titleMedium.copyWith(color: AppColors.textMuted),
+                            ),
                           ],
                         ),
                       );

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import '../../../core/config/app_config.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../state/audio_player_provider.dart';
 import '../../../state/auth_provider.dart';
@@ -94,12 +96,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ? const MiniPlayerBar(isStandalone: true)
           : null,
       body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH, vertical: AppSpacing.sm),
         physics: const BouncingScrollPhysics(),
         children: [
           // 1. Account & Server Profile
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSpacing.lg),
             decoration: BoxDecoration(
               color: AppColors.card,
               borderRadius: BorderRadius.circular(16),
@@ -127,7 +129,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: AppSpacing.lg),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -147,7 +149,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: AppSpacing.sectionGap),
 
           // 2. Audio & Equalizer Shortcut
           _buildSectionHeader('AUDIO EXPERIENCE'),
@@ -158,7 +160,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               border: Border.all(color: AppColors.border),
             ),
             child: ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH, vertical: AppSpacing.xs),
               leading: Container(
                 width: 36,
                 height: 36,
@@ -180,64 +182,52 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: AppSpacing.sectionGap),
 
           // 3. Server Connection Health
-          _buildSectionHeader('SERVER & NETWORK'),
+          _buildSectionHeader('CONNECTION'),
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSpacing.lg),
             decoration: BoxDecoration(
               color: AppColors.card,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: AppColors.border),
             ),
-            child: Column(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Server Latency', style: AppTypography.titleMedium.copyWith(fontSize: 14)),
-                    if (_isPinging)
-                      const SizedBox(
-                        width: 14,
-                        height: 14,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
-                      )
-                    else if (_pingResult != null)
-                      Text(
-                        _pingResult!,
-                        style: AppTypography.labelLarge.copyWith(
-                          color: _pingResult == 'Failed' ? AppColors.error : AppColors.primary,
-                        ),
-                      )
-                    else
-                      GestureDetector(
-                        onTap: _testPing,
-                        child: Text(
-                          'Test Ping',
-                          style: AppTypography.labelSmall.copyWith(color: AppColors.primary, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                  ],
-                ),
-                const Divider(height: 20, color: AppColors.border),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Subsonic API Version', style: AppTypography.titleMedium.copyWith(fontSize: 14)),
-                    Text('1.16.1 (Navidrome)', style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted)),
-                  ],
-                ),
+                Text('Connection speed', style: AppTypography.titleMedium.copyWith(fontSize: 14)),
+                if (_isPinging)
+                  const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                  )
+                else if (_pingResult != null)
+                  Text(
+                    _pingResult!,
+                    style: AppTypography.labelLarge.copyWith(
+                      color: _pingResult == 'Failed' ? AppColors.error : AppColors.primary,
+                    ),
+                  )
+                else
+                  GestureDetector(
+                    onTap: _testPing,
+                    child: Text(
+                      'Test connection',
+                      style: AppTypography.labelSmall.copyWith(color: AppColors.primary, fontWeight: FontWeight.bold),
+                    ),
+                  ),
               ],
             ),
           ),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: AppSpacing.sectionGap),
 
           // 4. Offline Storage Management
           _buildSectionHeader('OFFLINE STORAGE'),
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSpacing.lg),
             decoration: BoxDecoration(
               color: AppColors.card,
               borderRadius: BorderRadius.circular(16),
@@ -253,7 +243,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     Text('${music.offlineTracks.length} ${music.offlineTracks.length == 1 ? "song" : "songs"}', style: AppTypography.labelLarge.copyWith(color: AppColors.primary)),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.rowGap),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -268,13 +258,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ],
                 ),
                 if (music.offlineTracks.isNotEmpty) ...[
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.lg),
                   PressableScale(
                     onTap: () => _confirmClearDownloads(context, music),
                     scaleFactor: 0.96,
                     child: Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
                       decoration: BoxDecoration(
                         color: AppColors.error.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(12),
@@ -293,7 +283,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: AppSpacing.sectionGap),
 
           // 5. Account & Log Out
           _buildSectionHeader('ACCOUNT'),
@@ -324,15 +314,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
 
-          const SizedBox(height: 36),
+          const SizedBox(height: AppSpacing.xxl),
           Center(
             child: Text(
-              'LocalSpotify Mobile v1.1.0\nHigh-Performance Native Client',
+              'LocalSpotify Mobile v${AppConfig.appVersion}\nHigh-Performance Native Client',
               textAlign: TextAlign.center,
               style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted, fontSize: 11),
             ),
           ),
-          const SizedBox(height: 40),
+          const SizedBox(height: AppSpacing.xxl),
         ],
       ),
     );
@@ -340,7 +330,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildSectionHeader(String title) {
     return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 8),
+      padding: const EdgeInsets.only(left: AppSpacing.xs, bottom: AppSpacing.sm),
       child: Text(
         title,
         style: AppTypography.labelSmall.copyWith(
@@ -357,7 +347,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.card,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.lg)),
         title: Text('Delete All Downloads?', style: AppTypography.titleLarge),
         content: Text(
           'This will remove all downloaded songs from local device storage.',

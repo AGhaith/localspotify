@@ -1,10 +1,9 @@
 import 'dart:async';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:palette_generator/palette_generator.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../data/models/playlist.dart';
 import '../../../data/services/spotify_importer_service.dart';
@@ -43,11 +42,6 @@ class _ImportSpotifyPlaylistSheetState extends State<ImportSpotifyPlaylistSheet>
   ImportProgressStatus? _importStatus;
   Playlist? _createdPlaylist;
 
-  // Extracted color palette from album artwork
-  Color _paletteDominant = AppColors.card;
-  Color _paletteVibrant = AppColors.primary;
-  Color _paletteSurface = AppColors.surface;
-
   @override
   void dispose() {
     _urlController.dispose();
@@ -62,31 +56,6 @@ class _ImportSpotifyPlaylistSheetState extends State<ImportSpotifyPlaylistSheet>
       });
       HapticFeedback.lightImpact();
     }
-  }
-
-  Future<void> _extractPalette(String coverUrl) async {
-    try {
-      final palette = await PaletteGenerator.fromImageProvider(
-        CachedNetworkImageProvider(coverUrl),
-        maximumColorCount: 16,
-      );
-      if (mounted) {
-        setState(() {
-          _paletteDominant = palette.darkVibrantColor?.color ??
-              palette.darkMutedColor?.color ??
-              palette.dominantColor?.color ??
-              AppColors.card;
-          _paletteVibrant = palette.vibrantColor?.color ??
-              palette.lightVibrantColor?.color ??
-              palette.dominantColor?.color ??
-              AppColors.primary;
-          _paletteSurface = Color.alphaBlend(
-            _paletteDominant.withValues(alpha: 0.5),
-            AppColors.surface,
-          );
-        });
-      }
-    } catch (_) {}
   }
 
   Future<void> _onFetchPlaylist() async {
@@ -117,10 +86,6 @@ class _ImportSpotifyPlaylistSheetState extends State<ImportSpotifyPlaylistSheet>
           _step = _ImportStep.preview;
           _isFetching = false;
         });
-
-        if (info.coverUrl != null && info.coverUrl!.isNotEmpty) {
-          _extractPalette(info.coverUrl!);
-        }
       }
     } catch (e) {
       if (mounted) {
@@ -189,9 +154,7 @@ class _ImportSpotifyPlaylistSheetState extends State<ImportSpotifyPlaylistSheet>
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 350),
-      curve: Curves.easeOutCubic,
+    return Container(
       padding: EdgeInsets.only(
         left: 20,
         right: 20,
@@ -199,15 +162,7 @@ class _ImportSpotifyPlaylistSheetState extends State<ImportSpotifyPlaylistSheet>
         bottom: MediaQuery.of(context).viewInsets.bottom + 24,
       ),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Color.alphaBlend(_paletteDominant.withValues(alpha: 0.85), AppColors.background),
-            AppColors.background,
-          ],
-          stops: const [0.0, 0.5],
-        ),
+        color: AppColors.background,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         border: const Border(
           top: BorderSide(
@@ -246,17 +201,13 @@ class _ImportSpotifyPlaylistSheetState extends State<ImportSpotifyPlaylistSheet>
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      _paletteVibrant,
-                      _paletteVibrant.withValues(alpha: 0.85),
-                    ],
-                  ),
+                  color: AppColors.surface,
                   borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.border),
                 ),
                 child: const Icon(
                   Icons.playlist_add_check_rounded,
-                  color: Colors.black,
+                  color: AppColors.textPrimary,
                   size: 22,
                 ),
               ),
@@ -270,15 +221,15 @@ class _ImportSpotifyPlaylistSheetState extends State<ImportSpotifyPlaylistSheet>
                       style: AppTypography.titleLarge.copyWith(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     Text(
-                      'Sync tracks into your library vault',
-                      style: AppTypography.bodySmall.copyWith(color: Colors.white70),
+                      'Sync tracks into your Library',
+                      style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
                     ),
                   ],
                 ),
               ),
               IconButton(
-                style: IconButton.styleFrom(backgroundColor: Colors.white.withValues(alpha: 0.08)),
-                icon: const Icon(Icons.close_rounded, color: Colors.white70, size: 20),
+                style: IconButton.styleFrom(backgroundColor: AppColors.surface),
+                icon: const Icon(Icons.close_rounded, color: AppColors.textSecondary, size: 20),
                 onPressed: () => Navigator.pop(context),
               ),
             ],
@@ -301,8 +252,8 @@ class _ImportSpotifyPlaylistSheetState extends State<ImportSpotifyPlaylistSheet>
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          'Paste any Spotify playlist link below. The server will sync audio tracks, high-res artwork, and synced lyrics into your vault, and make the playlist available on your account.',
-          style: AppTypography.bodySmall.copyWith(color: Colors.white70, height: 1.4),
+          'Paste any Spotify playlist link below to sync audio tracks, high-res artwork, and synced lyrics into your Library, and make the playlist available on your account.',
+          style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary, height: 1.4),
         ),
         const SizedBox(height: 18),
 
@@ -313,9 +264,9 @@ class _ImportSpotifyPlaylistSheetState extends State<ImportSpotifyPlaylistSheet>
           keyboardType: TextInputType.url,
           decoration: InputDecoration(
             hintText: 'https://open.spotify.com/playlist/...',
-            prefixIcon: Icon(Icons.link_rounded, color: _paletteVibrant),
+            prefixIcon: const Icon(Icons.link_rounded, color: AppColors.textSecondary),
             suffixIcon: IconButton(
-              icon: Icon(Icons.content_paste_rounded, color: _paletteVibrant),
+              icon: const Icon(Icons.content_paste_rounded, color: AppColors.textPrimary),
               tooltip: 'Paste link',
               onPressed: _pasteFromClipboard,
             ),
@@ -339,7 +290,7 @@ class _ImportSpotifyPlaylistSheetState extends State<ImportSpotifyPlaylistSheet>
                 Expanded(
                   child: Text(
                     _errorMessage!,
-                    style: const TextStyle(color: AppColors.error, fontSize: 13),
+                    style: AppTypography.bodySmall.copyWith(color: AppColors.error, fontSize: 13),
                   ),
                 ),
               ],
@@ -352,8 +303,6 @@ class _ImportSpotifyPlaylistSheetState extends State<ImportSpotifyPlaylistSheet>
           text: 'Fetch Playlist',
           icon: Icons.search_rounded,
           isLoading: _isFetching,
-          backgroundColor: _paletteVibrant,
-          textColor: Colors.black,
           onPressed: _isFetching ? null : _onFetchPlaylist,
         ),
       ],
@@ -365,11 +314,11 @@ class _ImportSpotifyPlaylistSheetState extends State<ImportSpotifyPlaylistSheet>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Playlist Info Card (matches cover palette)
+        // Playlist Info Card
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: _paletteSurface.withValues(alpha: 0.65),
+            color: AppColors.card,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: AppColors.border,
@@ -387,7 +336,7 @@ class _ImportSpotifyPlaylistSheetState extends State<ImportSpotifyPlaylistSheet>
             children: [
               Container(
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(AppRadius.card),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.3),
@@ -400,7 +349,7 @@ class _ImportSpotifyPlaylistSheetState extends State<ImportSpotifyPlaylistSheet>
                   imageUrl: info.coverUrl,
                   width: 72,
                   height: 72,
-                  borderRadius: 10,
+                  borderRadius: AppRadius.card,
                   placeholderIcon: Icons.music_note_rounded,
                 ),
               ),
@@ -419,7 +368,7 @@ class _ImportSpotifyPlaylistSheetState extends State<ImportSpotifyPlaylistSheet>
                       const SizedBox(height: 3),
                       Text(
                         info.description,
-                        style: AppTypography.bodySmall.copyWith(color: Colors.white60),
+                        style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -428,16 +377,15 @@ class _ImportSpotifyPlaylistSheetState extends State<ImportSpotifyPlaylistSheet>
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: _paletteVibrant.withValues(alpha: 0.18),
+                        color: AppColors.surface,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: _paletteVibrant.withValues(alpha: 0.4), width: 1),
+                        border: Border.all(color: AppColors.border, width: 1),
                       ),
                       child: Text(
                         '${info.trackCount} Tracks Ready',
-                        style: TextStyle(
-                          color: _paletteVibrant,
+                        style: AppTypography.labelSmall.copyWith(
+                          color: AppColors.textPrimary,
                           fontWeight: FontWeight.bold,
-                          fontSize: 11,
                         ),
                       ),
                     ),
@@ -453,20 +401,20 @@ class _ImportSpotifyPlaylistSheetState extends State<ImportSpotifyPlaylistSheet>
         if (info.tracks.isNotEmpty) ...[
           Text(
             'TRACKS IN PLAYLIST',
-            style: AppTypography.labelSmall.copyWith(color: Colors.white54, fontSize: 11),
+            style: AppTypography.labelSmall.copyWith(color: AppColors.textMuted, fontSize: 11),
           ),
           const SizedBox(height: 8),
           Container(
             constraints: const BoxConstraints(maxHeight: 150),
             decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.35),
+              color: AppColors.card,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+              border: Border.all(color: AppColors.border),
             ),
             child: ListView.separated(
               shrinkWrap: true,
               itemCount: info.tracks.length > 5 ? 5 : info.tracks.length,
-              separatorBuilder: (_, __) => Divider(color: Colors.white.withValues(alpha: 0.06), height: 1),
+              separatorBuilder: (_, __) => const Divider(color: AppColors.border, height: 1),
               itemBuilder: (ctx, i) {
                 final t = info.tracks[i];
                 return Padding(
@@ -475,9 +423,8 @@ class _ImportSpotifyPlaylistSheetState extends State<ImportSpotifyPlaylistSheet>
                     children: [
                       Text(
                         '${i + 1}.',
-                        style: TextStyle(
-                          color: _paletteVibrant.withValues(alpha: 0.8),
-                          fontSize: 12,
+                        style: AppTypography.labelSmall.copyWith(
+                          color: AppColors.textSecondary,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -485,7 +432,10 @@ class _ImportSpotifyPlaylistSheetState extends State<ImportSpotifyPlaylistSheet>
                       Expanded(
                         child: Text(
                           t.title,
-                          style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                          style: AppTypography.bodyMedium.copyWith(
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.w600,
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -493,7 +443,9 @@ class _ImportSpotifyPlaylistSheetState extends State<ImportSpotifyPlaylistSheet>
                       const SizedBox(width: 8),
                       Text(
                         t.artist,
-                        style: const TextStyle(color: Colors.white54, fontSize: 12),
+                        style: AppTypography.bodySmall.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -507,7 +459,7 @@ class _ImportSpotifyPlaylistSheetState extends State<ImportSpotifyPlaylistSheet>
             const SizedBox(height: 6),
             Text(
               '+ ${info.tracks.length - 5} more songs',
-              style: const TextStyle(color: Colors.white38, fontSize: 11),
+              style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted, fontSize: 11),
               textAlign: TextAlign.center,
             ),
           ],
@@ -519,14 +471,12 @@ class _ImportSpotifyPlaylistSheetState extends State<ImportSpotifyPlaylistSheet>
         NeoButton(
           text: 'Import to Library',
           icon: Icons.playlist_add_check_rounded,
-          backgroundColor: _paletteVibrant,
-          textColor: Colors.black,
           onPressed: _startImport,
         ),
         const SizedBox(height: 10),
         TextButton(
           onPressed: () => setState(() => _step = _ImportStep.input),
-          child: const Text('Choose a different link', style: TextStyle(color: Colors.white54)),
+          child: Text('Choose a different link', style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary)),
         ),
       ],
     );
@@ -546,12 +496,12 @@ class _ImportSpotifyPlaylistSheetState extends State<ImportSpotifyPlaylistSheet>
           // Album Cover Art
           Center(
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.header),
               child: CachedCoverArt(
                 imageUrl: info?.coverUrl,
                 width: 88,
                 height: 88,
-                borderRadius: 12,
+                borderRadius: AppRadius.header,
                 placeholderIcon: Icons.queue_music_rounded,
               ),
             ),
@@ -570,7 +520,7 @@ class _ImportSpotifyPlaylistSheetState extends State<ImportSpotifyPlaylistSheet>
           Text(
             status?.message ?? 'Importing tracks to library...',
             textAlign: TextAlign.center,
-            style: AppTypography.bodySmall.copyWith(color: Colors.white70, fontSize: 13),
+            style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary, fontSize: 13),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -585,18 +535,17 @@ class _ImportSpotifyPlaylistSheetState extends State<ImportSpotifyPlaylistSheet>
                   child: LinearProgressIndicator(
                     value: progress,
                     minHeight: 4,
-                    backgroundColor: Colors.white12,
-                    valueColor: AlwaysStoppedAnimation<Color>(_paletteVibrant),
+                    backgroundColor: AppColors.surface,
+                    valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
                   ),
                 ),
               ),
               const SizedBox(width: 12),
               Text(
                 '$percentInt%',
-                style: TextStyle(
-                  color: _paletteVibrant,
+                style: AppTypography.labelSmall.copyWith(
+                  color: AppColors.textPrimary,
                   fontWeight: FontWeight.w700,
-                  fontSize: 12,
                 ),
               ),
             ],
@@ -605,7 +554,7 @@ class _ImportSpotifyPlaylistSheetState extends State<ImportSpotifyPlaylistSheet>
             const SizedBox(height: 8),
             Text(
               status!.currentTrack!,
-              style: const TextStyle(color: Colors.white38, fontSize: 11),
+              style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted, fontSize: 11),
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -620,15 +569,15 @@ class _ImportSpotifyPlaylistSheetState extends State<ImportSpotifyPlaylistSheet>
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.08),
+                color: AppColors.surface,
                 borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppColors.border),
               ),
-              child: const Center(
+              child: Center(
                 child: Text(
                   'Continue in Background',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 13,
+                  style: AppTypography.labelMedium.copyWith(
+                    color: AppColors.textPrimary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -653,13 +602,13 @@ class _ImportSpotifyPlaylistSheetState extends State<ImportSpotifyPlaylistSheet>
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: _paletteVibrant.withValues(alpha: 0.18),
+                color: AppColors.surface,
                 shape: BoxShape.circle,
-                border: Border.all(color: _paletteVibrant, width: 2),
+                border: Border.all(color: AppColors.border, width: 2),
               ),
-              child: Icon(
+              child: const Icon(
                 Icons.check_circle_rounded,
-                color: _paletteVibrant,
+                color: AppColors.primary,
                 size: 48,
               ),
             ),
@@ -674,20 +623,18 @@ class _ImportSpotifyPlaylistSheetState extends State<ImportSpotifyPlaylistSheet>
           Text(
             '"$playlistName" ($songCount ${songCount == 1 ? "song" : "songs"})\nis now available on this app and on your account.',
             textAlign: TextAlign.center,
-            style: AppTypography.bodyMedium.copyWith(color: Colors.white70, height: 1.4),
+            style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary, height: 1.4),
           ),
           const SizedBox(height: 24),
           NeoButton(
             text: 'Open Playlist',
             icon: Icons.play_arrow_rounded,
-            backgroundColor: _paletteVibrant,
-            textColor: Colors.black,
             onPressed: _openPlaylist,
           ),
           const SizedBox(height: 10),
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Done', style: TextStyle(color: Colors.white54)),
+            child: Text('Done', style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary)),
           ),
         ],
       ),
@@ -716,9 +663,9 @@ class _ImportSpotifyPlaylistSheetState extends State<ImportSpotifyPlaylistSheet>
         ),
         const SizedBox(height: 8),
         Text(
-          _errorMessage ?? 'Unable to complete sync to library vault.',
+          _errorMessage ?? 'Unable to complete sync to Library.',
           textAlign: TextAlign.center,
-          style: AppTypography.bodySmall.copyWith(color: Colors.white70),
+          style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
         ),
         const SizedBox(height: 20),
         NeoButton(

@@ -95,23 +95,28 @@ class _AnimatedLikeButtonState extends State<AnimatedLikeButton>
     final activeColor = widget.activeColor ?? AppColors.primary;
     final inactiveColor = widget.inactiveColor ?? AppColors.textSecondary;
 
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: _handleTap,
-      child: Padding(
-        padding: widget.padding,
-        child: AnimatedBuilder(
-          animation: _scaleAnimation,
-          builder: (context, child) {
-            return Transform.scale(
-              scale: _controller.isAnimating ? _scaleAnimation.value : 1.0,
-              child: Icon(
-                isStarred ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                color: isStarred ? activeColor : inactiveColor,
-                size: widget.size,
-              ),
-            );
-          },
+    return Semantics(
+      button: true,
+      selected: isStarred,
+      label: isStarred ? 'Unlike' : 'Like',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: _handleTap,
+        child: Padding(
+          padding: widget.padding,
+          child: AnimatedBuilder(
+            animation: _scaleAnimation,
+            builder: (context, child) {
+              return Transform.scale(
+                scale: _controller.isAnimating ? _scaleAnimation.value : 1.0,
+                child: Icon(
+                  isStarred ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                  color: isStarred ? activeColor : inactiveColor,
+                  size: widget.size,
+                ),
+              );
+            },
+          ),
         ),
       ),
     );

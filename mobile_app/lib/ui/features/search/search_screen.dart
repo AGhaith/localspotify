@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../state/audio_player_provider.dart';
 import '../../../state/music_provider.dart';
@@ -40,7 +41,8 @@ class _SearchScreenState extends State<SearchScreen> {
 
   void _triggerSearch(String query) {
     _searchController.text = query;
-    _searchController.selection = TextSelection.fromPosition(TextPosition(offset: query.length));
+    _searchController.selection =
+        TextSelection.fromPosition(TextPosition(offset: query.length));
     context.read<MusicProvider>().search(query);
   }
 
@@ -52,7 +54,9 @@ class _SearchScreenState extends State<SearchScreen> {
 
     // Compute dynamic suggestions matching recent searches
     final matchingRecent = query.isNotEmpty
-        ? music.recentSearches.where((s) => s.toLowerCase().contains(query.toLowerCase())).toList()
+        ? music.recentSearches
+            .where((s) => s.toLowerCase().contains(query.toLowerCase()))
+            .toList()
         : <String>[];
 
     return Scaffold(
@@ -65,17 +69,20 @@ class _SearchScreenState extends State<SearchScreen> {
               children: [
                 // Search Input Field
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                  padding: const EdgeInsets.fromLTRB(AppSpacing.screenH,
+                      AppSpacing.md, AppSpacing.screenH, AppSpacing.md),
                   child: TextField(
                     controller: _searchController,
                     onChanged: (val) => music.searchDebounced(val),
                     style: AppTypography.bodyLarge,
                     decoration: InputDecoration(
                       hintText: 'What do you want to listen to?',
-                      prefixIcon: const Icon(Icons.search_rounded, color: AppColors.textSecondary),
+                      prefixIcon: const Icon(Icons.search_rounded,
+                          color: AppColors.textSecondary),
                       suffixIcon: _searchController.text.isNotEmpty
                           ? IconButton(
-                              icon: const Icon(Icons.close_rounded, color: AppColors.textSecondary),
+                              icon: const Icon(Icons.close_rounded,
+                                  color: AppColors.textSecondary),
                               onPressed: () {
                                 _searchController.clear();
                                 music.search('');
@@ -97,8 +104,45 @@ class _SearchScreenState extends State<SearchScreen> {
                               const SliverToBoxAdapter(
                                 child: LinearProgressIndicator(
                                   minHeight: 2.5,
-                                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      AppColors.primary),
                                   backgroundColor: Colors.transparent,
+                                ),
+                              ),
+
+                            if (!music.isSearching && music.searchError != null)
+                              SliverToBoxAdapter(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(
+                                      AppSpacing.sectionGap),
+                                  child: Column(
+                                    children: [
+                                      Text("Couldn't search. Try again.",
+                                          style: AppTypography.titleMedium),
+                                      TextButton(
+                                        onPressed: () => music.search(query),
+                                        child: const Text('Retry',
+                                            style: TextStyle(
+                                                color: AppColors.textPrimary)),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              )
+                            else if (!music.isSearching &&
+                                !music.isSearchingSpotify &&
+                                music.searchTracks.isEmpty &&
+                                music.searchAlbums.isEmpty &&
+                                music.searchArtists.isEmpty &&
+                                music.searchPlaylists.isEmpty &&
+                                music.spotifySearchTracks.isEmpty)
+                              SliverToBoxAdapter(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(
+                                      AppSpacing.sectionGap),
+                                  child: Center(
+                                      child: Text('No results for $query',
+                                          style: AppTypography.titleMedium)),
                                 ),
                               ),
 
@@ -106,7 +150,11 @@ class _SearchScreenState extends State<SearchScreen> {
                             if (matchingRecent.isNotEmpty) ...[
                               SliverToBoxAdapter(
                                 child: Padding(
-                                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                                  padding: const EdgeInsets.fromLTRB(
+                                      AppSpacing.screenH,
+                                      AppSpacing.sectionGap,
+                                      AppSpacing.screenH,
+                                      AppSpacing.rowGap),
                                   child: Text(
                                     'SUGGESTIONS',
                                     style: AppTypography.labelSmall.copyWith(
@@ -131,8 +179,10 @@ class _SearchScreenState extends State<SearchScreen> {
                                       },
                                       onFill: () {
                                         _searchController.text = suggestion;
-                                        _searchController.selection = TextSelection.fromPosition(
-                                          TextPosition(offset: suggestion.length),
+                                        _searchController.selection =
+                                            TextSelection.fromPosition(
+                                          TextPosition(
+                                              offset: suggestion.length),
                                         );
                                         music.search(suggestion);
                                       },
@@ -141,13 +191,17 @@ class _SearchScreenState extends State<SearchScreen> {
                                       },
                                     );
                                   },
-                                  childCount: matchingRecent.length > 5 ? 5 : matchingRecent.length,
+                                  childCount: matchingRecent.length > 5
+                                      ? 5
+                                      : matchingRecent.length,
                                 ),
                               ),
                               const SliverToBoxAdapter(
                                 child: Padding(
-                                  padding: EdgeInsets.symmetric(horizontal: 16),
-                                  child: Divider(color: AppColors.border, height: 16),
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: AppSpacing.screenH),
+                                  child: Divider(
+                                      color: AppColors.border, height: 16),
                                 ),
                               ),
                             ],
@@ -156,18 +210,25 @@ class _SearchScreenState extends State<SearchScreen> {
                             if (music.searchArtists.isNotEmpty) ...[
                               SliverToBoxAdapter(
                                 child: Padding(
-                                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
-                                  child: Text('Artists', style: AppTypography.titleLarge),
+                                  padding: const EdgeInsets.fromLTRB(
+                                      AppSpacing.screenH,
+                                      AppSpacing.sectionGap,
+                                      AppSpacing.screenH,
+                                      AppSpacing.rowGap),
+                                  child: Text('Artists',
+                                      style: AppTypography.titleLarge),
                                 ),
                               ),
                               SliverToBoxAdapter(
                                 child: SizedBox(
-                                  height: 110,
+                                  height: 132,
                                   child: ListView.separated(
-                                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: AppSpacing.screenH),
                                     scrollDirection: Axis.horizontal,
                                     itemCount: music.searchArtists.length,
-                                    separatorBuilder: (_, __) => const SizedBox(width: 14),
+                                    separatorBuilder: (_, __) => const SizedBox(
+                                        width: AppSpacing.rowGap),
                                     itemBuilder: (ctx, i) {
                                       final artist = music.searchArtists[i];
                                       return GestureDetector(
@@ -175,22 +236,28 @@ class _SearchScreenState extends State<SearchScreen> {
                                           Navigator.push(
                                             context,
                                             MaterialPageRoute(
-                                              builder: (_) => ArtistDetailScreen(artistId: artist.id),
+                                              builder: (_) =>
+                                                  ArtistDetailScreen(
+                                                      artistId: artist.id),
                                             ),
                                           );
                                         },
                                         child: Column(
                                           children: [
                                             CachedCoverArt(
-                                              imageUrl: music.getCoverArtUrl(artist.coverArtId, size: 150),
-                                              width: 70,
-                                              height: 70,
+                                              imageUrl: music.getCoverArtUrl(
+                                                  artist.coverArtId,
+                                                  size: 150),
+                                              width: 104,
+                                              height: 104,
                                               borderRadius: 99,
-                                              placeholderIcon: Icons.person_rounded,
+                                              placeholderIcon:
+                                                  Icons.person_rounded,
                                             ),
-                                            const SizedBox(height: 6),
+                                            const SizedBox(
+                                                height: AppSpacing.sm),
                                             SizedBox(
-                                              width: 76,
+                                              width: 104,
                                               child: Text(
                                                 artist.name,
                                                 maxLines: 1,
@@ -212,8 +279,13 @@ class _SearchScreenState extends State<SearchScreen> {
                             if (music.searchTracks.isNotEmpty) ...[
                               SliverToBoxAdapter(
                                 child: Padding(
-                                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                                  child: Text('Songs', style: AppTypography.titleLarge),
+                                  padding: const EdgeInsets.fromLTRB(
+                                      AppSpacing.screenH,
+                                      AppSpacing.sectionGap,
+                                      AppSpacing.screenH,
+                                      AppSpacing.rowGap),
+                                  child: Text('Songs',
+                                      style: AppTypography.titleLarge),
                                 ),
                               ),
                               SliverList(
@@ -237,28 +309,38 @@ class _SearchScreenState extends State<SearchScreen> {
                             if (music.searchAlbums.isNotEmpty) ...[
                               SliverToBoxAdapter(
                                 child: Padding(
-                                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
-                                  child: Text('Albums', style: AppTypography.titleLarge),
+                                  padding: const EdgeInsets.fromLTRB(
+                                      AppSpacing.screenH,
+                                      AppSpacing.sectionGap,
+                                      AppSpacing.screenH,
+                                      AppSpacing.rowGap),
+                                  child: Text('Albums',
+                                      style: AppTypography.titleLarge),
                                 ),
                               ),
                               SliverToBoxAdapter(
                                 child: SizedBox(
-                                  height: 190,
+                                  height: 200,
                                   child: ListView.separated(
-                                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: AppSpacing.screenH),
                                     scrollDirection: Axis.horizontal,
                                     itemCount: music.searchAlbums.length,
-                                    separatorBuilder: (_, __) => const SizedBox(width: 12),
+                                    separatorBuilder: (_, __) => const SizedBox(
+                                        width: AppSpacing.rowGap),
                                     itemBuilder: (ctx, i) {
                                       final album = music.searchAlbums[i];
                                       return AlbumCard(
                                         album: album,
-                                        coverUrl: music.getCoverArtUrl(album.coverArtId, size: 250),
+                                        coverUrl: music.getCoverArtUrl(
+                                            album.coverArtId,
+                                            size: 250),
                                         onTap: () {
                                           Navigator.push(
                                             context,
                                             MaterialPageRoute(
-                                              builder: (_) => AlbumDetailScreen(albumId: album.id),
+                                              builder: (_) => AlbumDetailScreen(
+                                                  albumId: album.id),
                                             ),
                                           );
                                         },
@@ -273,40 +355,73 @@ class _SearchScreenState extends State<SearchScreen> {
                             if (music.searchPlaylists.isNotEmpty) ...[
                               SliverToBoxAdapter(
                                 child: Padding(
-                                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
-                                  child: Text('Playlists', style: AppTypography.titleLarge),
+                                  padding: const EdgeInsets.fromLTRB(
+                                      AppSpacing.screenH,
+                                      AppSpacing.sectionGap,
+                                      AppSpacing.screenH,
+                                      AppSpacing.rowGap),
+                                  child: Text('Playlists',
+                                      style: AppTypography.titleLarge),
                                 ),
                               ),
                               SliverPadding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
-                                sliver: SliverList(
-                                  delegate: SliverChildBuilderDelegate(
-                                    (ctx, i) {
-                                      final pl = music.searchPlaylists[i];
-                                      return ListTile(
-                                        contentPadding: EdgeInsets.zero,
-                                        leading: CachedCoverArt(
-                                          imageUrl: music.getCoverArtUrl(pl.coverArtId, size: 150),
-                                          width: 48,
-                                          height: 48,
-                                          borderRadius: 6,
-                                          placeholderIcon: Icons.queue_music_rounded,
-                                        ),
-                                        title: Text(pl.name, style: AppTypography.titleMedium),
-                                        subtitle: Text('${pl.songCount} ${pl.songCount == 1 ? "song" : "songs"}', style: AppTypography.bodySmall),
-                                        trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted),
-                                        onTap: () {
-                                          Navigator.push(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: AppSpacing.screenH),
+                                sliver: SliverList.separated(
+                                  separatorBuilder: (_, __) =>
+                                      const SizedBox(height: AppSpacing.rowGap),
+                                  itemBuilder: (ctx, i) {
+                                    final pl = music.searchPlaylists[i];
+                                    return InkWell(
+                                      onTap: () {
+                                        Navigator.push(
                                             context,
                                             MaterialPageRoute(
-                                              builder: (_) => PlaylistDetailScreen(playlistId: pl.id),
+                                              builder: (_) =>
+                                                  PlaylistDetailScreen(
+                                                      playlistId: pl.id),
+                                            ));
+                                      },
+                                      child: SizedBox(
+                                          height: 64,
+                                          child: Row(children: [
+                                            CachedCoverArt(
+                                              imageUrl: music.getCoverArtUrl(
+                                                  pl.coverArtId,
+                                                  size: 150),
+                                              width: 56,
+                                              height: 56,
+                                              borderRadius: 4,
+                                              placeholderIcon:
+                                                  Icons.queue_music_rounded,
                                             ),
-                                          );
-                                        },
-                                      );
-                                    },
-                                    childCount: music.searchPlaylists.length,
-                                  ),
+                                            const SizedBox(
+                                                width: AppSpacing.rowGap),
+                                            Expanded(
+                                                child: Column(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(pl.name,
+                                                    style: AppTypography
+                                                        .titleMedium,
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis),
+                                                const SizedBox(
+                                                    height: AppSpacing.xs),
+                                                Text(
+                                                    'Playlist • ${pl.songCount} ${pl.songCount == 1 ? "song" : "songs"}',
+                                                    style: AppTypography
+                                                        .bodySmall),
+                                              ],
+                                            )),
+                                          ])),
+                                    );
+                                  },
+                                  itemCount: music.searchPlaylists.length,
                                 ),
                               ),
                             ],
@@ -314,24 +429,35 @@ class _SearchScreenState extends State<SearchScreen> {
                             // 5. Spotify Global Catalog Section (On-Demand Sync & Play)
                             SliverToBoxAdapter(
                               child: Padding(
-                                padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
+                                padding: const EdgeInsets.fromLTRB(
+                                    AppSpacing.screenH,
+                                    AppSpacing.sectionGap,
+                                    AppSpacing.screenH,
+                                    AppSpacing.rowGap),
                                 child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     Row(
                                       children: [
-                                        const Icon(Icons.public_rounded, color: AppColors.primary, size: 18),
-                                        const SizedBox(width: 8),
-                                        Text('Spotify Catalog', style: AppTypography.titleLarge),
+                                        const Icon(Icons.public_rounded,
+                                            color: AppColors.primary, size: 18),
+                                        const SizedBox(width: AppSpacing.sm),
+                                        Text('Catalog',
+                                            style: AppTypography.titleLarge),
                                       ],
                                     ),
                                     if (music.isSearchingSpotify)
                                       const SizedBox(
                                         width: 16,
                                         height: 16,
-                                        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                                        child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: AppColors.primary),
                                       )
-                                    else if (music.spotifySearchTracks.isEmpty && query.isNotEmpty)
+                                    else if (music
+                                            .spotifySearchTracks.isEmpty &&
+                                        query.isNotEmpty)
                                       GestureDetector(
                                         onTap: () {
                                           HapticFeedback.lightImpact();
@@ -339,7 +465,8 @@ class _SearchScreenState extends State<SearchScreen> {
                                         },
                                         child: Text(
                                           'Get More Results',
-                                          style: AppTypography.labelSmall.copyWith(
+                                          style:
+                                              AppTypography.labelSmall.copyWith(
                                             color: AppColors.primary,
                                             fontWeight: FontWeight.bold,
                                           ),
@@ -360,19 +487,26 @@ class _SearchScreenState extends State<SearchScreen> {
                                   childCount: music.spotifySearchTracks.length,
                                 ),
                               )
-                            else if (!music.isSearchingSpotify && music.searchTracks.isEmpty && query.isNotEmpty)
+                            else if (!music.isSearchingSpotify &&
+                                music.searchTracks.isEmpty &&
+                                query.isNotEmpty)
                               SliverToBoxAdapter(
                                 child: Padding(
-                                  padding: const EdgeInsets.all(24.0),
+                                  padding: const EdgeInsets.all(
+                                      AppSpacing.sectionGap),
                                   child: Center(
                                     child: OutlinedButton.icon(
                                       style: OutlinedButton.styleFrom(
                                         foregroundColor: AppColors.primary,
-                                        side: const BorderSide(color: AppColors.primary),
-                                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                        side: const BorderSide(
+                                            color: AppColors.primary),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 20, vertical: 12),
                                       ),
-                                      icon: const Icon(Icons.cloud_download_rounded),
-                                      label: const Text('Search Spotify Catalog for tracks'),
+                                      icon: const Icon(
+                                          Icons.cloud_download_rounded),
+                                      label: const Text(
+                                          'Search Spotify Catalog for tracks'),
                                       onPressed: () {
                                         HapticFeedback.lightImpact();
                                         music.searchSpotify(query);
@@ -382,7 +516,8 @@ class _SearchScreenState extends State<SearchScreen> {
                                 ),
                               ),
 
-                            const SliverToBoxAdapter(child: SizedBox(height: 120)),
+                            const SliverToBoxAdapter(
+                                child: SizedBox(height: 120)),
                           ],
                         ),
                 ),
@@ -406,7 +541,8 @@ class _SearchScreenState extends State<SearchScreen> {
   }) {
     return ListTile(
       dense: true,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+      contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.screenH, vertical: 0),
       leading: Icon(
         isHistory ? Icons.history_rounded : Icons.search_rounded,
         color: AppColors.textMuted,
@@ -417,13 +553,15 @@ class _SearchScreenState extends State<SearchScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           IconButton(
-            icon: const Icon(Icons.north_west_rounded, size: 18, color: AppColors.textMuted),
+            icon: const Icon(Icons.north_west_rounded,
+                size: 18, color: AppColors.textMuted),
             tooltip: 'Insert into search',
             onPressed: onFill,
           ),
           if (onRemove != null)
             IconButton(
-              icon: const Icon(Icons.close_rounded, size: 16, color: AppColors.textMuted),
+              icon: const Icon(Icons.close_rounded,
+                  size: 16, color: AppColors.textMuted),
               tooltip: 'Remove',
               onPressed: onRemove,
             ),
@@ -435,7 +573,9 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Widget _buildHighlightedText(String text, String query) {
     if (query.isEmpty) {
-      return Text(text, style: AppTypography.bodyMedium.copyWith(color: AppColors.textPrimary));
+      return Text(text,
+          style:
+              AppTypography.bodyMedium.copyWith(color: AppColors.textPrimary));
     }
 
     final lowerText = text.toLowerCase();
@@ -443,7 +583,9 @@ class _SearchScreenState extends State<SearchScreen> {
     final index = lowerText.indexOf(lowerQuery);
 
     if (index == -1) {
-      return Text(text, style: AppTypography.bodyMedium.copyWith(color: AppColors.textPrimary));
+      return Text(text,
+          style:
+              AppTypography.bodyMedium.copyWith(color: AppColors.textPrimary));
     }
 
     return RichText(
@@ -453,10 +595,13 @@ class _SearchScreenState extends State<SearchScreen> {
         style: AppTypography.bodyMedium.copyWith(color: AppColors.textPrimary),
         children: [
           if (index > 0)
-            TextSpan(text: text.substring(0, index), style: const TextStyle(color: AppColors.textSecondary)),
+            TextSpan(
+                text: text.substring(0, index),
+                style: const TextStyle(color: AppColors.textSecondary)),
           TextSpan(
             text: text.substring(index, index + query.length),
-            style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+                color: AppColors.primary, fontWeight: FontWeight.bold),
           ),
           if (index + query.length < text.length)
             TextSpan(
@@ -471,7 +616,7 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget _buildEmptyView() {
     return Center(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -491,16 +636,18 @@ class _SearchScreenState extends State<SearchScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: AppSpacing.lg),
             Text(
               'Play what you love',
-              style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.bold),
+              style: AppTypography.titleLarge
+                  .copyWith(fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: AppSpacing.sm),
             Text(
-              'Search for artists, songs, albums, or explore the global Spotify catalog',
-              style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted, height: 1.4),
+              'Search for artists, songs, albums, or explore the catalog',
+              style: AppTypography.bodySmall
+                  .copyWith(color: AppColors.textMuted, height: 1.4),
               textAlign: TextAlign.center,
             ),
           ],

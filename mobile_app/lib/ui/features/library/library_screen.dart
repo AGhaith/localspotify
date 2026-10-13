@@ -2,13 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../data/models/album.dart';
 import '../../../data/models/artist.dart';
 import '../../../data/models/playlist.dart';
 import '../../../state/music_provider.dart';
 import '../../core_widgets/cached_cover_art.dart';
 import '../../core_widgets/pressable_scale.dart';
 import 'artist_detail_screen.dart';
+import 'album_detail_screen.dart';
 import 'import_spotify_playlist_sheet.dart';
 import 'liked_songs_screen.dart';
 import 'playlist_detail_screen.dart';
@@ -32,6 +35,11 @@ class _ArtistEntry extends _LibraryEntry {
   _ArtistEntry(this.artist) : super(artist.name);
 }
 
+class _AlbumEntry extends _LibraryEntry {
+  final Album album;
+  _AlbumEntry(this.album) : super(album.name);
+}
+
 class LibraryScreen extends StatefulWidget {
   const LibraryScreen({super.key});
 
@@ -40,7 +48,7 @@ class LibraryScreen extends StatefulWidget {
 }
 
 class _LibraryScreenState extends State<LibraryScreen> {
-  String? _selectedFilter; // null = all, 'Playlists', 'Artists'
+  String? _selectedFilter; // null = all
 
   @override
   void initState() {
@@ -59,32 +67,38 @@ class _LibraryScreenState extends State<LibraryScreen> {
       ),
       builder: (ctx) => SafeArea(
         child: Padding(
-          padding: const EdgeInsets.only(top: 8, bottom: 16),
+          padding:
+              const EdgeInsets.only(top: AppSpacing.sm, bottom: AppSpacing.lg),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
                 width: 36,
                 height: 4,
-                margin: const EdgeInsets.symmetric(vertical: 8),
+                margin: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
               ListTile(
-                leading: const Icon(Icons.music_note_rounded, color: Colors.white, size: 24),
+                leading: const Icon(Icons.music_note_rounded,
+                    color: Colors.white, size: 24),
                 title: Text('Playlist', style: AppTypography.titleMedium),
-                subtitle: Text('Create a playlist with songs', style: AppTypography.bodySmall),
+                subtitle: Text('Create a playlist with songs',
+                    style: AppTypography.bodySmall),
                 onTap: () {
                   Navigator.pop(ctx);
                   _showCreatePlaylistDialog(context, music);
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.download_rounded, color: AppColors.primary, size: 24),
-                title: Text('Import from Spotify', style: AppTypography.titleMedium),
-                subtitle: Text('Sync a Spotify playlist into your library', style: AppTypography.bodySmall),
+                leading: const Icon(Icons.download_rounded,
+                    color: AppColors.primary, size: 24),
+                title: Text('Import from Spotify',
+                    style: AppTypography.titleMedium),
+                subtitle: Text('Sync a Spotify playlist into your library',
+                    style: AppTypography.bodySmall),
                 onTap: () {
                   Navigator.pop(ctx);
                   ImportSpotifyPlaylistSheet.show(context);
@@ -119,7 +133,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+            child: const Text('Cancel',
+                style: TextStyle(color: AppColors.textSecondary)),
           ),
           TextButton(
             onPressed: () async {
@@ -137,7 +152,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
                 }
               }
             },
-            child: const Text('Create', style: TextStyle(color: AppColors.primary)),
+            child: const Text('Create',
+                style: TextStyle(color: AppColors.primary)),
           ),
         ],
       ),
@@ -150,11 +166,11 @@ class _LibraryScreenState extends State<LibraryScreen> {
 
     final List<_LibraryEntry> items = [];
     if (_selectedFilter == 'Artists') {
-      final sortedArtists = List<Artist>.from(music.artists)
-        ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-      for (final artist in sortedArtists) {
+      for (final artist in music.libraryArtists) {
         items.add(_ArtistEntry(artist));
       }
+    } else if (_selectedFilter == 'Albums') {
+      items.addAll(music.libraryAlbums.map(_AlbumEntry.new));
     } else if (_selectedFilter == 'Playlists') {
       items.add(const _LikedSongsEntry());
       final sortedPlaylists = List<Playlist>.from(music.playlists)
@@ -169,14 +185,16 @@ class _LibraryScreenState extends State<LibraryScreen> {
       for (final pl in music.playlists) {
         otherEntries.add(_PlaylistEntry(pl));
       }
-      for (final artist in music.artists) {
-        otherEntries.add(_ArtistEntry(artist));
+      for (final album in music.libraryAlbums) {
+        otherEntries.add(_AlbumEntry(album));
       }
-      otherEntries.sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+      otherEntries.sort(
+          (a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
       items.addAll(otherEntries);
     }
 
-    final showEmptyPlaylists = music.playlists.isEmpty && (_selectedFilter == null || _selectedFilter == 'Playlists');
+    final showEmptyPlaylists = music.playlists.isEmpty &&
+        (_selectedFilter == null || _selectedFilter == 'Playlists');
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -187,18 +205,21 @@ class _LibraryScreenState extends State<LibraryScreen> {
           backgroundColor: AppColors.card,
           onRefresh: () => music.loadLibrary(),
           child: CustomScrollView(
-            physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+            physics: const AlwaysScrollableScrollPhysics(
+                parent: BouncingScrollPhysics()),
             slivers: [
               // Header
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
+                  padding: const EdgeInsets.fromLTRB(AppSpacing.screenH,
+                      AppSpacing.lg, AppSpacing.sm, AppSpacing.lg),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text('Your Library', style: AppTypography.displayMedium),
                       IconButton(
-                        icon: const Icon(Icons.add_rounded, color: AppColors.textPrimary, size: 28),
+                        icon: const Icon(Icons.add_rounded,
+                            color: AppColors.textPrimary, size: 28),
                         tooltip: 'Create or import',
                         onPressed: () => _showAddBottomSheet(context, music),
                       ),
@@ -210,7 +231,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
               // Filter Chips
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.screenH, 0, AppSpacing.screenH, AppSpacing.lg),
                   child: SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     physics: const BouncingScrollPhysics(),
@@ -218,11 +240,15 @@ class _LibraryScreenState extends State<LibraryScreen> {
                       children: [
                         if (_selectedFilter != null) ...[
                           _buildClearFilterChip(),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: AppSpacing.sm),
                           _buildFilterPill(_selectedFilter!, _selectedFilter!),
                         ] else ...[
                           _buildFilterPill('Playlists', 'Playlists'),
-                          const SizedBox(width: 8),
+                          if (music.libraryAlbums.isNotEmpty) ...[
+                            const SizedBox(width: AppSpacing.sm),
+                            _buildFilterPill('Albums', 'Albums'),
+                          ],
+                          const SizedBox(width: AppSpacing.sm),
                           _buildFilterPill('Artists', 'Artists'),
                         ],
                       ],
@@ -231,42 +257,76 @@ class _LibraryScreenState extends State<LibraryScreen> {
                 ),
               ),
 
-              // Unified Single Vertical List
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                sliver: SliverList.separated(
-                  itemCount: items.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
-                  itemBuilder: (ctx, i) {
-                    final entry = items[i];
-                    return switch (entry) {
-                      _LikedSongsEntry() => _buildLikedSongsRow(context, music),
-                      _PlaylistEntry(:final playlist) => _buildPlaylistRow(context, music, playlist),
-                      _ArtistEntry(:final artist) => _buildArtistRow(context, music, artist),
-                    };
-                  },
-                ),
-              ),
-
-              // Empty state when there are no playlists
-              if (showEmptyPlaylists)
+              if (music.libraryError != null)
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.screenH,
+                        vertical: AppSpacing.rowGap),
+                    child: Row(
+                      children: [
+                        Expanded(
+                            child: Text('Could not load Library',
+                                style: AppTypography.bodySmall)),
+                        TextButton(
+                          onPressed: music.retryLibrary,
+                          child: const Text('Retry',
+                              style: TextStyle(color: AppColors.textPrimary)),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+              // Unified Single Vertical List
+              if (music.libraryError == null)
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.screenH),
+                  sliver: SliverList.separated(
+                    itemCount: items.length,
+                    separatorBuilder: (_, __) =>
+                        const SizedBox(height: AppSpacing.rowGap),
+                    itemBuilder: (ctx, i) {
+                      final entry = items[i];
+                      return switch (entry) {
+                        _LikedSongsEntry() =>
+                          _buildLikedSongsRow(context, music),
+                        _PlaylistEntry(:final playlist) =>
+                          _buildPlaylistRow(context, music, playlist),
+                        _ArtistEntry(:final artist) =>
+                          _buildArtistRow(context, music, artist),
+                        _AlbumEntry(:final album) =>
+                          _buildAlbumRow(context, music, album),
+                      };
+                    },
+                  ),
+                ),
+
+              // Empty state when there are no playlists
+              if (showEmptyPlaylists && music.libraryError == null)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: AppSpacing.sectionGap),
                     child: Center(
                       child: InkWell(
                         onTap: () => _showAddBottomSheet(context, music),
                         borderRadius: BorderRadius.circular(8),
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.screenH,
+                              vertical: AppSpacing.sm),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.add_rounded, color: AppColors.textMuted, size: 18),
-                              const SizedBox(width: 6),
+                              const Icon(Icons.add_rounded,
+                                  color: AppColors.textMuted, size: 18),
+                              const SizedBox(width: AppSpacing.sm),
                               Text(
                                 'Create your first playlist',
-                                style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
+                                style: AppTypography.bodySmall
+                                    .copyWith(color: AppColors.textMuted),
                               ),
                             ],
                           ),
@@ -288,21 +348,25 @@ class _LibraryScreenState extends State<LibraryScreen> {
   }
 
   Widget _buildClearFilterChip() {
-    return PressableScale(
-      onTap: () {
-        HapticFeedback.selectionClick();
-        setState(() => _selectedFilter = null);
-      },
-      scaleFactor: 0.94,
-      child: Container(
-        width: 32,
-        height: 32,
-        decoration: const BoxDecoration(
-          color: AppColors.cardHover,
-          shape: BoxShape.circle,
-        ),
-        child: const Center(
-          child: Icon(Icons.close_rounded, color: Colors.white, size: 16),
+    return Semantics(
+      label: 'Clear filter',
+      button: true,
+      child: PressableScale(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          setState(() => _selectedFilter = null);
+        },
+        scaleFactor: 0.94,
+        child: Container(
+          width: 44,
+          height: 44,
+          decoration: const BoxDecoration(
+            color: AppColors.cardHover,
+            shape: BoxShape.circle,
+          ),
+          child: const Center(
+            child: Icon(Icons.close_rounded, color: Colors.white, size: 16),
+          ),
         ),
       ),
     );
@@ -324,7 +388,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
       scaleFactor: 0.94,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
         decoration: BoxDecoration(
           color: active ? AppColors.primary : AppColors.cardHover,
           borderRadius: BorderRadius.circular(99),
@@ -358,7 +423,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
         child: Row(
           children: [
             leading,
-            const SizedBox(width: 12),
+            const SizedBox(width: AppSpacing.rowGap),
             Expanded(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -370,7 +435,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: AppSpacing.xs),
                   Text(
                     subtitle,
                     style: AppTypography.bodySmall.copyWith(
@@ -400,7 +465,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
           borderRadius: BorderRadius.circular(4),
           border: Border.all(color: AppColors.border),
         ),
-        child: const Icon(Icons.favorite_rounded, color: Colors.white, size: 26),
+        child:
+            const Icon(Icons.favorite_rounded, color: Colors.white, size: 26),
       ),
       title: 'Liked Songs',
       subtitle: 'Playlist • $countText',
@@ -414,7 +480,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
     );
   }
 
-  Widget _buildPlaylistRow(BuildContext context, MusicProvider music, Playlist pl) {
+  Widget _buildPlaylistRow(
+      BuildContext context, MusicProvider music, Playlist pl) {
     final coverUrl = music.getCoverArtUrl(
       pl.coverArtId,
       size: 150,
@@ -425,10 +492,14 @@ class _LibraryScreenState extends State<LibraryScreen> {
     final importedTracks = music.getImportedPlaylistTracks(pl.id).isNotEmpty
         ? music.getImportedPlaylistTracks(pl.id)
         : music.getImportedPlaylistTracks(pl.name);
-    final effectiveCount = pl.songCount > 0 ? pl.songCount : importedTracks.length;
-    final countText = '$effectiveCount ${effectiveCount == 1 ? 'song' : 'songs'}';
+    final effectiveCount =
+        pl.songCount > 0 ? pl.songCount : importedTracks.length;
+    final countText =
+        '$effectiveCount ${effectiveCount == 1 ? 'song' : 'songs'}';
     final isSyncing = pl.songCount == 0 && effectiveCount > 0;
-    final subtitle = isSyncing ? 'Playlist • $countText • Syncing...' : 'Playlist • $countText';
+    final subtitle = isSyncing
+        ? 'Playlist • $countText • Syncing...'
+        : 'Playlist • $countText';
 
     return _buildRow(
       leading: CachedCoverArt(
@@ -453,7 +524,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
     );
   }
 
-  Widget _buildArtistRow(BuildContext context, MusicProvider music, Artist artist) {
+  Widget _buildArtistRow(
+      BuildContext context, MusicProvider music, Artist artist) {
     return _buildRow(
       leading: CachedCoverArt(
         imageUrl: music.getCoverArtUrl(artist.coverArtId, size: 150),
@@ -470,6 +542,30 @@ class _LibraryScreenState extends State<LibraryScreen> {
           context,
           MaterialPageRoute(
             builder: (_) => ArtistDetailScreen(artistId: artist.id),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildAlbumRow(
+      BuildContext context, MusicProvider music, Album album) {
+    return _buildRow(
+      leading: CachedCoverArt(
+        imageUrl: music.getCoverArtUrl(album.coverArtId, size: 150),
+        width: 56,
+        height: 56,
+        borderRadius: 4,
+        placeholderIcon: Icons.album_rounded,
+      ),
+      title: album.name,
+      subtitle: 'Album • ${album.artist}',
+      onTap: () {
+        HapticFeedback.selectionClick();
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => AlbumDetailScreen(albumId: album.id),
           ),
         );
       },

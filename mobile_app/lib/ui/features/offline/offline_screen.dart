@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../state/audio_player_provider.dart';
 import '../../../state/music_provider.dart';
@@ -55,7 +56,8 @@ class _OfflineScreenState extends State<OfflineScreen> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Text('Downloaded Music', style: AppTypography.titleLarge),
-        leading: const BackButton(),
+        automaticallyImplyLeading: false,
+        leading: Navigator.canPop(context) ? const BackButton() : null,
         actions: [
           if (offlineTracks.isNotEmpty)
             IconButton(
@@ -68,7 +70,7 @@ class _OfflineScreenState extends State<OfflineScreen> {
       body: offlineTracks.isEmpty
           ? Center(
               child: Padding(
-                padding: const EdgeInsets.all(32),
+                padding: const EdgeInsets.all(AppSpacing.xxl),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -77,7 +79,7 @@ class _OfflineScreenState extends State<OfflineScreen> {
                       color: AppColors.textMuted,
                       size: 56,
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.lg),
                     Text('No downloaded songs', style: AppTypography.titleLarge),
                     const SizedBox(height: 6),
                     Text(
@@ -95,9 +97,9 @@ class _OfflineScreenState extends State<OfflineScreen> {
                 // Storage and Playback Header Card
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(AppSpacing.screenH),
                     child: Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(AppSpacing.screenH),
                       decoration: BoxDecoration(
                         color: AppColors.card,
                         borderRadius: BorderRadius.circular(16),
@@ -135,10 +137,10 @@ class _OfflineScreenState extends State<OfflineScreen> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: AppSpacing.lg),
                           Wrap(
-                            spacing: 10,
-                            runSpacing: 10,
+                            spacing: AppSpacing.sm,
+                            runSpacing: AppSpacing.sm,
                             children: [
                               NeoButton(
                                 text: 'Play All',

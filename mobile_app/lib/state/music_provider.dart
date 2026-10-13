@@ -55,6 +55,7 @@ class MusicProvider extends ChangeNotifier {
   List<Album> _recentAlbums = [];
   List<Album> _frequentAlbums = [];
   List<Artist> _artists = [];
+  List<Album> _libraryAlbums = [];
   List<Playlist> _playlists = [];
   List<Track> _starredTracks = [];
   List<Track> _offlineTracks = [];
@@ -68,6 +69,7 @@ class MusicProvider extends ChangeNotifier {
   List<String> _recentSearches = [];
   bool _isSearching = false;
   bool _isSearchingSpotify = false;
+  String? _searchError;
   Timer? _searchDebounce;
 
   // Active Pill
@@ -77,10 +79,13 @@ class MusicProvider extends ChangeNotifier {
   bool _isLoadingHome = false;
   bool _isLoadingLibrary = false;
   String? _homeError;
+  String? _libraryError;
 
   // Batch download progress tracking
   String? _downloadingEntityId;
   double _downloadingProgress = 0.0;
+  Track? _failedDownloadTrack;
+  int _downloadErrorVersion = 0;
 
   MusicProvider({required MusicRepository musicRepository})
       : _musicRepository = musicRepository {
@@ -92,6 +97,34 @@ class MusicProvider extends ChangeNotifier {
   List<Album> get recentAlbums => _recentAlbums;
   List<Album> get frequentAlbums => _frequentAlbums;
   List<Artist> get artists => _artists;
+  List<Album> get libraryAlbums => _libraryAlbums;
+  List<Artist> get libraryArtists {
+    final counts = <String, int>{};
+    final primary = <String>{};
+    for (final album in _libraryAlbums) {
+      final names = splitArtistNames(album.artist);
+      if (names.isEmpty) continue;
+      final songs = album.songCount > 0 ? album.songCount : album.tracks.length;
+      for (final name in names) {
+        final key = normalizeArtistName(name);
+        counts[key] = (counts[key] ?? 0) + songs;
+      }
+      primary.add(normalizeArtistName(names.first));
+    }
+    return List<Artist>.from(_artists.where((artist) {
+      final key = normalizeArtistName(artist.name);
+      final count = counts[key] ?? 0;
+      return count > 0 && (primary.contains(key) || count >= 2);
+    }))
+      ..sort((a, b) {
+        final difference = (counts[normalizeArtistName(b.name)] ?? 0) -
+            (counts[normalizeArtistName(a.name)] ?? 0);
+        return difference != 0
+            ? difference
+            : a.name.toLowerCase().compareTo(b.name.toLowerCase());
+      });
+  }
+
   List<Playlist> get playlists => _playlists;
   List<Track> get starredTracks => _starredTracks;
   List<Track> get offlineTracks => _offlineTracks;
@@ -103,13 +136,17 @@ class MusicProvider extends ChangeNotifier {
   List<String> get recentSearches => _recentSearches;
   bool get isSearching => _isSearching;
   bool get isSearchingSpotify => _isSearchingSpotify;
+  String? get searchError => _searchError;
   String get activeFilter => _activeFilter;
   bool get isLoadingHome => _isLoadingHome;
   bool get isLoadingLibrary => _isLoadingLibrary;
   String? get homeError => _homeError;
+  String? get libraryError => _libraryError;
 
   String? get downloadingEntityId => _downloadingEntityId;
   double get downloadingProgress => _downloadingProgress;
+  Track? get failedDownloadTrack => _failedDownloadTrack;
+  int get downloadErrorVersion => _downloadErrorVersion;
 
   String getCoverArtUrl(
     String? coverArtId, {
@@ -137,7 +174,8 @@ class MusicProvider extends ChangeNotifier {
     return _musicRepository.getPlaylistCover(idOrName);
   }
 
-  Future<void> saveImportedPlaylistTracks(String idOrName, List<SpotifyTrackItem> tracks) async {
+  Future<void> saveImportedPlaylistTracks(
+      String idOrName, List<SpotifyTrackItem> tracks) async {
     await _musicRepository.saveImportedPlaylistTracks(idOrName, tracks);
     notifyListeners();
   }
@@ -152,7 +190,8 @@ class MusicProvider extends ChangeNotifier {
   }
 
   Future<void> loadHomeFeed({bool showLoadingSkeleton = false}) async {
-    if (showLoadingSkeleton || (_newestAlbums.isEmpty && _recentAlbums.isEmpty)) {
+    if (showLoadingSkeleton ||
+        (_newestAlbums.isEmpty && _recentAlbums.isEmpty)) {
       _isLoadingHome = true;
       _homeError = null;
       notifyListeners();
@@ -181,7 +220,9 @@ class MusicProvider extends ChangeNotifier {
   }
 
   Future<void> loadLibrary({bool showLoadingSkeleton = false}) async {
-    if (showLoadingSkeleton || (_playlists.isEmpty && _artists.isEmpty)) {
+    _libraryError = null;
+    if (showLoadingSkeleton ||
+        (_playlists.isEmpty && _artists.isEmpty && _libraryAlbums.isEmpty)) {
       _isLoadingLibrary = true;
       notifyListeners();
     }
@@ -190,17 +231,22 @@ class MusicProvider extends ChangeNotifier {
       final playlists = await _musicRepository.getPlaylists();
       final artists = await _musicRepository.getArtists();
       final starred = await _musicRepository.getStarredTracks();
+      final albums = await _musicRepository.getNewestAlbums(size: 500);
 
       _playlists = playlists;
       _artists = _sanitizeArtists(artists);
+      _libraryAlbums = albums;
       _starredTracks = starred;
       _offlineTracks = _musicRepository.getDownloadedTracks();
-    } catch (_) {
+    } catch (e) {
+      _libraryError = e.toString();
     } finally {
       _isLoadingLibrary = false;
       notifyListeners();
     }
   }
+
+  Future<void> retryLibrary() => loadLibrary(showLoadingSkeleton: true);
 
   /// Decomposes compound artist entries (e.g. "dizzytooskinny, marwan pablo") into individual artists
   List<Artist> _sanitizeArtists(List<Artist> rawArtists) {
@@ -238,7 +284,8 @@ class MusicProvider extends ChangeNotifier {
   final Map<String, Playlist> _playlistCache = {};
   final Map<String, Lyrics> _lyricsCache = {};
 
-  Future<Album> getAlbumDetails(String albumId, {bool forceRefresh = false}) async {
+  Future<Album> getAlbumDetails(String albumId,
+      {bool forceRefresh = false}) async {
     if (!forceRefresh && _albumCache.containsKey(albumId)) {
       return _albumCache[albumId]!;
     }
@@ -363,7 +410,8 @@ class MusicProvider extends ChangeNotifier {
     );
   }
 
-  Future<Playlist> getPlaylistDetails(String playlistId, {bool forceRefresh = false}) async {
+  Future<Playlist> getPlaylistDetails(String playlistId,
+      {bool forceRefresh = false}) async {
     if (!forceRefresh && _playlistCache.containsKey(playlistId)) {
       return _playlistCache[playlistId]!;
     }
@@ -392,6 +440,7 @@ class MusicProvider extends ChangeNotifier {
     final currentId = ++_activeSearchId;
     final trimmed = query.trim();
     _spotifySearchTracks = []; // Clear previous Spotify results immediately!
+    _searchError = null;
 
     if (trimmed.isEmpty) {
       _searchTracks = [];
@@ -426,7 +475,14 @@ class MusicProvider extends ChangeNotifier {
       // Record to recent searches
       await _musicRepository.addRecentSearch(trimmed);
       _recentSearches = _musicRepository.getRecentSearches();
-    } catch (_) {
+    } catch (e) {
+      if (_activeSearchId == currentId) {
+        _searchTracks = [];
+        _searchAlbums = [];
+        _searchArtists = [];
+        _searchPlaylists = [];
+        _searchError = e.toString();
+      }
     } finally {
       if (_activeSearchId == currentId) {
         _isSearching = false;
@@ -451,7 +507,9 @@ class MusicProvider extends ChangeNotifier {
 
     try {
       final results = await _musicRepository.searchSpotifyTracks(trimmed);
-      if (_activeSpotifySearchId != currentId) return; // Discard stale responses
+      if (_activeSpotifySearchId != currentId) {
+        return; // Discard stale responses
+      }
       _spotifySearchTracks = results;
     } catch (_) {
       if (_activeSpotifySearchId == currentId) {
@@ -470,16 +528,20 @@ class MusicProvider extends ChangeNotifier {
   final Map<String, String> _spotifyTrackSyncMessages = {};
   SpotifyTrackItem? _activeSyncingItem;
 
-  SpotifySyncState getSpotifySyncState(String trackId) => _spotifyTrackSyncStates[trackId] ?? SpotifySyncState.idle;
-  double getSpotifySyncProgress(String trackId) => _spotifyTrackSyncProgress[trackId] ?? 0.0;
-  String? getSpotifySyncMessage(String trackId) => _spotifyTrackSyncMessages[trackId];
+  SpotifySyncState getSpotifySyncState(String trackId) =>
+      _spotifyTrackSyncStates[trackId] ?? SpotifySyncState.idle;
+  double getSpotifySyncProgress(String trackId) =>
+      _spotifyTrackSyncProgress[trackId] ?? 0.0;
+  String? getSpotifySyncMessage(String trackId) =>
+      _spotifyTrackSyncMessages[trackId];
   SpotifyTrackItem? get activeSyncingItem => _activeSyncingItem;
 
   Future<ArtistCatalog> getArtistCatalog(String artistName) {
     return _musicRepository.getArtistCatalog(artistName);
   }
 
-  Future<Track?> convertAndSyncSpotifyTrack(SpotifyTrackItem spotifyItem) async {
+  Future<Track?> convertAndSyncSpotifyTrack(
+      SpotifyTrackItem spotifyItem) async {
     final trackId = spotifyItem.id;
     if (_spotifyTrackSyncStates[trackId] == SpotifySyncState.syncing) {
       return null;
@@ -496,8 +558,10 @@ class MusicProvider extends ChangeNotifier {
     bool isPollInProgress = false;
 
     try {
-      pollTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) async {
-        if (isCancelled || _spotifyTrackSyncStates[trackId] != SpotifySyncState.syncing) {
+      pollTimer =
+          Timer.periodic(const Duration(milliseconds: 500), (timer) async {
+        if (isCancelled ||
+            _spotifyTrackSyncStates[trackId] != SpotifySyncState.syncing) {
           timer.cancel();
           return;
         }
@@ -511,7 +575,8 @@ class MusicProvider extends ChangeNotifier {
             artist: spotifyItem.artist,
           );
 
-          if (isCancelled || _spotifyTrackSyncStates[trackId] != SpotifySyncState.syncing) {
+          if (isCancelled ||
+              _spotifyTrackSyncStates[trackId] != SpotifySyncState.syncing) {
             return;
           }
 
@@ -555,7 +620,8 @@ class MusicProvider extends ChangeNotifier {
         }
       });
 
-      final track = await _musicRepository.createTrackFromSpotifyItem(spotifyItem);
+      final track =
+          await _musicRepository.createTrackFromSpotifyItem(spotifyItem);
 
       _spotifyTrackSyncProgress[trackId] = 1.0;
       _spotifyTrackSyncStates[trackId] = SpotifySyncState.idle;
@@ -577,7 +643,8 @@ class MusicProvider extends ChangeNotifier {
     } catch (e) {
       _spotifyTrackSyncStates[trackId] = SpotifySyncState.error;
       _spotifyTrackSyncProgress[trackId] = 0.0;
-      _spotifyTrackSyncMessages[trackId] = 'Failed to load audio. Tap to retry.';
+      _spotifyTrackSyncMessages[trackId] =
+          'Failed to load audio. Tap to retry.';
       notifyListeners();
       return null;
     } finally {
@@ -607,7 +674,8 @@ class MusicProvider extends ChangeNotifier {
   // ================= Star / Like =================
   final Set<String> _starringInFlight = {};
 
-  bool isTrackStarred(String trackId) => _starredTracks.any((t) => t.id == trackId);
+  bool isTrackStarred(String trackId) =>
+      _starredTracks.any((t) => t.id == trackId);
 
   Future<void> toggleStar(Track track) async {
     if (_starringInFlight.contains(track.id)) return;
@@ -662,7 +730,8 @@ class MusicProvider extends ChangeNotifier {
     return ok;
   }
 
-  Future<bool> removeTrackFromPlaylist(String playlistId, int trackIndex) async {
+  Future<bool> removeTrackFromPlaylist(
+      String playlistId, int trackIndex) async {
     final ok = await _musicRepository.updatePlaylist(
       playlistId,
       songIndicesToRemove: [trackIndex],
@@ -683,7 +752,8 @@ class MusicProvider extends ChangeNotifier {
   }
 
   Future<Playlist> syncPlaylistWithVault(String playlistId) async {
-    final updated = await _musicRepository.syncPlaylistTracksWithVault(playlistId);
+    final updated =
+        await _musicRepository.syncPlaylistTracksWithVault(playlistId);
     _playlistCache[playlistId] = updated;
     notifyListeners();
     return updated;
@@ -731,20 +801,19 @@ class MusicProvider extends ChangeNotifier {
 
   // ================= Offline Downloads =================
   Future<void> downloadTrack(Track track) async {
+    _failedDownloadTrack = null;
     _downloadingEntityId = track.id;
     _downloadingProgress = 0.05;
     notifyListeners();
 
-    // Initial notification
-    await DownloadNotificationService.updateProgress(
-      id: track.id,
-      title: track.title,
-      artist: track.artist,
-      progress: 5,
-      isIndeterminate: true,
-    );
-
     try {
+      await DownloadNotificationService.updateProgress(
+        id: track.id,
+        title: track.title,
+        artist: track.artist,
+        progress: 5,
+        isIndeterminate: true,
+      );
       final offlineTrack = await _musicRepository.downloadTrack(
         track,
         onProgress: (received, total) {
@@ -772,7 +841,10 @@ class MusicProvider extends ChangeNotifier {
         artist: track.artist,
       );
     } catch (e) {
-      print('[MusicProvider] Failed to download track: $e');
+      debugPrint('[MusicProvider] Failed to download track: $e');
+      _failedDownloadTrack = track;
+      _downloadErrorVersion++;
+      notifyListeners();
       await DownloadNotificationService.cancel(track.id);
     } finally {
       if (_downloadingEntityId == track.id) {
@@ -856,7 +928,8 @@ class MusicProvider extends ChangeNotifier {
   }
 
   // Streaming Bitrate
-  Future<void> saveMaxBitRate(int? bitrate) => _musicRepository.saveMaxBitRate(bitrate);
+  Future<void> saveMaxBitRate(int? bitrate) =>
+      _musicRepository.saveMaxBitRate(bitrate);
   int? getMaxBitRate() => _musicRepository.getMaxBitRate();
 
   @override

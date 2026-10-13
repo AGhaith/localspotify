@@ -23,69 +23,98 @@ class DownloadActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (isDownloading) {
-      return SizedBox(
-        width: size,
-        height: size,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            SizedBox(
-              width: size - 8,
-              height: size - 8,
-              child: CircularProgressIndicator(
-                value: progress > 0 ? progress : null,
-                strokeWidth: 2.2,
-                color: AppColors.primary,
-                backgroundColor: AppColors.primary.withValues(alpha: 0.15),
+      return Semantics(
+        button: false,
+        label: 'Downloading',
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+          child: Center(
+            child: SizedBox(
+              width: size,
+              height: size,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  SizedBox(
+                    width: size - 8,
+                    height: size - 8,
+                    child: CircularProgressIndicator(
+                      value: progress > 0 ? progress : null,
+                      strokeWidth: 2.2,
+                      color: AppColors.primary,
+                      backgroundColor: AppColors.primary.withValues(alpha: 0.15),
+                    ),
+                  ),
+                  const Icon(
+                    Icons.arrow_downward_rounded,
+                    color: AppColors.primary,
+                    size: 16,
+                  ),
+                ],
               ),
-            ),
-            const Icon(
-              Icons.arrow_downward_rounded,
-              color: AppColors.primary,
-              size: 16,
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (isDownloaded) {
-      return GestureDetector(
-        onTap: () {
-          HapticFeedback.lightImpact();
-          onRemove?.call();
-        },
-        child: SizedBox(
-          width: size,
-          height: size,
-          child: const Center(
-            child: Icon(
-              Icons.arrow_circle_down_rounded,
-              color: AppColors.primary,
-              size: 26,
             ),
           ),
         ),
       );
     }
 
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.lightImpact();
-        onDownload();
-      },
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(color: AppColors.textMuted.withValues(alpha: 0.5), width: 1.5),
+    if (isDownloaded) {
+      return Semantics(
+        button: true,
+        label: 'Downloaded',
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () {
+            HapticFeedback.lightImpact();
+            onRemove?.call();
+          },
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+            child: Center(
+              child: SizedBox(
+                width: size,
+                height: size,
+                child: const Center(
+                  child: Icon(
+                    Icons.arrow_circle_down_rounded,
+                    color: AppColors.primary,
+                    size: 26,
+                  ),
+                ),
+              ),
+            ),
+          ),
         ),
-        child: const Center(
-          child: Icon(
-            Icons.arrow_downward_rounded,
-            color: AppColors.textSecondary,
-            size: 17,
+      );
+    }
+
+    return Semantics(
+      button: true,
+      label: 'Download',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onDownload();
+        },
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+          child: Center(
+            child: Container(
+              width: size,
+              height: size,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.textMuted.withValues(alpha: 0.5), width: 1.5),
+              ),
+              child: const Center(
+                child: Icon(
+                  Icons.arrow_downward_rounded,
+                  color: AppColors.textSecondary,
+                  size: 17,
+                ),
+              ),
+            ),
           ),
         ),
       ),

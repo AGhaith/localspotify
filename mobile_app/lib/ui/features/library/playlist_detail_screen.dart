@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/duration_formatter.dart';
 import '../../../data/models/playlist.dart';
@@ -159,7 +160,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(_errorMessage!, style: AppTypography.bodyMedium),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
               NeoButton(
                 text: 'Retry',
                 icon: Icons.refresh_rounded,
@@ -202,8 +203,12 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
           bottomNavigationBar: player.hasTrack
               ? const MiniPlayerBar(isStandalone: true)
               : null,
-          body: CustomScrollView(
-            physics: const BouncingScrollPhysics(),
+          body: RefreshIndicator(
+            color: AppColors.primary,
+            backgroundColor: AppColors.card,
+            onRefresh: () => _loadPlaylist(force: true),
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
             slivers: [
               SliverAppBar(
                 expandedHeight: 260,
@@ -258,7 +263,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
               // Playlist Meta & Actions
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH, vertical: AppSpacing.lg),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -279,7 +284,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                           style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
                         ),
                       ],
-                      const SizedBox(height: 16),
+                      const SizedBox(height: AppSpacing.lg),
                       if (playlist.tracks.isNotEmpty)
                         Row(
                           children: [
@@ -291,7 +296,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                                 player.playTracks(tracks: playlist.tracks, initialIndex: 0);
                               },
                             ),
-                            const SizedBox(width: 10),
+                            const SizedBox(width: AppSpacing.sm),
                             NeoButton(
                               text: 'Shuffle',
                               icon: Icons.shuffle_rounded,
@@ -304,7 +309,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                                 player.playTracks(tracks: shuffled, initialIndex: 0);
                               },
                             ),
-                            const SizedBox(width: 14),
+                            const SizedBox(width: AppSpacing.rowGap),
                             DownloadActionButton(
                               isDownloaded: isDownloaded,
                               isDownloading: isDownloading,
@@ -326,8 +331,8 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
               if (hasImported && !isFullySynced)
                 SliverToBoxAdapter(
                   child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    margin: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH, vertical: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.rowGap, vertical: AppSpacing.rowGap),
                     decoration: BoxDecoration(
                       color: AppColors.card,
                       borderRadius: BorderRadius.circular(12),
@@ -349,7 +354,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                                 valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
                               ),
                             ),
-                            const SizedBox(width: 10),
+                            const SizedBox(width: AppSpacing.sm),
                             Expanded(
                               child: Text(
                                 'Syncing: ${playlist.tracks.length} of $totalExpected tracks ready ($syncPercent%)',
@@ -362,12 +367,12 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: AppSpacing.sm),
                             PressableScale(
                               onTap: _retry,
                               scaleFactor: 0.90,
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
                                 decoration: BoxDecoration(
                                   color: Colors.white.withValues(alpha: 0.08),
                                   borderRadius: BorderRadius.circular(6),
@@ -376,7 +381,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Icon(Icons.refresh_rounded, size: 13, color: Colors.white70),
-                                    SizedBox(width: 4),
+                                    SizedBox(width: AppSpacing.xs),
                                     Text('Refresh', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w600)),
                                   ],
                                 ),
@@ -384,7 +389,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 10),
+                        const SizedBox(height: AppSpacing.sm),
                         // Thin Clean Linear Progress Bar
                         ClipRRect(
                           borderRadius: BorderRadius.circular(2),
@@ -421,7 +426,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                             DateTime.now().difference(syncStartTime).inSeconds >= 30;
 
                         return ListTile(
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH, vertical: AppSpacing.xs),
                           leading: SizedBox(
                             width: 32,
                             child: Center(
@@ -485,7 +490,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         Icon(Icons.refresh_rounded, color: AppColors.primary, size: 14),
-                                        SizedBox(width: 4),
+                                        SizedBox(width: AppSpacing.xs),
                                         Text(
                                           'Retry',
                                           style: TextStyle(
@@ -505,7 +510,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                                       t.durationFormatted,
                                       style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
                                     ),
-                                    const SizedBox(width: 8),
+                                    const SizedBox(width: AppSpacing.sm),
                                     Icon(
                                       isReady ? Icons.play_arrow_rounded : Icons.sync_rounded,
                                       size: 18,
@@ -552,14 +557,14 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                   hasScrollBody: false,
                   child: Center(
                     child: Padding(
-                      padding: const EdgeInsets.all(32),
+                      padding: const EdgeInsets.all(AppSpacing.xxl),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           const Icon(Icons.queue_music_rounded, color: AppColors.textMuted, size: 54),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: AppSpacing.md),
                           Text('This playlist is empty', style: AppTypography.titleLarge),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: AppSpacing.xs),
                           Text('Add songs via the 3-dots menu on any track.', style: AppTypography.bodySmall),
                         ],
                       ),
@@ -587,7 +592,8 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                 ),
             ],
           ),
-        );
+        ),
+      );
   }
 
   Track? _findMatchedTrack(List<Track> tracks, SpotifyTrackItem imported) {

@@ -25,6 +25,8 @@ class AudioPlayerProvider extends ChangeNotifier {
   bool _isShuffle = false;
   AppRepeatMode _repeatMode = AppRepeatMode.off;
   bool _hasScrobbledCurrent = false;
+  String? _playbackError;
+  int _playbackErrorVersion = 0;
 
   // Sleep Timer
   Timer? _sleepTimer;
@@ -61,6 +63,8 @@ class AudioPlayerProvider extends ChangeNotifier {
   bool get isShuffle => _isShuffle;
   AppRepeatMode get repeatMode => _repeatMode;
   bool get hasTrack => _currentTrack != null;
+  String? get playbackError => _playbackError;
+  int get playbackErrorVersion => _playbackErrorVersion;
   double _playbackSpeed = 1.0;
   int _crossfadeDurationSeconds = 0;
 
@@ -89,7 +93,8 @@ class AudioPlayerProvider extends ChangeNotifier {
 
   double get progress {
     if (_duration.inMilliseconds == 0) return 0.0;
-    return (_position.inMilliseconds / _duration.inMilliseconds).clamp(0.0, 1.0);
+    return (_position.inMilliseconds / _duration.inMilliseconds)
+        .clamp(0.0, 1.0);
   }
 
   // ================= State Persistence & Restoration =================
@@ -100,15 +105,19 @@ class AudioPlayerProvider extends ChangeNotifier {
       final queueJson = prefs.getString('last_played_queue');
       final posMs = prefs.getInt('last_played_position_ms') ?? 0;
       final index = prefs.getInt('last_played_index') ?? 0;
-      _crossfadeDurationSeconds = (prefs.getDouble('crossfade_seconds') ?? 0.0).toInt();
+      _crossfadeDurationSeconds =
+          (prefs.getDouble('crossfade_seconds') ?? 0.0).toInt();
 
       if (trackJson != null) {
-        final track = Track.fromJson(jsonDecode(trackJson) as Map<String, dynamic>);
+        final track =
+            Track.fromJson(jsonDecode(trackJson) as Map<String, dynamic>);
         List<Track> restoredQueue = [track];
         if (queueJson != null) {
           try {
             final list = jsonDecode(queueJson) as List<dynamic>;
-            restoredQueue = list.map((e) => Track.fromJson(e as Map<String, dynamic>)).toList();
+            restoredQueue = list
+                .map((e) => Track.fromJson(e as Map<String, dynamic>))
+                .toList();
           } catch (_) {}
         }
         _currentTrack = track;
@@ -130,9 +139,7 @@ class AudioPlayerProvider extends ChangeNotifier {
         }
       }
     } catch (e) {
-      if (kDebugMode) {
-        print('[AudioPlayerProvider] Failed to restore playback state: $e');
-      }
+      debugPrint('[AudioPlayerProvider] Failed to restore playback state: $e');
     }
   }
 
@@ -140,11 +147,13 @@ class AudioPlayerProvider extends ChangeNotifier {
     if (_currentTrack == null) return;
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('last_played_track', jsonEncode(_currentTrack!.toJson()));
+      await prefs.setString(
+          'last_played_track', jsonEncode(_currentTrack!.toJson()));
       await prefs.setInt('last_played_position_ms', _position.inMilliseconds);
       await prefs.setInt('last_played_index', _currentIndex);
       if (_queue.isNotEmpty) {
-        await prefs.setString('last_played_queue', jsonEncode(_queue.map((t) => t.toJson()).toList()));
+        await prefs.setString('last_played_queue',
+            jsonEncode(_queue.map((t) => t.toJson()).toList()));
       }
     } catch (_) {}
   }
@@ -157,9 +166,13 @@ class AudioPlayerProvider extends ChangeNotifier {
   }
 
   // ================= Crossfade Engine =================
-  Future<void> _fadeVolume({required double from, required double to, required Duration duration}) async {
+  Future<void> _fadeVolume(
+      {required double from,
+      required double to,
+      required Duration duration}) async {
     const steps = 8;
-    final stepDuration = Duration(milliseconds: (duration.inMilliseconds / steps).round());
+    final stepDuration =
+        Duration(milliseconds: (duration.inMilliseconds / steps).round());
     for (int i = 1; i <= steps; i++) {
       final v = from + (to - from) * (i / steps);
       await _audioHandler.player.setVolume(v.clamp(0.0, 1.0));
@@ -170,8 +183,14 @@ class AudioPlayerProvider extends ChangeNotifier {
   void _listenStreams() {
     _playbackStateSub = _audioHandler.playbackState.listen((state) {
       final playing = state.playing;
-      final buffering = state.processingState == AudioProcessingState.buffering ||
-          state.processingState == AudioProcessingState.loading;
+      final buffering =
+          state.processingState == AudioProcessingState.buffering ||
+              state.processingState == AudioProcessingState.loading;
+
+      if (playing && _playbackError != null) {
+        _playbackError = null;
+        notifyListeners();
+      }
 
       if (_isPlaying != playing || _isBuffering != buffering) {
         _isPlaying = playing;
@@ -215,7 +234,9 @@ class AudioPlayerProvider extends ChangeNotifier {
       _scheduleSavePosition();
 
       // Scrobble at 50% or 4 minutes
-      if (!_hasScrobbledCurrent && _currentTrack != null && _duration.inSeconds > 0) {
+      if (!_hasScrobbledCurrent &&
+          _currentTrack != null &&
+          _duration.inSeconds > 0) {
         final percent = pos.inMilliseconds / _duration.inMilliseconds;
         if (percent >= 0.5 || pos.inSeconds >= 240) {
           _hasScrobbledCurrent = true;
@@ -239,7 +260,9 @@ class AudioPlayerProvider extends ChangeNotifier {
 
   MediaItem _trackToMediaItem(Track t) {
     String audioUrl;
-    if (t.isOffline && t.localAudioPath != null && t.localAudioPath!.isNotEmpty) {
+    if (t.isOffline &&
+        t.localAudioPath != null &&
+        t.localAudioPath!.isNotEmpty) {
       audioUrl = t.localAudioPath!;
     } else if (t.localAudioPath != null && t.localAudioPath!.isNotEmpty) {
       audioUrl = t.localAudioPath!;
@@ -247,12 +270,14 @@ class AudioPlayerProvider extends ChangeNotifier {
       final session = _musicRepository.session;
       final serverUrl = session?.serverUrl ?? AppConfig.serverUrl;
       final companionBase = serverUrl.replaceAll(':6767', ':6969');
-      audioUrl = '$companionBase/api/stream?title=${Uri.encodeComponent(t.title)}&artist=${Uri.encodeComponent(t.artist)}';
+      audioUrl =
+          '$companionBase/api/stream?title=${Uri.encodeComponent(t.title)}&artist=${Uri.encodeComponent(t.artist)}';
     } else {
       audioUrl = _musicRepository.getStreamUrl(t.id);
     }
 
-    final coverArtUrl = _musicRepository.getCoverArtUrl(t.coverArtId, size: 500);
+    final coverArtUrl =
+        _musicRepository.getCoverArtUrl(t.coverArtId, size: 500);
 
     return t.toMediaItem(
       audioUri: Uri.parse(audioUrl),
@@ -276,16 +301,20 @@ class AudioPlayerProvider extends ChangeNotifier {
 
       List<Track> candidateRecommendations = [];
       try {
-        candidateRecommendations = await _musicRepository.getSimilarSongs(current.id, count: 20);
+        candidateRecommendations =
+            await _musicRepository.getSimilarSongs(current.id, count: 20);
       } catch (_) {}
 
       if (candidateRecommendations.isEmpty) {
         try {
-          candidateRecommendations = await _musicRepository.getRandomSongs(size: 20);
+          candidateRecommendations =
+              await _musicRepository.getRandomSongs(size: 20);
         } catch (_) {}
       }
 
-      final freshTracks = candidateRecommendations.where((t) => !existingIds.contains(t.id)).toList();
+      final freshTracks = candidateRecommendations
+          .where((t) => !existingIds.contains(t.id))
+          .toList();
       final needed = (minRemaining - remaining + 5).clamp(1, 20);
       final toAdd = freshTracks.take(needed).toList();
 
@@ -309,7 +338,8 @@ class AudioPlayerProvider extends ChangeNotifier {
     if (tracks.isEmpty) return;
 
     if (_crossfadeDurationSeconds > 0 && _isPlaying) {
-      await _fadeVolume(from: 1.0, to: 0.1, duration: const Duration(milliseconds: 300));
+      await _fadeVolume(
+          from: 1.0, to: 0.1, duration: const Duration(milliseconds: 300));
     }
 
     _userQueuedCount = 0;
@@ -319,18 +349,28 @@ class AudioPlayerProvider extends ChangeNotifier {
     _hasScrobbledCurrent = false;
     notifyListeners();
 
-    final mediaItems = tracks.map(_trackToMediaItem).toList();
-
-    await _audioHandler.setTrackQueue(
-      items: mediaItems,
-      initialIndex: _currentIndex,
-      autoPlay: true,
-    );
+    try {
+      final mediaItems = tracks.map(_trackToMediaItem).toList();
+      await _audioHandler.setTrackQueue(
+        items: mediaItems,
+        initialIndex: _currentIndex,
+        autoPlay: true,
+      );
+      _playbackError = null;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('[AudioPlayerProvider] Failed to play track: $e');
+      _playbackError = e.toString();
+      _playbackErrorVersion++;
+      notifyListeners();
+      return;
+    }
 
     _savePlaybackState();
 
     if (_crossfadeDurationSeconds > 0) {
-      await _fadeVolume(from: 0.1, to: 1.0, duration: const Duration(milliseconds: 400));
+      await _fadeVolume(
+          from: 0.1, to: 1.0, duration: const Duration(milliseconds: 400));
     }
 
     // Auto-backfill to guarantee minimum 10 upcoming tracks
@@ -343,7 +383,8 @@ class AudioPlayerProvider extends ChangeNotifier {
 
   // ================= Queue Manipulation =================
   Future<void> addToQueue(Track track) async {
-    final insertIndex = (_currentIndex + 1 + _userQueuedCount).clamp(0, _queue.length);
+    final insertIndex =
+        (_currentIndex + 1 + _userQueuedCount).clamp(0, _queue.length);
     _queue.insert(insertIndex, track);
     _userQueuedCount++;
     notifyListeners();
@@ -383,7 +424,12 @@ class AudioPlayerProvider extends ChangeNotifier {
   }
 
   Future<void> reorderQueue(int oldIndex, int newIndex) async {
-    if (oldIndex < 0 || oldIndex >= _queue.length || newIndex < 0 || newIndex >= _queue.length) return;
+    if (oldIndex < 0 ||
+        oldIndex >= _queue.length ||
+        newIndex < 0 ||
+        newIndex >= _queue.length) {
+      return;
+    }
     final item = _queue.removeAt(oldIndex);
     _queue.insert(newIndex, item);
 
@@ -426,16 +472,19 @@ class AudioPlayerProvider extends ChangeNotifier {
 
   Future<void> seekPercent(double percent) async {
     final target = Duration(
-      milliseconds: (_duration.inMilliseconds * percent.clamp(0.0, 1.0)).toInt(),
+      milliseconds:
+          (_duration.inMilliseconds * percent.clamp(0.0, 1.0)).toInt(),
     );
     await seek(target);
   }
 
   Future<void> skipNext() async {
     if (_crossfadeDurationSeconds > 0 && _isPlaying) {
-      await _fadeVolume(from: 1.0, to: 0.15, duration: const Duration(milliseconds: 250));
+      await _fadeVolume(
+          from: 1.0, to: 0.15, duration: const Duration(milliseconds: 250));
       await _audioHandler.skipToNext();
-      await _fadeVolume(from: 0.15, to: 1.0, duration: const Duration(milliseconds: 350));
+      await _fadeVolume(
+          from: 0.15, to: 1.0, duration: const Duration(milliseconds: 350));
     } else {
       await _audioHandler.skipToNext();
     }
@@ -443,9 +492,11 @@ class AudioPlayerProvider extends ChangeNotifier {
 
   Future<void> skipPrevious() async {
     if (_crossfadeDurationSeconds > 0 && _isPlaying) {
-      await _fadeVolume(from: 1.0, to: 0.15, duration: const Duration(milliseconds: 250));
+      await _fadeVolume(
+          from: 1.0, to: 0.15, duration: const Duration(milliseconds: 250));
       await _audioHandler.skipToPrevious();
-      await _fadeVolume(from: 0.15, to: 1.0, duration: const Duration(milliseconds: 350));
+      await _fadeVolume(
+          from: 0.15, to: 1.0, duration: const Duration(milliseconds: 350));
     } else {
       await _audioHandler.skipToPrevious();
     }

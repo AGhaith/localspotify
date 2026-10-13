@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/dynamic_palette_service.dart';
 import '../../../core/utils/duration_formatter.dart';
@@ -95,16 +96,16 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
 
             // Header Bar
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
               child: Row(
                 children: [
                   IconButton(
                     icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textPrimary, size: 28),
-                    padding: const EdgeInsets.all(6),
-                    constraints: const BoxConstraints(),
+                    constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                    tooltip: 'Close',
                     onPressed: () => Navigator.pop(context),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: GestureDetector(
                       onTap: () {
@@ -143,19 +144,18 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppSpacing.sm),
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       // Equalizer & Audio Options Icon
                       IconButton(
                         icon: const Icon(Icons.tune_rounded, color: AppColors.textSecondary, size: 20),
-                        padding: const EdgeInsets.all(6),
-                        constraints: const BoxConstraints(),
-                        visualDensity: VisualDensity.compact,
+                        constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                        tooltip: 'Equalizer',
                         onPressed: () => _showEqualizerSheet(context),
                       ),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: AppSpacing.xs),
                       // Sleep Timer icon
                       IconButton(
                         icon: Icon(
@@ -163,18 +163,16 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
                           color: player.hasActiveSleepTimer ? AppColors.primary : AppColors.textSecondary,
                           size: 20,
                         ),
-                        padding: const EdgeInsets.all(6),
-                        constraints: const BoxConstraints(),
-                        visualDensity: VisualDensity.compact,
+                        constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                        tooltip: 'Sleep timer',
                         onPressed: () => _showSleepTimerDialog(context, player),
                       ),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: AppSpacing.xs),
                       // Queue Sheet Icon
                       IconButton(
                         icon: const Icon(Icons.queue_music_rounded, color: AppColors.textPrimary, size: 22),
-                        padding: const EdgeInsets.all(6),
-                        constraints: const BoxConstraints(),
-                        visualDensity: VisualDensity.compact,
+                        constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                        tooltip: 'Queue',
                         onPressed: () => _showQueue(context),
                       ),
                     ],
@@ -186,10 +184,10 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
             Expanded(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sectionGap),
                 child: Column(
                   children: [
-                    const SizedBox(height: 12),
+                    const SizedBox(height: AppSpacing.md),
                     // High-Res Artwork with Swipe-to-Skip
                     Center(
                       child: AspectRatio(
@@ -234,7 +232,7 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
                       ),
                     ),
 
-                    const SizedBox(height: 24),
+                    const SizedBox(height: AppSpacing.sectionGap),
 
                     // Track Info, Download Button & Like Button
                     Row(
@@ -249,7 +247,7 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
                                 overflow: TextOverflow.ellipsis,
                                 style: AppTypography.displayMedium.copyWith(fontSize: 22),
                               ),
-                              const SizedBox(height: 4),
+                              const SizedBox(height: AppSpacing.xs),
                               GestureDetector(
                                 onTap: () {
                                   HapticFeedback.selectionClick();
@@ -295,13 +293,13 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
                         ),
                         // Circular Download Button with real-time progress ring
                         CircularDownloadButton(track: track, size: 34),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: AppSpacing.sm),
                         // Instagram-style Popping Like Button
                         AnimatedLikeButton(track: track, size: 28),
                       ],
                     ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.lg),
 
                     // Scrubber Slider
                     Column(
@@ -328,7 +326,7 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
                           ),
                         ),
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -346,7 +344,7 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
                       ],
                     ),
 
-                    const SizedBox(height: 12),
+                    const SizedBox(height: AppSpacing.md),
 
                     // Controls Row (Shuffle, Previous, Play/Pause, Next, Repeat)
                     Row(
@@ -359,7 +357,7 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
                           },
                           scaleFactor: 0.88,
                           child: Padding(
-                            padding: const EdgeInsets.all(8.0),
+                            padding: const EdgeInsets.all(AppSpacing.sm),
                             child: Icon(
                               Icons.shuffle_rounded,
                               color: player.isShuffle ? AppColors.primary : AppColors.textMuted,
@@ -374,7 +372,7 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
                           },
                           scaleFactor: 0.88,
                           child: const Padding(
-                            padding: EdgeInsets.all(8.0),
+                            padding: EdgeInsets.all(AppSpacing.sm),
                             child: Icon(
                               Icons.skip_previous_rounded,
                               color: AppColors.textPrimary,
@@ -412,7 +410,7 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
                           },
                           scaleFactor: 0.88,
                           child: const Padding(
-                            padding: EdgeInsets.all(8.0),
+                            padding: EdgeInsets.all(AppSpacing.sm),
                             child: Icon(
                               Icons.skip_next_rounded,
                               color: AppColors.textPrimary,
@@ -427,7 +425,7 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
                           },
                           scaleFactor: 0.88,
                           child: Padding(
-                            padding: const EdgeInsets.all(8.0),
+                            padding: const EdgeInsets.all(AppSpacing.sm),
                             child: Icon(
                               player.repeatMode == AppRepeatMode.one
                                   ? Icons.repeat_one_rounded
@@ -442,12 +440,12 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
                       ],
                     ),
 
-                    const SizedBox(height: 24),
+                    const SizedBox(height: AppSpacing.sectionGap),
 
                     // Interactive Lyrics Card styled with album-derived dynamic palette
                     LyricsView(track: track, paletteColors: _paletteColors),
 
-                    const SizedBox(height: 32),
+                    const SizedBox(height: AppSpacing.xxl),
                   ],
                 ),
               ),
@@ -483,7 +481,7 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
       builder: (ctx) {
         return SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16),
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -491,18 +489,18 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const Icon(Icons.bedtime_rounded, color: AppColors.primary, size: 22),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: AppSpacing.sm),
                     Text('Sleep Timer', style: AppTypography.titleLarge),
                   ],
                 ),
                 if (player.hasActiveSleepTimer) ...[
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.sm),
                   Text(
                     'Active: ${player.sleepTimerRemaining?.inMinutes ?? 0} minutes remaining',
                     style: AppTypography.bodySmall.copyWith(color: AppColors.primary),
                   ),
                 ],
-                const Divider(height: 24),
+                const Divider(height: AppSpacing.sectionGap),
                 _sleepTimerOption(ctx, player, '15 minutes', const Duration(minutes: 15)),
                 _sleepTimerOption(ctx, player, '30 minutes', const Duration(minutes: 30)),
                 _sleepTimerOption(ctx, player, '45 minutes', const Duration(minutes: 45)),
@@ -558,17 +556,17 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
       builder: (ctx) {
         return SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16),
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH, vertical: AppSpacing.sm),
                   child: Row(
                     children: [
                       const Icon(Icons.people_alt_rounded, color: AppColors.primary, size: 22),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: AppSpacing.sm),
                       Text(
                         'Artists',
                         style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.bold),

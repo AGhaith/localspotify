@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../state/audio_player_provider.dart';
 import '../../../state/music_provider.dart';
@@ -28,8 +30,8 @@ class MiniPlayerBar extends StatelessWidget {
 
     final content = Container(
       margin: EdgeInsets.symmetric(
-        horizontal: 10,
-        vertical: isStandalone ? 4 : 6,
+        horizontal: AppSpacing.sm,
+        vertical: isStandalone ? AppSpacing.xs : 6,
       ),
       decoration: BoxDecoration(
         color: AppColors.surface,
@@ -47,7 +49,7 @@ class MiniPlayerBar extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 6),
             child: Row(
               children: [
                 // Tap cover art / title to open Now Playing Sheet
@@ -69,9 +71,9 @@ class MiniPlayerBar extends StatelessWidget {
                           localImagePath: track.localCoverArtPath,
                           width: 44,
                           height: 44,
-                          borderRadius: 8,
+                          borderRadius: AppRadius.coverSmall,
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: AppSpacing.rowGap),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -98,7 +100,7 @@ class MiniPlayerBar extends StatelessWidget {
                 ),
                 // Instagram-style Like Button
                 AnimatedLikeButton(track: track, size: 22),
-                const SizedBox(width: 4),
+                const SizedBox(width: AppSpacing.xs),
                 // Play / Pause Button
                 PressableScale(
                   onTap: () {
@@ -107,7 +109,7 @@ class MiniPlayerBar extends StatelessWidget {
                   },
                   scaleFactor: 0.88,
                   child: Padding(
-                    padding: const EdgeInsets.all(8.0),
+                    padding: const EdgeInsets.all(AppSpacing.sm),
                     child: Icon(
                       player.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
                       color: AppColors.textPrimary,
@@ -136,7 +138,7 @@ class MiniPlayerBar extends StatelessWidget {
       return SafeArea(
         top: false,
         bottom: true,
-        minimum: const EdgeInsets.only(bottom: 12),
+        minimum: const EdgeInsets.only(bottom: AppSpacing.rowGap),
         child: content,
       );
     }

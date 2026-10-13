@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../state/audio_player_provider.dart';
 import '../../../state/music_provider.dart';
@@ -44,7 +46,7 @@ class QueueSheet extends StatelessWidget {
 
             // Header Bar
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH, vertical: AppSpacing.sm),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -74,9 +76,9 @@ class QueueSheet extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           const Icon(Icons.queue_music_rounded, color: AppColors.textMuted, size: 48),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: AppSpacing.md),
                           Text('Queue is empty', style: AppTypography.titleMedium),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: AppSpacing.xs),
                           Text('Play a song or album to start listening', style: AppTypography.bodySmall),
                         ],
                       ),
@@ -88,7 +90,7 @@ class QueueSheet extends StatelessWidget {
                         if (currentTrack != null) ...[
                           SliverToBoxAdapter(
                             child: Padding(
-                              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                              padding: const EdgeInsets.fromLTRB(AppSpacing.screenH, AppSpacing.lg, AppSpacing.screenH, AppSpacing.sm),
                               child: Text(
                                 'NOW PLAYING',
                                 style: AppTypography.labelSmall.copyWith(
@@ -100,7 +102,7 @@ class QueueSheet extends StatelessWidget {
                           ),
                           SliverToBoxAdapter(
                             child: Container(
-                              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                              margin: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH, vertical: AppSpacing.xs),
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
                                 color: AppColors.surface.withValues(alpha: 0.6),
@@ -114,9 +116,9 @@ class QueueSheet extends StatelessWidget {
                                     localImagePath: currentTrack.localCoverArtPath,
                                     width: 46,
                                     height: 46,
-                                    borderRadius: 6,
+                                    borderRadius: AppRadius.coverSmall,
                                   ),
-                                  const SizedBox(width: 12),
+                                  const SizedBox(width: AppSpacing.rowGap),
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -150,7 +152,7 @@ class QueueSheet extends StatelessWidget {
                         // Up Next Section Header
                         SliverToBoxAdapter(
                           child: Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
+                            padding: const EdgeInsets.fromLTRB(AppSpacing.screenH, AppSpacing.sectionGap, AppSpacing.screenH, AppSpacing.sm),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
@@ -191,13 +193,13 @@ class QueueSheet extends StatelessWidget {
                                 color: isCurrent
                                     ? AppColors.primary.withValues(alpha: 0.1)
                                     : Colors.transparent,
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH, vertical: AppSpacing.sm),
                                 child: Row(
                                   children: [
                                     ReorderableDragStartListener(
                                       index: i,
                                       child: const Padding(
-                                        padding: EdgeInsets.only(right: 12),
+                                        padding: EdgeInsets.only(right: AppSpacing.rowGap),
                                         child: Icon(Icons.drag_handle_rounded, color: AppColors.textMuted, size: 20),
                                       ),
                                     ),
@@ -206,9 +208,9 @@ class QueueSheet extends StatelessWidget {
                                       localImagePath: track.localCoverArtPath,
                                       width: 40,
                                       height: 40,
-                                      borderRadius: 6,
+                                      borderRadius: AppRadius.coverSmall,
                                     ),
-                                    const SizedBox(width: 12),
+                                    const SizedBox(width: AppSpacing.rowGap),
                                     Expanded(
                                       child: GestureDetector(
                                         onTap: () {

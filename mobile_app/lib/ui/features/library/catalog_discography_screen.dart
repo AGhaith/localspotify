@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../data/models/track.dart';
 import '../../../data/services/spotify_service.dart';
@@ -90,23 +92,25 @@ class _CatalogDiscographyScreenState extends State<CatalogDiscographyScreen> {
               // Filter Chips
               SliverToBoxAdapter(
                 child: SizedBox(
-                  height: 48,
+                  height: 56,
                   child: ListView.separated(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH, vertical: 6),
                     scrollDirection: Axis.horizontal,
                     itemCount: availableFilters.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 8),
+                    separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.sm),
                     itemBuilder: (ctx, i) {
                       final filter = availableFilters[i];
                       final isSelected = filter == _activeFilter;
                       return GestureDetector(
+                        behavior: HitTestBehavior.opaque,
                         onTap: () => setState(() => _activeFilter = filter),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 180),
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                          constraints: const BoxConstraints(minHeight: 44),
+                          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH, vertical: 10),
                           decoration: BoxDecoration(
                             color: isSelected ? Colors.white : AppColors.surface,
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(22),
                             border: Border.all(
                               color: isSelected ? Colors.white : AppColors.border,
                             ),
@@ -140,12 +144,12 @@ class _CatalogDiscographyScreenState extends State<CatalogDiscographyScreen> {
                 )
               else
                 SliverPadding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(AppSpacing.screenH),
                   sliver: SliverGrid(
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
-                      crossAxisSpacing: 14,
-                      mainAxisSpacing: 16,
+                      crossAxisSpacing: AppSpacing.rowGap,
+                      mainAxisSpacing: AppSpacing.lg,
                       childAspectRatio: 0.72,
                     ),
                     delegate: SliverChildBuilderDelegate(
@@ -175,11 +179,11 @@ class _CatalogDiscographyScreenState extends State<CatalogDiscographyScreen> {
                                 aspectRatio: 1.0,
                                 child: CachedCoverArt(
                                   imageUrl: release.coverUrl,
-                                  borderRadius: 8,
+                                  borderRadius: AppRadius.card,
                                   placeholderIcon: Icons.album_rounded,
                                 ),
                               ),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: AppSpacing.sm),
                               Text(
                                 release.title,
                                 maxLines: 2,

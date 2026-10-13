@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/catalog_matcher.dart';
 import '../../../data/models/track.dart';
@@ -202,7 +203,7 @@ class _CatalogAlbumScreenState extends State<CatalogAlbumScreen> {
               // Album Info & Play Controls
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                  padding: const EdgeInsets.fromLTRB(AppSpacing.screenH, AppSpacing.md, AppSpacing.screenH, AppSpacing.lg),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -227,13 +228,13 @@ class _CatalogAlbumScreenState extends State<CatalogAlbumScreen> {
                         ),
                       ),
                       if (metadataString.isNotEmpty) ...[
-                        const SizedBox(height: 4),
+                        const SizedBox(height: AppSpacing.xs),
                         Text(
                           metadataString,
                           style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
                         ),
                       ],
-                      const SizedBox(height: 16),
+                      const SizedBox(height: AppSpacing.lg),
                       Row(
                         children: [
                           GestureDetector(
@@ -252,7 +253,7 @@ class _CatalogAlbumScreenState extends State<CatalogAlbumScreen> {
                               ),
                             ),
                           ),
-                          const SizedBox(width: 16),
+                          const SizedBox(width: AppSpacing.lg),
                           IconButton(
                             icon: const Icon(Icons.shuffle_rounded, size: 28),
                             color: AppColors.textSecondary,
@@ -276,17 +277,17 @@ class _CatalogAlbumScreenState extends State<CatalogAlbumScreen> {
               else if (_hasError || _tracks == null || _tracks!.isEmpty)
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH, vertical: AppSpacing.sectionGap),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         const Divider(color: AppColors.border, height: 1),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: AppSpacing.lg),
                         Text(
                           'Unable to load release tracks',
                           style: AppTypography.bodyMedium.copyWith(color: AppColors.textMuted),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: AppSpacing.md),
                         OutlinedButton(
                           onPressed: () => _loadTracks(forceRefresh: true),
                           style: OutlinedButton.styleFrom(
@@ -347,7 +348,7 @@ class _CatalogAlbumScreenState extends State<CatalogAlbumScreen> {
 
   Widget _buildSkeletonRow() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH, vertical: AppSpacing.sm),
       child: Row(
         children: [
           Container(
@@ -358,7 +359,7 @@ class _CatalogAlbumScreenState extends State<CatalogAlbumScreen> {
               borderRadius: BorderRadius.circular(4),
             ),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: AppSpacing.rowGap),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -383,7 +384,7 @@ class _CatalogAlbumScreenState extends State<CatalogAlbumScreen> {
               ],
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: AppSpacing.lg),
           Container(
             width: 32,
             height: 12,

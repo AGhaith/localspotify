@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:audio_service/audio_service.dart';
+import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 
 class LocalSpotifyAudioHandler extends BaseAudioHandler
@@ -20,7 +21,9 @@ class LocalSpotifyAudioHandler extends BaseAudioHandler
 
     // 2. Broadcast current media item index changes
     _player.currentIndexStream.listen((index) {
-      if (index != null && queue.value.isNotEmpty && index < queue.value.length) {
+      if (index != null &&
+          queue.value.isNotEmpty &&
+          index < queue.value.length) {
         mediaItem.add(queue.value[index]);
       }
     });
@@ -82,7 +85,8 @@ class LocalSpotifyAudioHandler extends BaseAudioHandler
         uriStr.contains('spotify.com') ||
         uriStr.contains('audio-ak-spotify-com')) {
       return {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       };
     }
     return const {'User-Agent': 'LocalSpotify/1.0 (Android)'};
@@ -107,7 +111,8 @@ class LocalSpotifyAudioHandler extends BaseAudioHandler
       }
     }
 
-    if (url.isNotEmpty && (url.startsWith('http://') || url.startsWith('https://'))) {
+    if (url.isNotEmpty &&
+        (url.startsWith('http://') || url.startsWith('https://'))) {
       return LockCachingAudioSource(
         Uri.parse(url),
         tag: item,
@@ -160,7 +165,8 @@ class LocalSpotifyAudioHandler extends BaseAudioHandler
         await play();
       }
     } catch (e) {
-      print('[AudioHandler] Error loading audio source: $e');
+      debugPrint('[AudioHandler] Error loading audio source: $e');
+      rethrow;
     }
   }
 
@@ -181,7 +187,8 @@ class LocalSpotifyAudioHandler extends BaseAudioHandler
 
   @override
   Future<void> insertQueueItem(int index, MediaItem mediaItem) async {
-    final newQueue = List<MediaItem>.from(queue.value)..insert(index, mediaItem);
+    final newQueue = List<MediaItem>.from(queue.value)
+      ..insert(index, mediaItem);
     queue.add(newQueue);
     await _playlist.insert(index, _createAudioSource(mediaItem));
   }

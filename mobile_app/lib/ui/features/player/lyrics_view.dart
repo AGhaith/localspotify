@@ -42,12 +42,17 @@ class _LyricsViewState extends State<LyricsView> {
   void didUpdateWidget(covariant LyricsView oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.track.id != widget.track.id) {
-      _loadLyrics();
+      setState(() {
+        _loadLyrics();
+      });
     }
   }
 
   void _loadLyrics() {
-    _lyricsFuture = context.read<MusicProvider>().getLyrics(widget.track);
+    _lyricsFuture = context.read<MusicProvider>().getLyrics(widget.track).timeout(
+      const Duration(seconds: 5),
+      onTimeout: () => null,
+    ).catchError((_) => null);
   }
 
   void _openFullScreen(BuildContext context) {
@@ -144,9 +149,12 @@ class _LyricsViewState extends State<LyricsView> {
             ),
             child: Row(
               children: [
-                Icon(Icons.lyrics_rounded, color: accent.withValues(alpha: 0.7), size: 22),
+                const Icon(Icons.lyrics_rounded, color: AppColors.textMuted, size: 22),
                 const SizedBox(width: 12),
-                Text('No lyrics found for this song', style: AppTypography.bodySmall),
+                Text(
+                  'No lyrics for this song',
+                  style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
+                ),
               ],
             ),
           );

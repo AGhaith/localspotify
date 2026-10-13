@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/catalog_matcher.dart';
 import '../../../data/models/artist.dart';
@@ -283,7 +285,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                 'Unable to load artist information',
                 style: AppTypography.bodyMedium.copyWith(color: AppColors.textMuted),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
               OutlinedButton(
                 onPressed: _retry,
                 style: OutlinedButton.styleFrom(
@@ -358,7 +360,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                     onPressed: () => Navigator.maybePop(context),
                   ),
                   flexibleSpace: FlexibleSpaceBar(
-                    titlePadding: const EdgeInsetsDirectional.only(start: 72, bottom: 16, end: 16),
+                    titlePadding: const EdgeInsetsDirectional.only(start: 72, bottom: AppSpacing.screenH, end: AppSpacing.screenH),
                     title: Text(
                       artist.name,
                       maxLines: 1,
@@ -399,7 +401,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                 // 2. Play & Shuffle Action Row (White circular Play + Shuffle icon)
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                    padding: const EdgeInsets.fromLTRB(AppSpacing.screenH, AppSpacing.md, AppSpacing.screenH, AppSpacing.sm),
                     child: Row(
                       children: [
                         GestureDetector(
@@ -418,7 +420,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 16),
+                        const SizedBox(width: AppSpacing.lg),
                         IconButton(
                           icon: const Icon(Icons.shuffle_rounded, size: 28),
                           color: AppColors.textSecondary,
@@ -432,7 +434,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                 // 3. "Popular" Section
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
+                    padding: const EdgeInsets.fromLTRB(AppSpacing.screenH, AppSpacing.sectionGap, AppSpacing.screenH, AppSpacing.sm),
                     child: Text('Popular', style: AppTypography.titleLarge),
                   ),
                 ),
@@ -476,7 +478,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                   if (catTop.length > 5)
                     SliverToBoxAdapter(
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH, vertical: AppSpacing.xs),
                         child: Align(
                           alignment: Alignment.centerLeft,
                           child: TextButton(
@@ -512,7 +514,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                   if (artist.topTracks.length > 5)
                     SliverToBoxAdapter(
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH, vertical: AppSpacing.xs),
                         child: Align(
                           alignment: Alignment.centerLeft,
                           child: TextButton(
@@ -540,7 +542,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                 if (_catalogFailed && !_isLoadingCatalog)
                   const SliverToBoxAdapter(
                     child: Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: EdgeInsets.symmetric(horizontal: AppSpacing.screenH, vertical: AppSpacing.sm),
                       child: Divider(color: AppColors.border, height: 1),
                     ),
                   ),
@@ -548,7 +550,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                 // 4. "Discography" Section
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+                    padding: const EdgeInsets.fromLTRB(AppSpacing.screenH, AppSpacing.sectionGap, AppSpacing.screenH, AppSpacing.sm),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -587,10 +589,10 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                     child: SizedBox(
                       height: 44,
                       child: ListView.separated(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH, vertical: AppSpacing.xs),
                         scrollDirection: Axis.horizontal,
                         itemCount: filterChips.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 8),
+                        separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.sm),
                         itemBuilder: (ctx, i) {
                           final filter = filterChips[i];
                           final isSelected = filter == _selectedDiscographyFilter;
@@ -635,11 +637,11 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                               ),
                             )
                           : ListView.separated(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH, vertical: AppSpacing.sm),
                               scrollDirection: Axis.horizontal,
                               physics: const BouncingScrollPhysics(),
                               itemCount: filteredReleases.length.clamp(0, 10),
-                              separatorBuilder: (_, __) => const SizedBox(width: 14),
+                              separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.rowGap),
                               itemBuilder: (ctx, i) {
                                 final release = filteredReleases[i];
                                 return GestureDetector(
@@ -668,11 +670,11 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                                           aspectRatio: 1.0,
                                           child: CachedCoverArt(
                                             imageUrl: release.coverUrl,
-                                            borderRadius: 8,
+                                            borderRadius: AppRadius.card,
                                             placeholderIcon: Icons.album_rounded,
                                           ),
                                         ),
-                                        const SizedBox(height: 8),
+                                        const SizedBox(height: AppSpacing.sm),
                                         Text(
                                           release.title,
                                           maxLines: 1,
@@ -706,11 +708,11 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                     child: SizedBox(
                       height: 200,
                       child: ListView.separated(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH, vertical: AppSpacing.sm),
                         scrollDirection: Axis.horizontal,
                         physics: const BouncingScrollPhysics(),
                         itemCount: artist.albums.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 12),
+                        separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.rowGap),
                         itemBuilder: (ctx, i) {
                           final alb = artist.albums[i];
                           return AlbumCard(
@@ -740,10 +742,10 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                     child: SizedBox(
                       height: 200,
                       child: ListView.separated(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH, vertical: AppSpacing.sm),
                         scrollDirection: Axis.horizontal,
                         itemCount: 4,
-                        separatorBuilder: (_, __) => const SizedBox(width: 14),
+                        separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.rowGap),
                         itemBuilder: (_, __) => _buildSkeletonCard(),
                       ),
                     ),
@@ -753,7 +755,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                 if (hasRelated) ...[
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
+                      padding: const EdgeInsets.fromLTRB(AppSpacing.screenH, AppSpacing.sectionGap, AppSpacing.screenH, AppSpacing.sm),
                       child: Text('Fans Also Like', style: AppTypography.titleLarge),
                     ),
                   ),
@@ -762,11 +764,11 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                       height: 125,
                       child: hasDeezerRelated
                           ? ListView.separated(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH),
                               scrollDirection: Axis.horizontal,
                               physics: const BouncingScrollPhysics(),
                               itemCount: deezerRelated.length,
-                              separatorBuilder: (_, __) => const SizedBox(width: 16),
+                              separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.lg),
                               itemBuilder: (ctx, i) {
                                 final rel = deezerRelated[i];
                                 return GestureDetector(
@@ -800,11 +802,11 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                               },
                             )
                           : ListView.separated(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH),
                               scrollDirection: Axis.horizontal,
                               physics: const BouncingScrollPhysics(),
                               itemCount: subsonicRelated.length,
-                              separatorBuilder: (_, __) => const SizedBox(width: 16),
+                              separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.lg),
                               itemBuilder: (ctx, i) {
                                 final sim = subsonicRelated[i];
                                 return GestureDetector(
@@ -846,9 +848,9 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                 if (artist.biography != null && artist.biography!.isNotEmpty) ...[
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
+                      padding: const EdgeInsets.fromLTRB(AppSpacing.screenH, AppSpacing.sectionGap, AppSpacing.screenH, AppSpacing.sm),
                       child: Container(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(AppSpacing.screenH),
                         decoration: BoxDecoration(
                           color: AppColors.card,
                           borderRadius: BorderRadius.circular(12),
@@ -858,7 +860,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text('About the Artist', style: AppTypography.titleMedium),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: AppSpacing.sm),
                             Text(
                               _cleanBio(artist.biography!),
                               maxLines: _isBioExpanded ? 100 : 3,
@@ -868,7 +870,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                                 height: 1.4,
                               ),
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: AppSpacing.xs),
                             GestureDetector(
                               onTap: () => setState(() => _isBioExpanded = !_isBioExpanded),
                               child: Text(
@@ -908,7 +910,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
             color: AppColors.card,
           ),
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSpacing.screenH),
             child: Row(
               children: [
                 Container(
@@ -919,7 +921,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                     shape: BoxShape.circle,
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: AppSpacing.lg),
                 Container(
                   width: 32,
                   height: 32,
@@ -932,7 +934,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH, vertical: AppSpacing.sm),
             child: Container(
               width: 100,
               height: 20,
@@ -950,7 +952,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
 
   Widget _buildSkeletonTrackRow({bool showCover = false}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH, vertical: 6),
       child: Row(
         children: [
           Container(
@@ -961,7 +963,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
               borderRadius: BorderRadius.circular(4),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSpacing.sm),
           if (showCover) ...[
             Container(
               width: 48,
@@ -971,7 +973,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                 borderRadius: BorderRadius.circular(6),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: AppSpacing.rowGap),
           ],
           Expanded(
             child: Column(
@@ -997,7 +999,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
               ],
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: AppSpacing.lg),
           Container(
             width: 32,
             height: 12,
@@ -1025,7 +1027,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
               borderRadius: BorderRadius.circular(8),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           Container(
             width: 100,
             height: 12,
@@ -1034,7 +1036,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
               borderRadius: BorderRadius.circular(4),
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSpacing.xs),
           Container(
             width: 60,
             height: 10,

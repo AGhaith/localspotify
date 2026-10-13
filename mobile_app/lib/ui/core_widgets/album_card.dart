@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_radius.dart';
+import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../data/models/album.dart';
 import 'cached_cover_art.dart';
@@ -78,7 +80,7 @@ class _AlbumCardState extends State<AlbumCard> {
                 Container(
                   decoration: BoxDecoration(
                     color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: AppRadius.cardBorderRadius,
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.25),
@@ -94,17 +96,17 @@ class _AlbumCardState extends State<AlbumCard> {
                       children: [
                         Positioned.fill(
                           child: ClipRRect(
-                            borderRadius: BorderRadius.circular(4),
+                            borderRadius: AppRadius.cardBorderRadius,
                             child: CachedCoverArt(
                               imageUrl: widget.coverUrl,
-                              borderRadius: 4,
+                              borderRadius: AppRadius.card,
                             ),
                           ),
                         ),
                         if (widget.onPlayTap != null)
                           Positioned(
-                            right: 8,
-                            bottom: 8,
+                            right: AppSpacing.sm,
+                            bottom: AppSpacing.sm,
                             child: AnimatedSlide(
                               duration: const Duration(milliseconds: 150),
                               curve: Curves.easeOutCubic,
@@ -157,7 +159,7 @@ class _AlbumCardState extends State<AlbumCard> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.sm),
                 Text(
                   widget.album.name,
                   maxLines: 1,

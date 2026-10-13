@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../state/audio_player_provider.dart';
 import '../../../state/music_provider.dart';
@@ -88,7 +89,7 @@ class _LikedSongsScreenState extends State<LikedSongsScreen> {
           // Actions & Search Filter Bar
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              padding: const EdgeInsets.fromLTRB(AppSpacing.screenH, AppSpacing.lg, AppSpacing.screenH, AppSpacing.sm),
               child: Column(
                 children: [
                   Row(
@@ -110,7 +111,7 @@ class _LikedSongsScreenState extends State<LikedSongsScreen> {
                         ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
                   // In-list search field
                   TextField(
                     onChanged: (val) => setState(() => _searchQuery = val),
@@ -118,7 +119,7 @@ class _LikedSongsScreenState extends State<LikedSongsScreen> {
                     decoration: InputDecoration(
                       hintText: 'Search in liked songs...',
                       prefixIcon: const Icon(Icons.search_rounded, color: AppColors.textSecondary),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH, vertical: 10),
                       suffixIcon: _searchQuery.isNotEmpty
                           ? IconButton(
                               icon: const Icon(Icons.close_rounded, color: AppColors.textSecondary),

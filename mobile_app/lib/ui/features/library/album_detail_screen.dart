@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/duration_formatter.dart';
 import '../../../data/models/album.dart';
@@ -33,11 +34,17 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
     _albumFuture = context.read<MusicProvider>().getAlbumDetails(widget.albumId);
   }
 
-  void _retry() {
+  Future<void> _refresh() async {
+    final future = context.read<MusicProvider>().getAlbumDetails(widget.albumId, forceRefresh: true);
     setState(() {
-      _albumFuture = context.read<MusicProvider>().getAlbumDetails(widget.albumId, forceRefresh: true);
+      _albumFuture = future;
     });
+    try {
+      await future;
+    } catch (_) {}
   }
+
+  void _retry() => _refresh();
 
   @override
   Widget build(BuildContext context) {
@@ -85,7 +92,7 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text('Failed to load album', style: AppTypography.bodyMedium),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
                   NeoButton(
                     text: 'Retry',
                     icon: Icons.refresh_rounded,
@@ -107,151 +114,182 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
           bottomNavigationBar: player.hasTrack
               ? const MiniPlayerBar(isStandalone: true)
               : null,
-          body: CustomScrollView(
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              SliverAppBar(
-                expandedHeight: 280,
-                pinned: true,
-                backgroundColor: AppColors.card,
-                leading: IconButton(
-                  icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
-                  onPressed: () => Navigator.maybePop(context),
+          body: RefreshIndicator(
+            color: AppColors.primary,
+            backgroundColor: AppColors.card,
+            onRefresh: _refresh,
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+              slivers: [
+                SliverAppBar(
+                  expandedHeight: 280,
+                  pinned: true,
+                  backgroundColor: AppColors.card,
+                  leading: IconButton(
+                    icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+                    onPressed: () => Navigator.maybePop(context),
+                  ),
+                  flexibleSpace: FlexibleSpaceBar(
+                    background: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        CachedCoverArt(imageUrl: coverUrl, borderRadius: 0),
+                        Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.transparent,
+                                Colors.black.withValues(alpha: 0.6),
+                                AppColors.background,
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-                flexibleSpace: FlexibleSpaceBar(
-                  background: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      CachedCoverArt(imageUrl: coverUrl, borderRadius: 0),
-                      Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              Colors.black.withValues(alpha: 0.6),
-                              AppColors.background,
+
+                // Album Info & Play Actions
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH, vertical: AppSpacing.lg),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          album.name,
+                          style: AppTypography.displayMedium,
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        GestureDetector(
+                          onTap: (album.artistId != null && album.artistId!.isNotEmpty)
+                              ? () {
+                                  HapticFeedback.lightImpact();
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => ArtistDetailScreen(artistId: album.artistId!),
+                                    ),
+                                  );
+                                }
+                              : null,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                album.artist,
+                                style: AppTypography.titleMedium.copyWith(
+                                  color: AppColors.textPrimary,
+                                  fontWeight: FontWeight.w600,
+                                  decoration: TextDecoration.none,
+                                ),
+                              ),
+                              if (album.artistId != null && album.artistId!.isNotEmpty) ...[
+                                const SizedBox(width: AppSpacing.xs),
+                                const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary, size: 18),
+                              ],
                             ],
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              // Album Info & Play Actions
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        album.name,
-                        style: AppTypography.displayMedium,
-                      ),
-                      const SizedBox(height: 4),
-                      GestureDetector(
-                        onTap: (album.artistId != null && album.artistId!.isNotEmpty)
-                            ? () {
-                                HapticFeedback.lightImpact();
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => ArtistDetailScreen(artistId: album.artistId!),
-                                  ),
-                                );
-                              }
-                            : null,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
+                        const SizedBox(height: 6),
+                        Text(
+                          '${album.tracks.length} ${album.tracks.length == 1 ? "song" : "songs"} • ${DurationFormatter.format(album.duration)} ${album.year != null ? "• ${album.year}" : ""}',
+                          style: AppTypography.bodySmall,
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
+                        Row(
                           children: [
-                            Text(
-                              album.artist,
-                              style: AppTypography.titleMedium.copyWith(
-                                color: AppColors.textPrimary,
-                                fontWeight: FontWeight.w600,
-                                decoration: TextDecoration.none,
-                              ),
+                            NeoButton(
+                              text: 'Play',
+                              icon: Icons.play_arrow_rounded,
+                              onPressed: album.tracks.isEmpty
+                                  ? null
+                                  : () {
+                                      HapticFeedback.heavyImpact();
+                                      player.playTracks(tracks: album.tracks, initialIndex: 0);
+                                    },
                             ),
-                            if (album.artistId != null && album.artistId!.isNotEmpty) ...[
-                              const SizedBox(width: 4),
-                              const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary, size: 18),
+                            const SizedBox(width: AppSpacing.sm),
+                            NeoButton(
+                              text: 'Shuffle',
+                              icon: Icons.shuffle_rounded,
+                              backgroundColor: AppColors.surface,
+                              textColor: AppColors.textPrimary,
+                              borderColor: AppColors.border,
+                              onPressed: album.tracks.isEmpty
+                                  ? null
+                                  : () {
+                                      HapticFeedback.heavyImpact();
+                                      final shuffled = List.of(album.tracks)..shuffle();
+                                      player.playTracks(tracks: shuffled, initialIndex: 0);
+                                    },
+                            ),
+                            if (album.tracks.isNotEmpty) ...[
+                              const SizedBox(width: AppSpacing.rowGap),
+                              // Spotify-grade circular download button with spinner and checkmark
+                              DownloadActionButton(
+                                isDownloaded: isDownloaded,
+                                isDownloading: isDownloading,
+                                progress: music.downloadingProgress,
+                                size: 38,
+                                onDownload: () {
+                                  HapticFeedback.lightImpact();
+                                  music.downloadAlbum(album);
+                                },
+                              ),
                             ],
                           ],
                         ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        '${album.tracks.length} ${album.tracks.length == 1 ? "song" : "songs"} • ${DurationFormatter.format(album.duration)} ${album.year != null ? "• ${album.year}" : ""}',
-                        style: AppTypography.bodySmall,
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          NeoButton(
-                            text: 'Play',
-                            icon: Icons.play_arrow_rounded,
-                            onPressed: () {
-                              HapticFeedback.heavyImpact();
-                              player.playTracks(tracks: album.tracks, initialIndex: 0);
-                            },
-                          ),
-                          const SizedBox(width: 10),
-                          NeoButton(
-                            text: 'Shuffle',
-                            icon: Icons.shuffle_rounded,
-                            backgroundColor: AppColors.surface,
-                            textColor: AppColors.textPrimary,
-                            borderColor: AppColors.border,
-                            onPressed: () {
-                              HapticFeedback.heavyImpact();
-                              final shuffled = List.of(album.tracks)..shuffle();
-                              player.playTracks(tracks: shuffled, initialIndex: 0);
-                            },
-                          ),
-                          const SizedBox(width: 14),
-                          // Spotify-grade circular download button with spinner and checkmark
-                          DownloadActionButton(
-                            isDownloaded: isDownloaded,
-                            isDownloading: isDownloading,
-                            progress: music.downloadingProgress,
-                            size: 38,
-                            onDownload: () {
-                              HapticFeedback.lightImpact();
-                              music.downloadAlbum(album);
-                            },
-                          ),
-                        ],
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
 
-              // Track List
-              SliverPadding(
-                padding: const EdgeInsets.only(bottom: 100),
-                sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (ctx, i) {
-                      final track = album.tracks[i];
-                      return TrackRow(
-                        track: track,
-                        index: i + 1,
-                        showCover: false,
-                        onTap: () {
-                          player.playTracks(tracks: album.tracks, initialIndex: i);
+                // Track List or Empty State
+                if (album.tracks.isEmpty)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 48, horizontal: AppSpacing.xl),
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.music_off_rounded, color: AppColors.textMuted, size: 48),
+                            const SizedBox(height: AppSpacing.md),
+                            Text(
+                              'No tracks in this album',
+                              style: AppTypography.bodyMedium.copyWith(color: AppColors.textMuted),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  SliverPadding(
+                    padding: const EdgeInsets.only(bottom: 100),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (ctx, i) {
+                          final track = album.tracks[i];
+                          return TrackRow(
+                            track: track,
+                            index: i + 1,
+                            showCover: false,
+                            onTap: () {
+                              player.playTracks(tracks: album.tracks, initialIndex: i);
+                            },
+                          );
                         },
-                      );
-                    },
-                    childCount: album.tracks.length,
+                        childCount: album.tracks.length,
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },

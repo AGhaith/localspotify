@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_radius.dart';
+import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../data/services/spotify_service.dart';
 import '../../state/audio_player_provider.dart';
@@ -48,7 +50,7 @@ class CatalogTrackRow extends StatelessWidget {
         height: 48,
         decoration: BoxDecoration(
           color: Colors.black.withValues(alpha: 0.55),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppRadius.coverSmall),
         ),
         child: Center(
           child: SizedBox(
@@ -81,7 +83,7 @@ class CatalogTrackRow extends StatelessWidget {
         height: 48,
         decoration: BoxDecoration(
           color: Colors.black.withValues(alpha: 0.55),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppRadius.coverSmall),
         ),
         child: const Icon(
           Icons.refresh_rounded,
@@ -100,7 +102,7 @@ class CatalogTrackRow extends StatelessWidget {
         height: 48,
         decoration: BoxDecoration(
           color: Colors.black.withValues(alpha: 0.55),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppRadius.coverSmall),
         ),
         child: const Icon(
           Icons.graphic_eq_rounded,
@@ -110,7 +112,7 @@ class CatalogTrackRow extends StatelessWidget {
       );
     }
 
-    final rowPadding = contentPadding ?? const EdgeInsets.symmetric(horizontal: 16, vertical: 8);
+    final rowPadding = contentPadding ?? const EdgeInsets.symmetric(horizontal: AppSpacing.screenH, vertical: AppSpacing.sm);
 
     return SwipeToQueue(
       id: item.id,
@@ -143,7 +145,7 @@ class CatalogTrackRow extends StatelessWidget {
           imageUrl: item.coverUrl,
           width: 48,
           height: 48,
-          borderRadius: 8,
+          borderRadius: AppRadius.coverSmall,
         ),
         coverOverlay: coverOverlay,
         indexOverlay: indexOverlay,
@@ -201,21 +203,21 @@ void showCatalogTrackOptions(
     builder: (ctx) {
       return SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(vertical: 16),
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH),
                 child: Row(
                   children: [
                     CachedCoverArt(
                       imageUrl: item.coverUrl,
                       width: 54,
                       height: 54,
-                      borderRadius: 10,
+                      borderRadius: AppRadius.coverSmall,
                     ),
-                    const SizedBox(width: 14),
+                    const SizedBox(width: AppSpacing.rowGap),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -241,7 +243,7 @@ void showCatalogTrackOptions(
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
               const Divider(color: AppColors.border),
               ListTile(
                 leading: const Icon(Icons.playlist_play_rounded, color: Colors.white70, size: 22),
@@ -356,17 +358,17 @@ void showSpotifyArtistsSheet(BuildContext context, SpotifyTrackItem item, MusicP
     builder: (ctx) {
       return SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16),
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH, vertical: AppSpacing.sm),
                 child: Row(
                   children: [
                     const Icon(Icons.people_alt_rounded, color: AppColors.primary, size: 22),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: AppSpacing.sm),
                     Text(
                       'Artists',
                       style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.bold),
