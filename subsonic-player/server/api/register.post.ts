@@ -89,7 +89,7 @@ export default defineEventHandler(async (event) => {
     ].join(' ');
     if (
       response.statusCode === 409 ||
-      /already exists|duplicate|already taken/i.test(description)
+      /already exists|duplicate|already taken|validation.unique/i.test(description)
     ) {
       throw createError({ statusCode: 409, statusMessage: 'username taken' });
     }

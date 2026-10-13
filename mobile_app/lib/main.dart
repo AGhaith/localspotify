@@ -62,21 +62,30 @@ Future<void> main() async {
     storageService: storageService,
   );
 
+  final authProvider = AuthProvider(authRepository: authRepository);
+  final audioPlayerProvider = AudioPlayerProvider(
+    audioHandler: _audioHandler,
+    musicRepository: musicRepository,
+  );
+
+  // Stop playback and drop the queue whenever the user signs out.
+  var wasAuthenticated = authProvider.isAuthenticated;
+  authProvider.addListener(() {
+    final isAuthenticated = authProvider.isAuthenticated;
+    if (wasAuthenticated && !isAuthenticated) {
+      audioPlayerProvider.clearQueue();
+    }
+    wasAuthenticated = isAuthenticated;
+  });
+
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(
-          create: (_) => AuthProvider(authRepository: authRepository),
-        ),
+        ChangeNotifierProvider.value(value: authProvider),
         ChangeNotifierProvider(
           create: (_) => MusicProvider(musicRepository: musicRepository),
         ),
-        ChangeNotifierProvider(
-          create: (_) => AudioPlayerProvider(
-            audioHandler: _audioHandler,
-            musicRepository: musicRepository,
-          ),
-        ),
+        ChangeNotifierProvider.value(value: audioPlayerProvider),
       ],
       child: const LocalSpotifyApp(),
     ),
