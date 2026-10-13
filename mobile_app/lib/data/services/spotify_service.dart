@@ -154,7 +154,16 @@ class SpotifyPlaylistInfo {
 class SpotifyService {
   final Dio _dio;
 
-  SpotifyService({Dio? dio}) : _dio = dio ?? Dio();
+  SpotifyService({Dio? dio}) : _dio = dio ?? Dio() {
+    // Deezer localizes artist/track names by caller region (Arabic in Egypt);
+    // pin English so one artist never shows under two spellings.
+    _dio.interceptors.add(InterceptorsWrapper(onRequest: (options, handler) {
+      if (options.uri.host.endsWith('deezer.com')) {
+        options.headers['Accept-Language'] = 'en';
+      }
+      handler.next(options);
+    }));
+  }
 
   /// Parse Spotify playlist ID from URL, URI, or raw ID
   static String? parsePlaylistId(String input) {
@@ -492,6 +501,7 @@ class SpotifyService {
   }
 
   static final Map<String, ArtistProfile> _artistProfileCache = {};
+  static final Map<String, ArtistProfile> _artistIdentityCache = {};
   static final Map<String, List<SpotifyTrackItem>> _albumTracksCache = {};
   static final Map<String, ArtistCatalog> _artistCatalogCache = {};
 
@@ -499,6 +509,7 @@ class SpotifyService {
   void invalidateArtistCache(String artistName) {
     final clean = artistName.trim().toLowerCase();
     _artistProfileCache.remove(clean);
+    _artistIdentityCache.remove(clean);
     _artistCatalogCache.remove(clean);
   }
 
@@ -566,6 +577,50 @@ class SpotifyService {
       }
     }
     return v0[s2.length];
+  }
+
+  /// Look up an artist ID and canonical name without loading a catalog page.
+  Future<ArtistProfile> fetchArtistIdentity(String artistName) async {
+    final clean = artistName.trim();
+    if (clean.isEmpty) return ArtistProfile.empty;
+    final key = clean.toLowerCase();
+    final cached = _artistProfileCache[key] ?? _artistIdentityCache[key];
+    if (cached != null) return cached;
+    try {
+      final response = await _dio.get(
+        'https://api.deezer.com/search/artist',
+        queryParameters: {'q': clean, 'limit': 15},
+        options: Options(receiveTimeout: const Duration(seconds: 6)),
+      );
+      final payload =
+          response.data is String ? jsonDecode(response.data) : response.data;
+      final candidates = (payload['data'] as List?)?.whereType<Map>() ?? [];
+      Map? best;
+      var bestScore = 0.85;
+      if (RegExp(r'[\u0600-\u06ff]').hasMatch(clean) && candidates.length == 1) {
+        best = candidates.first;
+      }
+      for (final artist in candidates) {
+        final name = artist['name']?.toString() ?? '';
+        final id = artist['id']?.toString() ?? '';
+        final score = calculateNameSimilarity(clean, name);
+        if (id.isNotEmpty && score >= bestScore) {
+          best = artist;
+          bestScore = score;
+        }
+      }
+      if (best != null) {
+        return _artistIdentityCache[key] = ArtistProfile(
+          artistId: best['id'].toString(),
+          artistName: best['name'].toString(),
+          topTracks: const [],
+          releases: const [],
+        );
+      }
+    } catch (_) {
+      return ArtistProfile.empty;
+    }
+    return _artistIdentityCache[key] = ArtistProfile.empty;
   }
 
   /// Fetches Deezer artist profile: matching Deezer artist, top 10 songs, bounded releases list
@@ -928,4 +983,3 @@ class SpotifyService {
     return s.replaceAll(RegExp(r'\s+'), ' ').trim();
   }
 }
-

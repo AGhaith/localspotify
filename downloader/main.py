@@ -28,6 +28,8 @@ from download_liked_songs import (
     sanitize_filename,
     save_lrc_file,
 )
+from name_policy import canonical_metadata, contributors
+from replaygain import apply_replaygain
 
 
 music_dir = Path(os.environ.get("MUSIC_DIR", "/music"))
@@ -218,26 +220,38 @@ def accepted_candidate(track: DownloadRequest, source: str, song: dict, duration
 
 
 def deezer_json(path: str) -> dict:
-    request = urllib.request.Request(f"https://api.deezer.com/{path}", headers={"User-Agent": "LocalSpotify/1.0"})
+    request = urllib.request.Request(f"https://api.deezer.com/{path}", headers={"User-Agent": "LocalSpotify/1.0", "Accept-Language": "en"})
     with urllib.request.urlopen(request, timeout=8) as response:
         return json.load(response)
 
 
-def deezer_isrc(track: DownloadRequest) -> str | None:
+def deezer_isrc(track: DownloadRequest, matched_track: list[dict] | None = None) -> str | None:
     if track.isrc:
+        if matched_track is not None:
+            try:
+                song = deezer_json(f"track/isrc:{urllib.parse.quote(track.isrc.strip())}")
+                duration = track.durationMs / 1000 if track.durationMs else None
+                if song.get("id") and (duration is None or abs(song.get("duration", -1000) - duration) <= 3):
+                    matched_track.append(song)
+            except (OSError, ValueError, KeyError, TypeError):
+                logger.warning("Deezer track lookup failed for ISRC %s", track.isrc, exc_info=True)
         return track.isrc.strip() or None
     if track.deezerId:
         song = deezer_json(f"track/{track.deezerId}")
         duration = track.durationMs / 1000 if track.durationMs else None
-        if (version_signature(track.title) == version_signature(song.get("title") or "")
-                and (duration is None or abs(song.get("duration", -1000) - duration) <= 3)):
+        if (song.get("id") and (duration is None or abs(song.get("duration", -1000) - duration) <= 3)):
+            if matched_track is not None:
+                matched_track.append(song)
             return song.get("isrc")
     queries = (f'artist:"{track.artist}" track:"{track.title}"', f"{track.artist} {track.title}")
     for query in queries:
         songs = deezer_json(f"search?q={urllib.parse.quote(query)}").get("data", [])
         for song in songs:
             if deezer_track_matches(track, song):
-                return deezer_json(f"track/{song['id']}").get("isrc")
+                full_song = deezer_json(f"track/{song['id']}")
+                if matched_track is not None and full_song.get("id"):
+                    matched_track.append(full_song)
+                return full_song.get("isrc")
     return None
 
 
@@ -251,13 +265,30 @@ def deezer_track_matches(track: DownloadRequest, song: dict) -> bool:
             and (duration is None or abs(song.get("duration", -1000) - duration) <= 3))
 
 
-def select_audio_candidates(track: DownloadRequest) -> list[tuple[str, AudioCandidate]]:
+def canonical_request_tags(track: DownloadRequest, song: dict) -> tuple[str, str]:
+    contributor_ids = {str(artist["id"]) for artist in contributors(song)}
+
+    def artist_id(name: str) -> str | None:
+        try:
+            matches = deezer_json("search/artist?q=" + urllib.parse.quote(name)).get("data") or []
+        except (OSError, ValueError, KeyError, TypeError):
+            logger.warning("Deezer artist lookup failed for %s", name, exc_info=True)
+            return None
+        ids = {str(artist.get("id")) for artist in matches
+               if str(artist.get("id")) in contributor_ids}
+        return next(iter(ids)) if len(ids) == 1 else None
+
+    chosen = canonical_metadata(track.title, track.artist, "", song, artist_id)
+    return (chosen[0], chosen[1]) if chosen else (track.title, track.artist)
+
+
+def select_audio_candidates(track: DownloadRequest, matched_track: list[dict] | None = None) -> list[tuple[str, AudioCandidate]]:
     duration = track.durationMs / 1000 if track.durationMs else None
     if duration is None:
         return []
     chosen = []
     try:
-        isrc = deezer_isrc(track)
+        isrc = deezer_isrc(track, matched_track)
     except (OSError, ValueError, KeyError, TypeError):
         logger.warning("Deezer ISRC lookup failed for %s - %s", track.artist, track.title, exc_info=True)
         isrc = None
@@ -315,9 +346,10 @@ def download_video(video_id: str, output_base: Path, need_thumbnail: bool) -> tu
     return (file_path if os.path.exists(file_path) else None), fallback_cover
 
 
-def download_matching_audio(track: DownloadRequest, output_base: Path, need_thumbnail: bool) -> tuple[str | None, bytes | None, bool]:
+def download_matching_audio(track: DownloadRequest, output_base: Path, need_thumbnail: bool,
+                            matched_track: list[dict] | None = None) -> tuple[str | None, bytes | None, bool]:
     filename = f"{output_base.name}.m4a"
-    for source, candidate in select_audio_candidates(track):
+    for source, candidate in select_audio_candidates(track, matched_track):
         try:
             file_path, cover = download_video(candidate.video_id, output_base, need_thumbnail)
             if not file_path:
@@ -370,7 +402,8 @@ def download_track(track: DownloadRequest, output_base: Path, expected_file: Pat
         set_progress(expected_file.name, "ready", 100, "Ready")
         return expected_file.name, False
 
-    file_path, fallback_cover, low_confidence = download_matching_audio(track, output_base, True)
+    matched_track = []
+    file_path, fallback_cover, low_confidence = download_matching_audio(track, output_base, True, matched_track)
     if not file_path or not expected_file.is_file():
         raise RuntimeError("Download stream failed")
 
@@ -392,11 +425,16 @@ def download_track(track: DownloadRequest, output_base: Path, expected_file: Pat
     except Exception:
         logger.warning("Could not fetch lyrics for %s", expected_file.name, exc_info=True)
 
+    canonical_title, canonical_artists = (
+        canonical_request_tags(track, matched_track[0]) if matched_track
+        else (track.title, track.artist)
+    )
+
     embed_metadata(
         file_path,
         {
-            "title": track.title,
-            "artists": track.artist,
+            "title": canonical_title,
+            "artists": canonical_artists,
             "album": track.album or "",
             "date": "",
             "genre": "",
@@ -407,6 +445,7 @@ def download_track(track: DownloadRequest, output_base: Path, expected_file: Pat
         lyrics_text=lyrics_text,
         audio_format="m4a",
     )
+    apply_replaygain(file_path)  # never raises; logs and skips on failure
     set_progress(expected_file.name, "ready", 100, "Ready")
     return expected_file.name, low_confidence
 

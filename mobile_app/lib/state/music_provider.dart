@@ -9,6 +9,7 @@ import '../data/repositories/music_repository.dart';
 import '../data/services/spotify_service.dart';
 import '../data/services/spotify_importer_service.dart';
 import '../data/services/download_notification_service.dart';
+import '../core/utils/artist_identity.dart';
 import '../ui/features/library/artist_detail_screen.dart';
 
 enum SpotifySyncState { idle, syncing, error }
@@ -49,6 +50,8 @@ bool _trackMatchesArtist(Track track, Artist artist) {
 
 class MusicProvider extends ChangeNotifier {
   final MusicRepository _musicRepository;
+  final ArtistProfileResolver _resolveArtistProfile;
+  final ArtistIdentity _artistIdentity;
 
   // Feeds
   List<Album> _newestAlbums = [];
@@ -88,8 +91,14 @@ class MusicProvider extends ChangeNotifier {
   Track? _failedDownloadTrack;
   int _downloadErrorVersion = 0;
 
-  MusicProvider({required MusicRepository musicRepository})
-      : _musicRepository = musicRepository {
+  MusicProvider(
+      {required MusicRepository musicRepository,
+      ArtistProfileResolver? artistProfileResolver,
+      ArtistIdentity? artistIdentity})
+      : _musicRepository = musicRepository,
+        _resolveArtistProfile =
+            artistProfileResolver ?? SpotifyService().fetchArtistIdentity,
+        _artistIdentity = artistIdentity ?? ArtistIdentity.shared {
     _recentSearches = _musicRepository.getRecentSearches();
   }
 
@@ -108,19 +117,22 @@ class MusicProvider extends ChangeNotifier {
       if (names.isEmpty) continue;
       final songs = album.songCount > 0 ? album.songCount : album.tracks.length;
       for (final name in names) {
-        final key = normalizeArtistName(name);
+        final key = _artistIdentity.mergedKey(normalizeArtistName(name));
         counts[key] = (counts[key] ?? 0) + songs;
       }
-      primary.add(normalizeArtistName(names.first));
+      primary.add(_artistIdentity.mergedKey(normalizeArtistName(names.first)));
     }
     return List<Artist>.from(_artists.where((artist) {
-      final key = normalizeArtistName(artist.name);
+      final key = _artistIdentity.mergedKey(normalizeArtistName(artist.name));
       final count = counts[key] ?? 0;
       return count > 0 && (primary.contains(key) || count >= 2);
     }))
       ..sort((a, b) {
-        final difference = (counts[normalizeArtistName(b.name)] ?? 0) -
-            (counts[normalizeArtistName(a.name)] ?? 0);
+        final difference = (counts[
+                    _artistIdentity.mergedKey(normalizeArtistName(b.name))] ??
+                0) -
+            (counts[_artistIdentity.mergedKey(normalizeArtistName(a.name))] ??
+                0);
         return difference != 0
             ? difference
             : a.name.toLowerCase().compareTo(b.name.toLowerCase());
@@ -211,7 +223,8 @@ class MusicProvider extends ChangeNotifier {
       _recentAlbums = recent.isNotEmpty ? recent : newest;
       _frequentAlbums = frequent.isNotEmpty ? frequent : newest;
       _starredTracks = starred;
-      _artists = _sanitizeArtists(artists);
+      _artists = await _artistIdentity.merge(
+          _sanitizeArtists(artists), _resolveArtistProfile);
       _offlineTracks = _musicRepository.getDownloadedTracks();
     } catch (e) {
       _homeError = e.toString();
@@ -237,7 +250,8 @@ class MusicProvider extends ChangeNotifier {
       final albums = await _musicRepository.getNewestAlbums(size: 500);
 
       _playlists = playlists;
-      _artists = _sanitizeArtists(artists);
+      _artists = await _artistIdentity.merge(
+          _sanitizeArtists(artists), _resolveArtistProfile);
       _libraryAlbums = albums;
       _savedAlbums = savedAlbums;
       _starredTracks = starred;
@@ -326,23 +340,34 @@ class MusicProvider extends ChangeNotifier {
       throw StateError('Artist name unavailable for $artistId');
     }
     final selected = Artist(id: artistId, name: artistName);
-    final searchRes = await _musicRepository.searchArtistLibrary(artistName);
-    final tracks = ((searchRes['songs'] as List<Track>?) ?? [])
-        .where((track) => _trackMatchesArtist(track, selected))
-        .toList();
-    final albums = ((searchRes['albums'] as List<Album>?) ?? [])
-        .where((album) => splitArtistNames(album.artist).any((part) =>
-            normalizeArtistName(part) == normalizeArtistName(artistName)))
-        .toList();
+    final names = _artistIdentity.namesFor(artistId, artistName);
+    final searches =
+        await Future.wait(names.map(_musicRepository.searchArtistLibrary));
+    final tracks = <Track>[];
+    final albums = <Album>[];
+    for (var i = 0; i < searches.length; i++) {
+      final name = names[i];
+      tracks.addAll(((searches[i]['songs'] as List<Track>?) ?? []).where(
+          (track) =>
+              _trackMatchesArtist(track, Artist(id: artistId, name: name))));
+      albums.addAll(((searches[i]['albums'] as List<Album>?) ?? []).where(
+          (album) => splitArtistNames(album.artist).any((part) =>
+              normalizeArtistName(part) == normalizeArtistName(name))));
+    }
+    final uniqueTracks =
+        {for (final track in tracks) track.id: track}.values.toList();
+    final uniqueAlbums =
+        {for (final album in albums) album.id: album}.values.toList();
     final artist = selected.copyWith(
-      coverArtId:
-          tracks.isNotEmpty ? tracks.first.coverArtId : found?.coverArtId,
-      albumCount: albums.length,
-      albums: albums,
-      topTracks: tracks,
+      coverArtId: uniqueTracks.isNotEmpty
+          ? uniqueTracks.first.coverArtId
+          : found?.coverArtId,
+      albumCount: uniqueAlbums.length,
+      albums: uniqueAlbums,
+      topTracks: uniqueTracks,
     );
     _artistCache[artistId] = artist;
-    _artistLibraryTracksCache[artistId] = tracks;
+    _artistLibraryTracksCache[artistId] = uniqueTracks;
     return artist;
   }
 
