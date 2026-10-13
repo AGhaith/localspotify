@@ -250,7 +250,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text('Downloaded Tracks', style: AppTypography.titleMedium.copyWith(fontSize: 14)),
-                    Text('${music.offlineTracks.length} songs', style: AppTypography.labelLarge.copyWith(color: AppColors.primary)),
+                    Text('${music.offlineTracks.length} ${music.offlineTracks.length == 1 ? "song" : "songs"}', style: AppTypography.labelLarge.copyWith(color: AppColors.primary)),
                   ],
                 ),
                 const SizedBox(height: 12),

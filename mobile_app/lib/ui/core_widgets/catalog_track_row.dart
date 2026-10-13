@@ -6,12 +6,14 @@ import '../../core/theme/app_typography.dart';
 import '../../data/services/spotify_service.dart';
 import '../../state/audio_player_provider.dart';
 import '../../state/music_provider.dart';
+import 'cached_cover_art.dart';
+import 'track_row.dart';
 
 class CatalogTrackRow extends StatelessWidget {
   final SpotifyTrackItem item;
   final int? index;
   final bool showCover;
-  final EdgeInsetsGeometry contentPadding;
+  final EdgeInsetsGeometry? contentPadding;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
 
@@ -20,7 +22,7 @@ class CatalogTrackRow extends StatelessWidget {
     required this.item,
     this.index,
     this.showCover = true,
-    this.contentPadding = const EdgeInsets.symmetric(vertical: 2),
+    this.contentPadding,
     this.onTap,
     this.onLongPress,
   });
@@ -32,199 +34,286 @@ class CatalogTrackRow extends StatelessWidget {
 
     final syncState = music.getSpotifySyncState(item.id);
     final syncProgress = music.getSpotifySyncProgress(item.id);
-    final isPlaying = isSpotifyItemPlaying(item, player);
+    final isCurrent = isSpotifyItemCurrent(item, player);
+    final isPlaying = isCurrent && player.isPlaying;
+    final isSyncing = syncState == SpotifySyncState.syncing;
+    final isError = syncState == SpotifySyncState.error;
 
-    Widget? leadingWidget;
-    if (showCover) {
-      leadingWidget = ClipRRect(
-        borderRadius: BorderRadius.circular(6),
-        child: item.coverUrl != null && item.coverUrl!.isNotEmpty
-            ? Image.network(
-                item.coverUrl!,
-                width: 48,
-                height: 48,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  width: 48,
-                  height: 48,
-                  color: AppColors.card,
-                  child: const Icon(Icons.music_note_rounded, color: AppColors.primary),
-                ),
-              )
-            : Container(
-                width: 48,
-                height: 48,
-                color: AppColors.card,
-                child: const Icon(Icons.music_note_rounded, color: AppColors.primary),
-              ),
-      );
-    } else if (index != null) {
-      leadingWidget = SizedBox(
-        width: 28,
+    Widget? coverOverlay;
+    Widget? indexOverlay;
+
+    if (isSyncing) {
+      coverOverlay = Container(
+        width: 48,
+        height: 48,
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.55),
+          borderRadius: BorderRadius.circular(8),
+        ),
         child: Center(
-          child: Text(
-            '$index',
-            style: AppTypography.bodyMedium.copyWith(
-              color: AppColors.textMuted,
-              fontWeight: FontWeight.w500,
+          child: SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(
+              value: syncProgress > 0 ? syncProgress : null,
+              strokeWidth: 2.5,
+              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+              backgroundColor: syncProgress > 0 ? AppColors.primary.withValues(alpha: 0.2) : null,
             ),
           ),
         ),
       );
-    }
-
-    return ListTile(
-      contentPadding: contentPadding,
-      leading: leadingWidget,
-      title: Text(
-        item.title,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: AppTypography.titleMedium.copyWith(fontSize: 15),
-      ),
-      subtitle: Text(
-        '${item.artist} • ${item.durationFormatted}',
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
-      ),
-      trailing: _buildTrailing(syncState, syncProgress, isPlaying),
-      onLongPress: onLongPress ??
-          () {
-            HapticFeedback.selectionClick();
-            if (item.individualArtists.length > 1) {
-              showSpotifyArtistsSheet(context, item, music);
-            } else {
-              music.openArtistByName(context, item.primaryArtist);
-            }
-          },
-      onTap: onTap ??
-          () async {
-            if (syncState == SpotifySyncState.syncing) return;
-            HapticFeedback.mediumImpact();
-            final track = await music.convertAndSyncSpotifyTrack(item);
-            if (track != null && context.mounted) {
-              await player.playTrack(track);
-            }
-          },
-    );
-  }
-
-  Widget _buildTrailing(
-    SpotifySyncState syncState,
-    double progress,
-    bool isPlaying,
-  ) {
-    if (syncState == SpotifySyncState.syncing) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: AppColors.primary.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(
-              width: 14,
-              height: 14,
-              child: CircularProgressIndicator(
-                value: progress > 0 ? progress : null,
-                strokeWidth: 2,
-                valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
-                backgroundColor: progress > 0 ? AppColors.primary.withValues(alpha: 0.2) : null,
-              ),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              progress > 0 ? '${(progress * 100).toInt()}%' : 'Syncing...',
-              style: AppTypography.labelSmall.copyWith(
-                color: AppColors.primary,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
+      indexOverlay = Center(
+        child: SizedBox(
+          width: 16,
+          height: 16,
+          child: CircularProgressIndicator(
+            value: syncProgress > 0 ? syncProgress : null,
+            strokeWidth: 2,
+            valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+            backgroundColor: syncProgress > 0 ? AppColors.primary.withValues(alpha: 0.2) : null,
+          ),
         ),
       );
-    }
-
-    if (syncState == SpotifySyncState.error) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+    } else if (isError) {
+      coverOverlay = Container(
+        width: 48,
+        height: 48,
         decoration: BoxDecoration(
-          color: AppColors.error.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.error.withValues(alpha: 0.5)),
+          color: Colors.black.withValues(alpha: 0.55),
+          borderRadius: BorderRadius.circular(8),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.refresh_rounded, color: AppColors.error, size: 16),
-            const SizedBox(width: 4),
-            Text(
-              'Retry',
-              style: AppTypography.labelSmall.copyWith(
-                color: AppColors.error,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
+        child: const Icon(
+          Icons.refresh_rounded,
+          color: AppColors.error,
+          size: 22,
         ),
       );
-    }
-
-    if (isPlaying) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      indexOverlay = const Icon(
+        Icons.refresh_rounded,
+        color: AppColors.error,
+        size: 18,
+      );
+    } else if (isPlaying) {
+      coverOverlay = Container(
+        width: 48,
+        height: 48,
         decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.55),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: const Icon(
+          Icons.graphic_eq_rounded,
           color: AppColors.primary,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.equalizer_rounded, color: Colors.black, size: 16),
-            const SizedBox(width: 4),
-            Text(
-              'Playing',
-              style: AppTypography.labelSmall.copyWith(
-                color: Colors.black,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
+          size: 22,
         ),
       );
     }
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.play_arrow_rounded, color: AppColors.primary, size: 16),
-          const SizedBox(width: 4),
-          Text(
-            'Play & Sync',
-            style: AppTypography.labelSmall.copyWith(
-              color: AppColors.primary,
-              fontWeight: FontWeight.bold,
+    final rowPadding = contentPadding ?? const EdgeInsets.symmetric(horizontal: 16, vertical: 8);
+
+    return SwipeToQueue(
+      id: item.id,
+      gestureKey: Key('catalog_row_${item.id}_${index ?? 0}'),
+      onSwipe: () async {
+        if (isSyncing) return;
+        final messenger = ScaffoldMessenger.of(context);
+        final ap = context.read<AudioPlayerProvider>();
+        final mp = context.read<MusicProvider>();
+        final track = await mp.convertAndSyncSpotifyTrack(item);
+        if (track != null) {
+          ap.addToQueue(track);
+          messenger.hideCurrentSnackBar();
+          messenger.showSnackBar(
+            const SnackBar(
+              content: Text('Added to queue'),
+              duration: Duration(seconds: 1),
+              behavior: SnackBarBehavior.floating,
             ),
-          ),
-        ],
+          );
+        }
+      },
+      child: TrackRowLayout(
+        isCurrent: isCurrent,
+        isPlaying: isPlaying,
+        index: index,
+        showCover: showCover,
+        padding: rowPadding,
+        cover: CachedCoverArt(
+          imageUrl: item.coverUrl,
+          width: 48,
+          height: 48,
+          borderRadius: 8,
+        ),
+        coverOverlay: coverOverlay,
+        indexOverlay: indexOverlay,
+        title: item.title,
+        subtitle: Text(
+          (item.album != null && item.album!.isNotEmpty)
+              ? '${item.artist} • ${item.album}'
+              : item.artist,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
+        ),
+        durationText: item.durationFormatted,
+        onTap: onTap ??
+            () async {
+              if (isSyncing) return;
+              HapticFeedback.mediumImpact();
+              final ap = context.read<AudioPlayerProvider>();
+              final mp = context.read<MusicProvider>();
+              final track = await mp.convertAndSyncSpotifyTrack(item);
+              if (track != null) {
+                await ap.playTrack(track);
+              }
+            },
+        onLongPress: onLongPress ??
+            () {
+              HapticFeedback.selectionClick();
+              if (item.individualArtists.length > 1) {
+                showSpotifyArtistsSheet(context, item, music);
+              } else {
+                music.openArtistByName(context, item.primaryArtist);
+              }
+            },
+        onMoreTap: () => showCatalogTrackOptions(context, item, music, player),
       ),
     );
   }
 }
 
-bool isSpotifyItemPlaying(SpotifyTrackItem item, AudioPlayerProvider player) {
-  if (!player.isPlaying) return false;
+void showCatalogTrackOptions(
+  BuildContext context,
+  SpotifyTrackItem item,
+  MusicProvider music,
+  AudioPlayerProvider player,
+) {
+  final syncState = music.getSpotifySyncState(item.id);
+
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: AppColors.card,
+    isScrollControlled: true,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    ),
+    builder: (ctx) {
+      return SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    CachedCoverArt(
+                      imageUrl: item.coverUrl,
+                      width: 54,
+                      height: 54,
+                      borderRadius: 10,
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.titleMedium.copyWith(fontSize: 16),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            (item.album != null && item.album!.isNotEmpty)
+                                ? '${item.artist} • ${item.album}'
+                                : item.artist,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Divider(color: AppColors.border),
+              ListTile(
+                leading: const Icon(Icons.playlist_play_rounded, color: Colors.white70, size: 22),
+                title: Text(
+                  'Play Next',
+                  style: AppTypography.bodyLarge.copyWith(color: Colors.white, fontSize: 15),
+                ),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  if (syncState == SpotifySyncState.syncing) return;
+                  final track = await music.convertAndSyncSpotifyTrack(item);
+                  if (track != null && context.mounted) {
+                    player.playNext(track);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Playing next'), duration: Duration(seconds: 1)),
+                    );
+                  }
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.queue_music_rounded, color: Colors.white70, size: 22),
+                title: Text(
+                  'Add to Queue',
+                  style: AppTypography.bodyLarge.copyWith(color: Colors.white, fontSize: 15),
+                ),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  if (syncState == SpotifySyncState.syncing) return;
+                  final track = await music.convertAndSyncSpotifyTrack(item);
+                  if (track != null && context.mounted) {
+                    player.addToQueue(track);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Added to queue'), duration: Duration(seconds: 1)),
+                    );
+                  }
+                },
+              ),
+              if (item.individualArtists.length > 1) ...[
+                for (final artistName in item.individualArtists)
+                  ListTile(
+                    leading: const Icon(Icons.person_rounded, color: Colors.white70, size: 22),
+                    title: Text(
+                      'View $artistName',
+                      style: AppTypography.bodyLarge.copyWith(color: Colors.white, fontSize: 15),
+                    ),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      music.openArtistByName(context, artistName);
+                    },
+                  ),
+              ] else ...[
+                ListTile(
+                  leading: const Icon(Icons.person_rounded, color: Colors.white70, size: 22),
+                  title: Text(
+                    'View ${item.primaryArtist}',
+                    style: AppTypography.bodyLarge.copyWith(color: Colors.white, fontSize: 15),
+                  ),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    music.openArtistByName(context, item.primaryArtist);
+                  },
+                ),
+              ],
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
+bool isSpotifyItemCurrent(SpotifyTrackItem item, AudioPlayerProvider player) {
   final current = player.currentTrack;
   if (current == null) return false;
 
@@ -251,6 +340,10 @@ bool isSpotifyItemPlaying(SpotifyTrackItem item, AudioPlayerProvider player) {
   }
 
   return false;
+}
+
+bool isSpotifyItemPlaying(SpotifyTrackItem item, AudioPlayerProvider player) {
+  return player.isPlaying && isSpotifyItemCurrent(item, player);
 }
 
 void showSpotifyArtistsSheet(BuildContext context, SpotifyTrackItem item, MusicProvider music) {

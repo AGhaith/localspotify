@@ -14,25 +14,25 @@ import 'cached_cover_art.dart';
 import 'circular_download_button.dart';
 import 'pressable_scale.dart';
 
-class TrackRow extends StatefulWidget {
-  final Track track;
-  final VoidCallback onTap;
-  final int? index;
-  final bool showCover;
+class SwipeToQueue extends StatefulWidget {
+  final Widget child;
+  final VoidCallback onSwipe;
+  final Object? id;
+  final Key? gestureKey;
 
-  const TrackRow({
+  const SwipeToQueue({
     super.key,
-    required this.track,
-    required this.onTap,
-    this.index,
-    this.showCover = true,
+    required this.child,
+    required this.onSwipe,
+    this.id,
+    this.gestureKey,
   });
 
   @override
-  State<TrackRow> createState() => _TrackRowState();
+  State<SwipeToQueue> createState() => _SwipeToQueueState();
 }
 
-class _TrackRowState extends State<TrackRow> with TickerProviderStateMixin {
+class _SwipeToQueueState extends State<SwipeToQueue> with TickerProviderStateMixin {
   late final AnimationController _translateController;
   late Animation<double> _translateAnimation;
 
@@ -77,9 +77,9 @@ class _TrackRowState extends State<TrackRow> with TickerProviderStateMixin {
   }
 
   @override
-  void didUpdateWidget(covariant TrackRow oldWidget) {
+  void didUpdateWidget(covariant SwipeToQueue oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.track.id != widget.track.id) {
+    if (oldWidget.id != widget.id) {
       if (_translateController.isAnimating) {
         _translateController.stop();
       }
@@ -141,17 +141,7 @@ class _TrackRowState extends State<TrackRow> with TickerProviderStateMixin {
     final passedThreshold = _thresholdCrossed || _dragOffset >= threshold;
 
     if (passedThreshold) {
-      context.read<AudioPlayerProvider>().addToQueue(widget.track);
-      if (mounted) {
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Added to queue'),
-            duration: Duration(seconds: 1),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
+      widget.onSwipe();
     }
 
     _animateReset();
@@ -186,19 +176,13 @@ class _TrackRowState extends State<TrackRow> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final player = context.watch<AudioPlayerProvider>();
-    final music = context.watch<MusicProvider>();
-    final isCurrent = player.currentTrack?.id == widget.track.id;
-    final isPlaying = isCurrent && player.isPlaying;
-    final isDownloaded = music.isDownloaded(widget.track.id);
-
     return LayoutBuilder(
       builder: (context, constraints) {
         final rowWidth = constraints.maxWidth;
         final stripWidth = _dragOffset.clamp(0.0, rowWidth);
 
         return GestureDetector(
-          key: Key('track_row_${widget.track.id}_${widget.index ?? 0}'),
+          key: widget.gestureKey,
           behavior: HitTestBehavior.opaque,
           onHorizontalDragStart: _onHorizontalDragStart,
           onHorizontalDragUpdate: (details) => _onHorizontalDragUpdate(details, rowWidth),
@@ -239,128 +223,235 @@ class _TrackRowState extends State<TrackRow> with TickerProviderStateMixin {
                 ),
               Transform.translate(
                 offset: Offset(_dragOffset, 0),
-                child: PressableScale(
-                  onTap: widget.onTap,
-                  scaleFactor: 0.98,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: isCurrent ? AppColors.surface.withValues(alpha: 0.4) : Colors.transparent,
-                      border: isCurrent
-                          ? const Border(left: BorderSide(color: AppColors.primary, width: 3))
-                          : null,
-                    ),
-                    child: Row(
-                      children: [
-                        if (widget.index != null && !widget.showCover) ...[
-                          SizedBox(
-                            width: 28,
-                            child: isPlaying
-                                ? const Icon(Icons.graphic_eq_rounded, color: AppColors.primary, size: 18)
-                                : Text(
-                                    '${widget.index}',
-                                    style: AppTypography.bodyMedium.copyWith(
-                                      color: isCurrent ? AppColors.primary : AppColors.textMuted,
-                                      fontWeight: isCurrent ? FontWeight.w800 : FontWeight.w500,
-                                    ),
-                                  ),
-                          ),
-                          const SizedBox(width: 8),
-                        ],
-                        if (widget.showCover) ...[
-                          Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              CachedCoverArt(
-                                imageUrl: music.getCoverArtUrl(widget.track.coverArtId, albumName: widget.track.album, size: 150),
-                                localImagePath: widget.track.localCoverArtPath,
-                                width: 48,
-                                height: 48,
-                                borderRadius: 8,
-                              ),
-                              if (isPlaying)
-                                Container(
-                                  width: 48,
-                                  height: 48,
-                                  decoration: BoxDecoration(
-                                    color: Colors.black.withValues(alpha: 0.55),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: const Icon(
-                                    Icons.graphic_eq_rounded,
-                                    color: AppColors.primary,
-                                    size: 22,
-                                  ),
-                                ),
-                            ],
-                          ),
-                          const SizedBox(width: 14),
-                        ],
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                widget.track.title,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: AppTypography.titleMedium.copyWith(
-                                  color: isCurrent ? AppColors.primary : AppColors.textPrimary,
-                                  fontWeight: isCurrent ? FontWeight.w800 : FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(height: 3),
-                              Row(
-                                children: [
-                                  if (isDownloaded) ...[
-                                    const Icon(
-                                      Icons.check_circle_rounded,
-                                      color: AppColors.primary,
-                                      size: 13,
-                                    ),
-                                    const SizedBox(width: 4),
-                                  ],
-                                  Expanded(
-                                    child: Text(
-                                      '${widget.track.artist} • ${widget.track.album}',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        // Optimistic Animated Like Button
-                        AnimatedLikeButton(track: widget.track, size: 20),
-                        const SizedBox(width: 4),
-                        // Duration
-                        Text(
-                          DurationFormatter.format(widget.track.duration),
-                          style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
-                        ),
-                        const SizedBox(width: 2),
-                        // 3-Dot Options
-                        IconButton(
-                          icon: const Icon(
-                            Icons.more_vert_rounded,
-                            color: AppColors.textMuted,
-                            size: 20,
-                          ),
-                          onPressed: () => _showTrackOptions(context, widget.track, music, player),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                child: widget.child,
               ),
             ],
           ),
         );
       },
+    );
+  }
+}
+
+class TrackRowLayout extends StatelessWidget {
+  final bool isCurrent;
+  final bool isPlaying;
+  final int? index;
+  final bool showCover;
+  final Widget? cover;
+  final Widget? coverOverlay;
+  final Widget? indexOverlay;
+  final String title;
+  final Widget subtitle;
+  final String durationText;
+  final Widget? trailingPrefix;
+  final VoidCallback onMoreTap;
+  final VoidCallback onTap;
+  final VoidCallback? onLongPress;
+  final EdgeInsetsGeometry padding;
+
+  const TrackRowLayout({
+    super.key,
+    required this.isCurrent,
+    required this.isPlaying,
+    this.index,
+    this.showCover = true,
+    this.cover,
+    this.coverOverlay,
+    this.indexOverlay,
+    required this.title,
+    required this.subtitle,
+    required this.durationText,
+    this.trailingPrefix,
+    required this.onMoreTap,
+    required this.onTap,
+    this.onLongPress,
+    this.padding = const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return PressableScale(
+      onTap: onTap,
+      onLongPress: onLongPress,
+      scaleFactor: 0.98,
+      child: Container(
+        padding: padding,
+        decoration: BoxDecoration(
+          color: isCurrent ? AppColors.surface.withValues(alpha: 0.4) : Colors.transparent,
+          border: isCurrent
+              ? const Border(left: BorderSide(color: AppColors.primary, width: 3))
+              : null,
+        ),
+        child: Row(
+          children: [
+            if (index != null) ...[
+              SizedBox(
+                width: 28,
+                child: (isPlaying && !showCover)
+                    ? const Icon(Icons.graphic_eq_rounded, color: AppColors.primary, size: 18)
+                    : (indexOverlay != null && !showCover)
+                        ? indexOverlay!
+                        : Text(
+                            '$index',
+                            textAlign: TextAlign.center,
+                            style: AppTypography.bodyMedium.copyWith(
+                              color: isCurrent ? AppColors.primary : AppColors.textMuted,
+                              fontWeight: isCurrent ? FontWeight.w800 : FontWeight.w500,
+                            ),
+                          ),
+              ),
+              const SizedBox(width: 8),
+            ],
+            if (showCover) ...[
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  cover ?? const SizedBox(width: 48, height: 48),
+                  if (coverOverlay != null)
+                    coverOverlay!
+                  else if (isPlaying)
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.55),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.graphic_eq_rounded,
+                        color: AppColors.primary,
+                        size: 22,
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(width: 14),
+            ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.titleMedium.copyWith(
+                      color: isCurrent ? AppColors.primary : AppColors.textPrimary,
+                      fontWeight: isCurrent ? FontWeight.w800 : FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  subtitle,
+                ],
+              ),
+            ),
+            const SizedBox(width: 4),
+            if (trailingPrefix != null) ...[
+              trailingPrefix!,
+              const SizedBox(width: 4),
+            ],
+            Text(
+              durationText,
+              style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
+            ),
+            const SizedBox(width: 2),
+            IconButton(
+              icon: const Icon(
+                Icons.more_vert_rounded,
+                color: AppColors.textMuted,
+                size: 20,
+              ),
+              onPressed: onMoreTap,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class TrackRow extends StatefulWidget {
+  final Track track;
+  final VoidCallback onTap;
+  final int? index;
+  final bool showCover;
+
+  const TrackRow({
+    super.key,
+    required this.track,
+    required this.onTap,
+    this.index,
+    this.showCover = true,
+  });
+
+  @override
+  State<TrackRow> createState() => _TrackRowState();
+}
+
+class _TrackRowState extends State<TrackRow> {
+  @override
+  Widget build(BuildContext context) {
+    final player = context.watch<AudioPlayerProvider>();
+    final music = context.watch<MusicProvider>();
+    final isCurrent = player.currentTrack?.id == widget.track.id;
+    final isPlaying = isCurrent && player.isPlaying;
+    final isDownloaded = music.isDownloaded(widget.track.id);
+
+    return SwipeToQueue(
+      id: widget.track.id,
+      gestureKey: Key('track_row_${widget.track.id}_${widget.index ?? 0}'),
+      onSwipe: () {
+        context.read<AudioPlayerProvider>().addToQueue(widget.track);
+        if (mounted) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Added to queue'),
+              duration: Duration(seconds: 1),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      },
+      child: TrackRowLayout(
+        isCurrent: isCurrent,
+        isPlaying: isPlaying,
+        index: widget.index,
+        showCover: widget.showCover,
+        cover: CachedCoverArt(
+          imageUrl: music.getCoverArtUrl(widget.track.coverArtId, albumName: widget.track.album, size: 150),
+          localImagePath: widget.track.localCoverArtPath,
+          width: 48,
+          height: 48,
+          borderRadius: 8,
+        ),
+        title: widget.track.title,
+        subtitle: Row(
+          children: [
+            if (isDownloaded) ...[
+              const Icon(
+                Icons.check_circle_rounded,
+                color: AppColors.primary,
+                size: 13,
+              ),
+              const SizedBox(width: 4),
+            ],
+            Expanded(
+              child: Text(
+                '${widget.track.artist} • ${widget.track.album}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
+              ),
+            ),
+          ],
+        ),
+        durationText: DurationFormatter.format(widget.track.duration),
+        trailingPrefix: AnimatedLikeButton(track: widget.track, size: 20),
+        onTap: widget.onTap,
+        onMoreTap: () => _showTrackOptions(context, widget.track, music, player),
+      ),
     );
   }
 
@@ -636,7 +727,7 @@ class _TrackRowState extends State<TrackRow> with TickerProviderStateMixin {
                       return ListTile(
                         leading: const Icon(Icons.queue_music_rounded, color: AppColors.primary),
                         title: Text(pl.name, style: AppTypography.titleMedium),
-                        subtitle: Text('${pl.songCount} songs', style: AppTypography.bodySmall),
+                        subtitle: Text('${pl.songCount} ${pl.songCount == 1 ? "song" : "songs"}', style: AppTypography.bodySmall),
                         onTap: () async {
                           Navigator.pop(ctx);
                           final ok = await music.addTrackToPlaylist(pl.id, track.id);

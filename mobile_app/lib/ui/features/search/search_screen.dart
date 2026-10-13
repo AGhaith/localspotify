@@ -293,7 +293,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                           placeholderIcon: Icons.queue_music_rounded,
                                         ),
                                         title: Text(pl.name, style: AppTypography.titleMedium),
-                                        subtitle: Text('${pl.songCount} songs', style: AppTypography.bodySmall),
+                                        subtitle: Text('${pl.songCount} ${pl.songCount == 1 ? "song" : "songs"}', style: AppTypography.bodySmall),
                                         trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted),
                                         onTap: () {
                                           Navigator.push(
@@ -351,16 +351,13 @@ class _SearchScreenState extends State<SearchScreen> {
                             ),
 
                             if (music.spotifySearchTracks.isNotEmpty)
-                              SliverPadding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
-                                sliver: SliverList(
-                                  delegate: SliverChildBuilderDelegate(
-                                    (ctx, i) {
-                                      final item = music.spotifySearchTracks[i];
-                                      return CatalogTrackRow(item: item);
-                                    },
-                                    childCount: music.spotifySearchTracks.length,
-                                  ),
+                              SliverList(
+                                delegate: SliverChildBuilderDelegate(
+                                  (ctx, i) {
+                                    final item = music.spotifySearchTracks[i];
+                                    return CatalogTrackRow(item: item);
+                                  },
+                                  childCount: music.spotifySearchTracks.length,
                                 ),
                               )
                             else if (!music.isSearchingSpotify && music.searchTracks.isEmpty && query.isNotEmpty)
