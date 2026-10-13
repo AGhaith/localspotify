@@ -44,9 +44,9 @@ class _ImportSpotifyPlaylistSheetState extends State<ImportSpotifyPlaylistSheet>
   Playlist? _createdPlaylist;
 
   // Extracted color palette from album artwork
-  Color _paletteDominant = const Color(0xFF181818);
-  Color _paletteVibrant = const Color(0xFF1DB954);
-  Color _paletteSurface = const Color(0xFF242424);
+  Color _paletteDominant = AppColors.card;
+  Color _paletteVibrant = AppColors.primary;
+  Color _paletteSurface = AppColors.surface;
 
   @override
   void dispose() {
@@ -75,14 +75,14 @@ class _ImportSpotifyPlaylistSheetState extends State<ImportSpotifyPlaylistSheet>
           _paletteDominant = palette.darkVibrantColor?.color ??
               palette.darkMutedColor?.color ??
               palette.dominantColor?.color ??
-              const Color(0xFF181818);
+              AppColors.card;
           _paletteVibrant = palette.vibrantColor?.color ??
               palette.lightVibrantColor?.color ??
               palette.dominantColor?.color ??
-              const Color(0xFF1DB954);
+              AppColors.primary;
           _paletteSurface = Color.alphaBlend(
             _paletteDominant.withValues(alpha: 0.5),
-            const Color(0xFF1E1E1E),
+            AppColors.surface,
           );
         });
       }
@@ -203,21 +203,21 @@ class _ImportSpotifyPlaylistSheetState extends State<ImportSpotifyPlaylistSheet>
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            Color.alphaBlend(_paletteDominant.withValues(alpha: 0.85), const Color(0xFF121212)),
-            const Color(0xFF121212),
+            Color.alphaBlend(_paletteDominant.withValues(alpha: 0.85), AppColors.background),
+            AppColors.background,
           ],
           stops: const [0.0, 0.5],
         ),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        border: Border(
+        border: const Border(
           top: BorderSide(
-            color: _paletteVibrant.withValues(alpha: 0.35),
+            color: AppColors.border,
             width: 1.5,
           ),
         ),
         boxShadow: [
           BoxShadow(
-            color: _paletteDominant.withValues(alpha: 0.35),
+            color: Colors.black.withValues(alpha: 0.5),
             blurRadius: 30,
             offset: const Offset(0, -8),
           ),
@@ -372,7 +372,7 @@ class _ImportSpotifyPlaylistSheetState extends State<ImportSpotifyPlaylistSheet>
             color: _paletteSurface.withValues(alpha: 0.65),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: _paletteVibrant.withValues(alpha: 0.25),
+              color: AppColors.border,
               width: 1.2,
             ),
             boxShadow: [
@@ -390,7 +390,7 @@ class _ImportSpotifyPlaylistSheetState extends State<ImportSpotifyPlaylistSheet>
                   borderRadius: BorderRadius.circular(10),
                   boxShadow: [
                     BoxShadow(
-                      color: _paletteVibrant.withValues(alpha: 0.25),
+                      color: Colors.black.withValues(alpha: 0.3),
                       blurRadius: 10,
                       offset: const Offset(0, 3),
                     ),

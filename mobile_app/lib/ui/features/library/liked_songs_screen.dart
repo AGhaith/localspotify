@@ -60,8 +60,8 @@ class _LikedSongsScreenState extends State<LikedSongsScreen> {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Color(0xFF450AF5),
-                      Color(0xFF1E085A),
+                      AppColors.surface,
+                      AppColors.card,
                       AppColors.background,
                     ],
                   ),
@@ -70,7 +70,8 @@ class _LikedSongsScreenState extends State<LikedSongsScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.12),
+                      color: AppColors.surface,
+                      border: Border.all(color: AppColors.border),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(

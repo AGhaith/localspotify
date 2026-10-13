@@ -7,29 +7,30 @@ class AppTypography {
 
   static TextStyle displayLarge = GoogleFonts.plusJakartaSans(
     fontSize: 28,
-    fontWeight: FontWeight.w800,
+    fontWeight: FontWeight.w900,
     color: AppColors.textPrimary,
-    letterSpacing: -0.5,
+    letterSpacing: -0.7,
   );
 
   static TextStyle displayMedium = GoogleFonts.plusJakartaSans(
     fontSize: 22,
-    fontWeight: FontWeight.w800,
+    fontWeight: FontWeight.w900,
     color: AppColors.textPrimary,
-    letterSpacing: -0.3,
+    letterSpacing: -0.5,
   );
 
   static TextStyle titleLarge = GoogleFonts.plusJakartaSans(
     fontSize: 18,
-    fontWeight: FontWeight.w700,
+    fontWeight: FontWeight.w800,
     color: AppColors.textPrimary,
-    letterSpacing: -0.2,
+    letterSpacing: -0.4,
   );
 
   static TextStyle titleMedium = GoogleFonts.plusJakartaSans(
     fontSize: 15,
-    fontWeight: FontWeight.w600,
+    fontWeight: FontWeight.w700,
     color: AppColors.textPrimary,
+    letterSpacing: -0.2,
   );
 
   static TextStyle bodyLarge = GoogleFonts.plusJakartaSans(

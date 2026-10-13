@@ -203,7 +203,7 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
                           NeoButton(
                             text: 'Shuffle',
                             icon: Icons.shuffle_rounded,
-                            backgroundColor: const Color(0xFF222430),
+                            backgroundColor: AppColors.surface,
                             textColor: AppColors.textPrimary,
                             borderColor: AppColors.border,
                             onPressed: () {

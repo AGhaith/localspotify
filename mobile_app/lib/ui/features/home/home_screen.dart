@@ -122,11 +122,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF2E0249), Color(0xFF570A57)],
-                            ),
+                            color: AppColors.surface,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.white.withValues(alpha: 0.1), width: 1.0),
+                            border: Border.all(color: AppColors.border, width: 1.0),
                           ),
                           child: Row(
                             children: [
@@ -134,10 +132,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                 width: 48,
                                 height: 48,
                                 decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                    colors: [Color(0xFF450AF5), Color(0xFF8E8EE5)],
-                                  ),
+                                  color: AppColors.cardHover,
                                   borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: AppColors.border, width: 1.0),
                                 ),
                                 child: const Center(
                                   child: Icon(
@@ -396,7 +393,7 @@ class _HomeScreenState extends State<HomeScreen> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: active ? AppColors.primary : const Color(0xFF282828),
+          color: active ? AppColors.primary : AppColors.cardHover,
           borderRadius: BorderRadius.circular(99),
         ),
         child: Center(

@@ -147,7 +147,7 @@ class _SearchScreenState extends State<SearchScreen> {
                               const SliverToBoxAdapter(
                                 child: Padding(
                                   padding: EdgeInsets.symmetric(horizontal: 16),
-                                  child: Divider(color: Colors.white10, height: 16),
+                                  child: Divider(color: AppColors.border, height: 16),
                                 ),
                               ),
                             ],
@@ -456,7 +456,7 @@ class _SearchScreenState extends State<SearchScreen> {
         style: AppTypography.bodyMedium.copyWith(color: AppColors.textPrimary),
         children: [
           if (index > 0)
-            TextSpan(text: text.substring(0, index), style: const TextStyle(color: Colors.white70)),
+            TextSpan(text: text.substring(0, index), style: const TextStyle(color: AppColors.textSecondary)),
           TextSpan(
             text: text.substring(index, index + query.length),
             style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
@@ -464,7 +464,7 @@ class _SearchScreenState extends State<SearchScreen> {
           if (index + query.length < text.length)
             TextSpan(
               text: text.substring(index + query.length),
-              style: const TextStyle(color: Colors.white70),
+              style: const TextStyle(color: AppColors.textSecondary),
             ),
         ],
       ),
@@ -484,7 +484,7 @@ class _SearchScreenState extends State<SearchScreen> {
               decoration: BoxDecoration(
                 color: AppColors.card,
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                border: Border.all(color: AppColors.border),
               ),
               child: const Center(
                 child: Icon(

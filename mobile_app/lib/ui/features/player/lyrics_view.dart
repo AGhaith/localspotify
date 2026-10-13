@@ -98,7 +98,7 @@ class _LyricsViewState extends State<LyricsView> {
     final palette = widget.paletteColors;
     final accent = palette?.primaryAccent ?? AppColors.primary;
     final backgroundColor =
-        palette?.ambientTop ?? const Color(0xFF222228);
+        palette?.ambientTop ?? AppColors.surface;
 
     return FutureBuilder<Lyrics?>(
       future: _lyricsFuture,
@@ -112,7 +112,7 @@ class _LyricsViewState extends State<LyricsView> {
                   const LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [Color(0xFF222226), Color(0xFF141418)],
+                    colors: [AppColors.surface, AppColors.card],
                   ),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(color: palette?.lyricsBorderColor ?? AppColors.border),
@@ -137,7 +137,7 @@ class _LyricsViewState extends State<LyricsView> {
                   const LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [Color(0xFF222226), Color(0xFF141418)],
+                    colors: [AppColors.surface, AppColors.card],
                   ),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(color: palette?.lyricsBorderColor ?? AppColors.border),
@@ -164,7 +164,7 @@ class _LyricsViewState extends State<LyricsView> {
                 const LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Color(0xFF222228), Color(0xFF111115)],
+                  colors: [AppColors.surface, AppColors.card],
                 ),
             borderRadius: BorderRadius.circular(22),
             border: Border.all(
@@ -173,7 +173,7 @@ class _LyricsViewState extends State<LyricsView> {
             ),
             boxShadow: [
               BoxShadow(
-                color: (palette?.primaryAccent ?? Colors.black).withValues(alpha: 0.18),
+                color: Colors.black.withValues(alpha: 0.25),
                 offset: const Offset(0, 6),
                 blurRadius: 16,
               ),

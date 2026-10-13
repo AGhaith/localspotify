@@ -66,7 +66,11 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
             const LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [Color(0xFF1B142E), Color(0xFF0F0B1A), Color(0xFF07070B)],
+              colors: [
+                AppColors.surface,
+                AppColors.card,
+                AppColors.background,
+              ],
               stops: [0.0, 0.55, 1.0],
             ),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
@@ -209,12 +213,12 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
                               border: Border.all(color: Colors.white.withValues(alpha: 0.12), width: 1.0),
                               boxShadow: [
                                 BoxShadow(
-                                  color: (_paletteColors?.ambientTop ?? AppColors.primary).withValues(alpha: 0.35),
+                                  color: Colors.black.withValues(alpha: 0.5),
                                   offset: const Offset(0, 14),
                                   blurRadius: 36,
                                 ),
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.4),
+                                  color: Colors.black.withValues(alpha: 0.3),
                                   offset: const Offset(0, 6),
                                   blurRadius: 18,
                                 ),
@@ -547,7 +551,7 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
   void _showMultipleArtistsSheet(BuildContext context, Track track) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF181818),
+      backgroundColor: AppColors.card,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -577,7 +581,7 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
                     ],
                   ),
                 ),
-                const Divider(color: Color(0xFF2A2A2A)),
+                const Divider(color: AppColors.border),
                 Flexible(
                   child: ListView.builder(
                     shrinkWrap: true,

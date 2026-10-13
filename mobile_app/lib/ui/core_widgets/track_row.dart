@@ -372,7 +372,7 @@ class _TrackRowState extends State<TrackRow> with TickerProviderStateMixin {
   ) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF181818),
+      backgroundColor: AppColors.card,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -428,7 +428,7 @@ class _TrackRowState extends State<TrackRow> with TickerProviderStateMixin {
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF222222),
+                      color: AppColors.cardHover,
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Row(
@@ -469,7 +469,7 @@ class _TrackRowState extends State<TrackRow> with TickerProviderStateMixin {
                   ),
                 ),
                 const SizedBox(height: 10),
-                const Divider(color: Color(0xFF2A2A2A)),
+                const Divider(color: AppColors.border),
 
                 // Action List Tiles
                 _buildActionTile(
@@ -594,7 +594,7 @@ class _TrackRowState extends State<TrackRow> with TickerProviderStateMixin {
   void _showAddToPlaylistDialog(BuildContext context, Track track, MusicProvider music) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF181818),
+      backgroundColor: AppColors.card,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -620,7 +620,7 @@ class _TrackRowState extends State<TrackRow> with TickerProviderStateMixin {
                   ],
                 ),
               ),
-              const Divider(height: 1, color: Color(0xFF282828)),
+              const Divider(height: 1, color: AppColors.border),
               if (music.playlists.isEmpty)
                 Padding(
                   padding: const EdgeInsets.all(32),

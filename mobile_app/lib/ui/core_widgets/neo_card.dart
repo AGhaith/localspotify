@@ -30,7 +30,7 @@ class NeoCard extends StatelessWidget {
         color: backgroundColor,
         borderRadius: BorderRadius.circular(borderRadius),
         border: Border.all(
-          color: borderColor == AppColors.border ? Colors.white.withValues(alpha: 0.08) : borderColor,
+          color: borderColor,
           width: 1.0,
         ),
         boxShadow: [

@@ -27,10 +27,10 @@ class GoogleAuthButton extends StatelessWidget {
       child: Container(
         height: 52,
         decoration: BoxDecoration(
-          color: const Color(0xFF1E202B),
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: Colors.white.withValues(alpha: 0.12),
+            color: AppColors.border,
             width: 1.0,
           ),
         ),
@@ -211,10 +211,10 @@ class _GoogleOAuthSheetState extends State<GoogleOAuthSheet> {
         bottom: MediaQuery.of(context).viewInsets.bottom + 24,
       ),
       decoration: const BoxDecoration(
-        color: Color(0xFF141622),
+        color: AppColors.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         border: Border(
-          top: BorderSide(color: Color(0xFF33364A), width: 1.5),
+          top: BorderSide(color: AppColors.borderStrong, width: 1.5),
         ),
       ),
       child: Column(
@@ -238,13 +238,13 @@ class _GoogleOAuthSheetState extends State<GoogleOAuthSheet> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: const Color(0xFF0D0F18),
+              color: AppColors.card,
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Colors.white12),
+              border: Border.all(color: AppColors.border),
             ),
             child: Row(
               children: [
-                const Icon(Icons.lock_rounded, size: 14, color: Color(0xFF34A853)),
+                const Icon(Icons.lock_rounded, size: 14, color: AppColors.textSecondary),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -260,7 +260,7 @@ class _GoogleOAuthSheetState extends State<GoogleOAuthSheet> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF4285F4).withValues(alpha: 0.2),
+                    color: AppColors.cardHover,
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: const Text(
@@ -268,7 +268,7 @@ class _GoogleOAuthSheetState extends State<GoogleOAuthSheet> {
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF4285F4),
+                      color: AppColors.textPrimary,
                     ),
                   ),
                 ),
@@ -332,9 +332,9 @@ class _GoogleOAuthSheetState extends State<GoogleOAuthSheet> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFF1C1F2E),
+                color: AppColors.card,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.white10),
+                border: Border.all(color: AppColors.border),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -380,9 +380,9 @@ class _GoogleOAuthSheetState extends State<GoogleOAuthSheet> {
                 return Container(
                   margin: const EdgeInsets.only(bottom: 8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1A1C29),
+                    color: AppColors.card,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                    border: Border.all(color: AppColors.border),
                   ),
                   child: ListTile(
                     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
@@ -423,7 +423,7 @@ class _GoogleOAuthSheetState extends State<GoogleOAuthSheet> {
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF222432),
+                    color: AppColors.cardHover,
                     borderRadius: BorderRadius.circular(18),
                   ),
                   child: const Icon(Icons.person_add_alt_1_rounded, color: Colors.white70, size: 18),

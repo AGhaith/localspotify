@@ -39,7 +39,7 @@ class DynamicPaletteService {
       );
 
       final dominant = palette.dominantColor?.color ?? AppColors.primary;
-      final darkMuted = palette.darkMutedColor?.color ?? palette.mutedColor?.color ?? const Color(0xFF1B1828);
+      final darkMuted = palette.darkMutedColor?.color ?? palette.mutedColor?.color ?? AppColors.surface;
       final darkVibrant = palette.darkVibrantColor?.color ?? palette.vibrantColor?.color ?? dominant;
 
       // Darken and tone colors for premium Spotify ambient glow
@@ -56,7 +56,7 @@ class DynamicPaletteService {
         primaryAccent: dominant,
         ambientTop: bgTop,
         ambientMid: bgMid,
-        ambientBottom: const Color(0xFF07070B),
+        ambientBottom: AppColors.background,
       );
 
       _cache[key] = result;
@@ -68,9 +68,9 @@ class DynamicPaletteService {
 
   static const _defaultColors = PaletteColors(
     primaryAccent: AppColors.primary,
-    ambientTop: Color(0xFF222226),
-    ambientMid: Color(0xFF141418),
-    ambientBottom: Color(0xFF0A0A0E),
+    ambientTop: Color(0xFF1A1A1A),
+    ambientMid: Color(0xFF0E0E0E),
+    ambientBottom: Color(0xFF000000),
   );
 }
 
@@ -107,7 +107,7 @@ class PaletteColors {
     );
     final bottomColor = Color.alphaBlend(
       ambientMid.withValues(alpha: 0.85),
-      const Color(0xFF0E0E12),
+      AppColors.card,
     );
 
     return LinearGradient(

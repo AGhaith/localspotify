@@ -329,10 +329,10 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                     margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF181818),
+                      color: AppColors.card,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.08),
+                        color: AppColors.border,
                         width: 1.0,
                       ),
                     ),

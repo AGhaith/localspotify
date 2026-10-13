@@ -92,7 +92,7 @@ class _FullScreenLyricsScreenState extends State<FullScreenLyricsScreen> {
         return Container(
           padding: const EdgeInsets.all(24),
           decoration: const BoxDecoration(
-            color: Color(0xFF141622),
+            color: AppColors.card,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Column(
@@ -107,7 +107,7 @@ class _FullScreenLyricsScreenState extends State<FullScreenLyricsScreen> {
                 decoration: BoxDecoration(
                   gradient: _paletteColors?.toAmbientGradient() ??
                       const LinearGradient(
-                        colors: [Color(0xFF32125A), Color(0xFF120824)],
+                        colors: [AppColors.surface, AppColors.card],
                       ),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: Colors.white.withValues(alpha: 0.12), width: 1.0),
@@ -205,7 +205,7 @@ class _FullScreenLyricsScreenState extends State<FullScreenLyricsScreen> {
         : player.position.inSeconds;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0C0817),
+      backgroundColor: AppColors.background,
       body: AnimatedContainer(
         duration: const Duration(milliseconds: 400),
         curve: Curves.easeOutCubic,
@@ -215,9 +215,9 @@ class _FullScreenLyricsScreenState extends State<FullScreenLyricsScreen> {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Color(0xFF220C40),
-                  Color(0xFF0F0B1A),
-                  Color(0xFF08060E),
+                  AppColors.surface,
+                  AppColors.card,
+                  AppColors.background,
                 ],
                 stops: [0.0, 0.45, 1.0],
               ),
@@ -311,7 +311,7 @@ class _FullScreenLyricsScreenState extends State<FullScreenLyricsScreen> {
                       lyrics: lyrics,
                       currentPosition: currentPosition,
                       accentColor: _paletteColors?.primaryAccent ?? AppColors.primary,
-                      backgroundColor: _paletteColors?.ambientTop ?? const Color(0xFF140827),
+                      backgroundColor: _paletteColors?.ambientTop ?? AppColors.surface,
                       textSize: 25.0,
                       onSeek: (timestamp) => player.seek(timestamp),
                       padding: const EdgeInsets.symmetric(horizontal: 24),

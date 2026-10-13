@@ -276,9 +276,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF281418),
+                        color: AppColors.error.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFF5C1B24)),
+                        border: Border.all(color: AppColors.error.withValues(alpha: 0.35)),
                       ),
                       child: Center(
                         child: Text(
@@ -308,14 +308,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 14),
               decoration: BoxDecoration(
-                color: const Color(0xFF282828),
+                color: AppColors.cardHover,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Center(
                 child: Text(
                   'Log Out',
                   style: AppTypography.labelLarge.copyWith(
-                    color: Colors.white,
+                    color: AppColors.textPrimary,
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
                   ),

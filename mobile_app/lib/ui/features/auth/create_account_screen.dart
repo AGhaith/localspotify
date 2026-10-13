@@ -138,7 +138,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+          icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -163,7 +163,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                 Text(
                   'Join LocalSpotify to stream and save your audio vault',
                   textAlign: TextAlign.center,
-                  style: AppTypography.bodySmall.copyWith(color: Colors.white70),
+                  style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
                 ),
                 const SizedBox(height: 32),
 
@@ -253,12 +253,12 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                 // OR Divider
                 Row(
                   children: [
-                    const Expanded(child: Divider(color: Colors.white24)),
+                    const Expanded(child: Divider(color: AppColors.border)),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 14),
-                      child: Text('OR', style: AppTypography.labelSmall.copyWith(color: Colors.white54)),
+                      child: Text('OR', style: AppTypography.labelSmall.copyWith(color: AppColors.textMuted)),
                     ),
-                    const Expanded(child: Divider(color: Colors.white24)),
+                    const Expanded(child: Divider(color: AppColors.border)),
                   ],
                 ),
 
@@ -279,7 +279,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   children: [
                     Text(
                       'Already have an account? ',
-                      style: AppTypography.bodyMedium.copyWith(color: Colors.white70),
+                      style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary),
                     ),
                     GestureDetector(
                       onTap: () => Navigator.pop(context),

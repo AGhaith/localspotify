@@ -153,19 +153,19 @@ class CatalogTrackRow extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: Colors.redAccent.withValues(alpha: 0.15),
+          color: AppColors.error.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.redAccent.withValues(alpha: 0.5)),
+          border: Border.all(color: AppColors.error.withValues(alpha: 0.5)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.refresh_rounded, color: Colors.redAccent, size: 16),
+            const Icon(Icons.refresh_rounded, color: AppColors.error, size: 16),
             const SizedBox(width: 4),
             Text(
               'Retry',
               style: AppTypography.labelSmall.copyWith(
-                color: Colors.redAccent,
+                color: AppColors.error,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -256,7 +256,7 @@ bool isSpotifyItemPlaying(SpotifyTrackItem item, AudioPlayerProvider player) {
 void showSpotifyArtistsSheet(BuildContext context, SpotifyTrackItem item, MusicProvider music) {
   showModalBottomSheet(
     context: context,
-    backgroundColor: const Color(0xFF181818),
+    backgroundColor: AppColors.card,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
     ),
@@ -286,7 +286,7 @@ void showSpotifyArtistsSheet(BuildContext context, SpotifyTrackItem item, MusicP
                   ],
                 ),
               ),
-              const Divider(color: Color(0xFF2A2A2A)),
+              const Divider(color: AppColors.border),
               Flexible(
                 child: ListView.builder(
                   shrinkWrap: true,

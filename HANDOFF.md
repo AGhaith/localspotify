@@ -32,16 +32,19 @@ The system combines:
      - Streaming Server (Subsonic API): `http://100.92.248.49:6767`
      - Companion Node/Nitro API: `http://100.92.248.49:6969`
 
-4. **Authentic Spotify Dark Palette**:
-   - Main Background: `#121212` (Spotify charcoal grey, never pure `#000000`).
-   - Cards / Containers: `#181818`.
-   - Elevated Surfaces / Dialogs: `#242424`.
-   - Card Hover / Highlights: `#282828`.
-   - Primary Accent: `#1DB954` (Spotify green).
-   - Text Hierarchy: Primary `#FFFFFF`, Secondary `#B3B3B3`, Muted `#6A6A6A`.
+4. **Minimalist Monochrome Palette (Album Art Is The Only Color)**:
+   - Philosophy: High-contrast, minimalist pitch-black aesthetic where album artwork provides the only color in the entire UI. No brand neons, greens, or colored accent glows.
+   - Background: Pure black `#000000` (`AppColors.background`).
+   - Cards / Containers: `#0E0E0E` (`AppColors.card`).
+   - Elevated Surfaces / Inputs / Dialogs: `#1A1A1A` (`AppColors.surface`, `AppColors.inputBackground`).
+   - Hover / Pressed States: `#222222` (`AppColors.cardHover`).
+   - Borders: Subtle `#262626` (`AppColors.border`), strong `#333333` (`AppColors.borderStrong`).
+   - Primary Accent: Monochrome `#FFFFFF` (`AppColors.primary`) with black foreground (buttons, active playback progress, toggles, selected chips, Playing pills, queue swipe indicators).
+   - Text Hierarchy: Primary `#FFFFFF` (`AppColors.textPrimary`), Secondary `#A0A0A0` (`AppColors.textSecondary`), Muted `#6B6B6B` (`AppColors.textMuted`), Dark on White `#000000` (`AppColors.textDark`).
+   - Error / Destructive: `#E5484D` (`AppColors.error`), strictly reserved for errors and destructive actions.
 
 5. **Dynamic Artwork Palette Matching**:
-   - Drawers, bottom sheets, and detail headers must use `PaletteGenerator` (`package:palette_generator`) to dynamically extract dominant and vibrant colors from cover art, tinting the `#121212` background using smooth radial/linear gradients.
+   - Drawers, bottom sheets, and detail headers use `DynamicPaletteService` / `PaletteGenerator` to dynamically extract dominant and vibrant colors solely from album cover art, tinting the Now Playing and lyrics screens while falling back cleanly to the neutral dark palette. Text on tints remains high-contrast readable.
 
 ---
 
@@ -155,7 +158,7 @@ mobile_app/lib/
 │   ├── config/
 │   │   └── app_config.dart                  # Server IP (100.92.248.49:6767), App meta
 │   ├── theme/
-│   │   ├── app_colors.dart                  # #121212, #181818, #242424, #1DB954
+│   │   ├── app_colors.dart                  # #000000, #0E0E0E, #1A1A1A, #FFFFFF, #E5484D
 │   │   ├── app_theme.dart                   # Dark theme data & typography
 │   │   └── app_typography.dart              # Standardized Spotify type scale
 │   └── utils/
@@ -212,8 +215,8 @@ mobile_app/lib/
 3. **Infinite Loading / Stuck Playlist Resolution**:
    - Implemented `syncPlaylistTracksWithVault()` in [music_repository.dart](file:///d:/Side%20Projects/localspotify/mobile_app/lib/data/repositories/music_repository.dart) and [music_provider.dart](file:///d:/Side%20Projects/localspotify/mobile_app/lib/state/music_provider.dart).
    - Added automated periodic 4-second poller in [playlist_detail_screen.dart](file:///d:/Side%20Projects/localspotify/mobile_app/lib/ui/features/library/playlist_detail_screen.dart) to reconcile newly indexed tracks and transition the playlist to ready mode.
-4. **Spotify Charcoal Grey Theme**:
-   - Updated global color system from `#000000` to authentic `#121212`.
+4. **Minimalist Monochrome Palette**:
+   - Updated global color system to pure black `#000000` with monochrome surfaces and pure white accents, adhering to the "album art is the only color" rule.
 5. **Now Playing Sheet Layout Fix**:
    - Wrapped the album title header in `Expanded` to prevent 34px horizontal/bottom overflow on small or high-DPI screens.
 6. **Docker Redis Conflict Resolution**:

@@ -435,14 +435,14 @@ class _AudioEqualizerScreenState extends State<AudioEqualizerScreen> {
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
-            color: isSelected ? AppColors.primary : const Color(0xFF282828),
+            color: isSelected ? AppColors.primary : AppColors.cardHover,
             borderRadius: BorderRadius.circular(99),
           ),
           child: Center(
             child: Text(
               name,
               style: AppTypography.labelSmall.copyWith(
-                color: isSelected ? Colors.black : Colors.white,
+                color: isSelected ? AppColors.textDark : AppColors.textPrimary,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
               ),
             ),

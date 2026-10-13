@@ -292,7 +292,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                                 NeoButton(
                                   text: 'Shuffle',
                                   icon: Icons.shuffle_rounded,
-                                  backgroundColor: const Color(0xFF222430),
+                                  backgroundColor: AppColors.surface,
                                   textColor: AppColors.textPrimary,
                                   borderColor: AppColors.border,
                                   onPressed: () {
@@ -430,7 +430,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                     const SliverToBoxAdapter(
                       child: Padding(
                         padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        child: Divider(color: Colors.white10, height: 1),
+                        child: Divider(color: AppColors.border, height: 1),
                       ),
                     ),
 

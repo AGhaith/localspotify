@@ -34,12 +34,12 @@ class FloatingSyncBanner extends StatelessWidget {
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOutCubic,
         decoration: BoxDecoration(
-          color: const Color(0xFF1E222A),
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: syncState == SpotifySyncState.error
-                ? Colors.redAccent.withValues(alpha: 0.6)
-                : AppColors.primary.withValues(alpha: 0.5),
+                ? AppColors.error.withValues(alpha: 0.6)
+                : AppColors.border,
             width: 1.2,
           ),
           boxShadow: [
@@ -98,7 +98,7 @@ class FloatingSyncBanner extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: AppTypography.bodySmall.copyWith(
-                              color: syncState == SpotifySyncState.error ? Colors.redAccent : AppColors.primary,
+                              color: syncState == SpotifySyncState.error ? AppColors.error : AppColors.primary,
                               fontSize: 12,
                             ),
                           ),
@@ -119,7 +119,7 @@ class FloatingSyncBanner extends StatelessWidget {
                       )
                     else if (syncState == SpotifySyncState.error)
                       IconButton(
-                        icon: const Icon(Icons.refresh_rounded, color: Colors.redAccent, size: 20),
+                        icon: const Icon(Icons.refresh_rounded, color: AppColors.error, size: 20),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                         onPressed: () async {

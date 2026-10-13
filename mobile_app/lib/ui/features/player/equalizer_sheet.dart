@@ -45,7 +45,7 @@ class _EqualizerSheetState extends State<EqualizerSheet> {
 
     return Container(
       decoration: const BoxDecoration(
-        color: Color(0xFF10121A),
+        color: AppColors.card,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -103,7 +103,7 @@ class _EqualizerSheetState extends State<EqualizerSheet> {
                         label: Text('${speed}x', style: TextStyle(fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal)),
                         selected: isCurrent,
                         selectedColor: AppColors.primary,
-                        backgroundColor: const Color(0xFF1B1D28),
+                        backgroundColor: AppColors.cardHover,
                         labelStyle: TextStyle(color: isCurrent ? Colors.black : Colors.white),
                         onSelected: (_) {
                           HapticFeedback.selectionClick();
@@ -129,7 +129,7 @@ class _EqualizerSheetState extends State<EqualizerSheet> {
                     label: Text(preset),
                     selected: isSelected,
                     selectedColor: AppColors.primary,
-                    backgroundColor: const Color(0xFF1B1D28),
+                    backgroundColor: AppColors.cardHover,
                     labelStyle: TextStyle(
                       color: isSelected ? Colors.black : Colors.white70,
                       fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
@@ -147,7 +147,7 @@ class _EqualizerSheetState extends State<EqualizerSheet> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF151824),
+                  color: AppColors.surface,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: AppColors.border),
                 ),

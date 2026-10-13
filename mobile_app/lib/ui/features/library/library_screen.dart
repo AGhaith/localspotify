@@ -53,7 +53,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
   void _showAddBottomSheet(BuildContext context, MusicProvider music) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF242424),
+      backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -82,7 +82,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.download_rounded, color: Color(0xFF1DB954), size: 24),
+                leading: const Icon(Icons.download_rounded, color: AppColors.primary, size: 24),
                 title: Text('Import from Spotify', style: AppTypography.titleMedium),
                 subtitle: Text('Sync a Spotify playlist into your library', style: AppTypography.bodySmall),
                 onTap: () {
@@ -298,7 +298,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
         width: 32,
         height: 32,
         decoration: const BoxDecoration(
-          color: Color(0xFF282828),
+          color: AppColors.cardHover,
           shape: BoxShape.circle,
         ),
         child: const Center(
@@ -326,7 +326,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: active ? AppColors.primary : const Color(0xFF282828),
+          color: active ? AppColors.primary : AppColors.cardHover,
           borderRadius: BorderRadius.circular(99),
         ),
         child: Center(
@@ -396,10 +396,9 @@ class _LibraryScreenState extends State<LibraryScreen> {
         width: 56,
         height: 56,
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF450AF5), Color(0xFF8E8EE5)],
-          ),
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: AppColors.border),
         ),
         child: const Icon(Icons.favorite_rounded, color: Colors.white, size: 26),
       ),

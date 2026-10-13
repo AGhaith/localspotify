@@ -164,12 +164,12 @@ class _LoginScreenState extends State<LoginScreen> {
                 // OR Divider
                 Row(
                   children: [
-                    const Expanded(child: Divider(color: Colors.white24)),
+                    const Expanded(child: Divider(color: AppColors.border)),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 14),
-                      child: Text('OR', style: AppTypography.labelSmall.copyWith(color: Colors.white54)),
+                      child: Text('OR', style: AppTypography.labelSmall.copyWith(color: AppColors.textMuted)),
                     ),
-                    const Expanded(child: Divider(color: Colors.white24)),
+                    const Expanded(child: Divider(color: AppColors.border)),
                   ],
                 ),
 
@@ -190,7 +190,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     Text(
                       "Don't have an account? ",
-                      style: AppTypography.bodyMedium.copyWith(color: Colors.white70),
+                      style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary),
                     ),
                     GestureDetector(
                       onTap: () {
