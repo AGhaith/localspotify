@@ -1,3 +1,4 @@
+import 'dart:convert';
 import '../models/album.dart';
 import '../models/artist.dart';
 import '../models/lyrics.dart';
@@ -429,6 +430,54 @@ class MusicRepository {
     return fallbackUrl;
   }
 
+  /// Queries backend companion for import progress of a track being converted.
+  Future<TrackImportProgress?> getImportProgress({
+    required String title,
+    required String artist,
+  }) async {
+    final session = _apiService.session;
+    if (session == null) {
+      return null;
+    }
+
+    final companionServer = session.serverUrl.replaceAll(':6767', ':6969');
+    final cleanBase = companionServer.endsWith('/')
+        ? companionServer.substring(0, companionServer.length - 1)
+        : companionServer;
+
+    try {
+      final response = await _spotifyImporterService.dio.get(
+        '$cleanBase/api/import-progress',
+        queryParameters: {
+          'title': title,
+          'artist': artist,
+        },
+        options: Options(
+          receiveTimeout: const Duration(milliseconds: 1500),
+          sendTimeout: const Duration(milliseconds: 1500),
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        if (response.data is Map) {
+          final data = Map<String, dynamic>.from(response.data as Map);
+          return TrackImportProgress.fromJson(data);
+        } else if (response.data is String) {
+          try {
+            final decoded = jsonDecode(response.data as String);
+            if (decoded is Map) {
+              return TrackImportProgress.fromJson(Map<String, dynamic>.from(decoded));
+            }
+          } catch (_) {}
+        }
+      }
+    } catch (_) {
+      // Short timeout / polling error - ignore
+    }
+
+    return null;
+  }
+
   Future<void> deleteDownloadedTrack(String trackId) {
     return _storageService.deleteDownloadedTrack(trackId);
   }
@@ -529,5 +578,25 @@ class MusicRepository {
 
   Future<Map<String, dynamic>?> startServerScan() => _apiService.startScan();
   Future<Map<String, dynamic>?> getServerScanStatus() => _apiService.getScanStatus();
+}
+
+class TrackImportProgress {
+  final String stage;
+  final int percent;
+  final String message;
+
+  const TrackImportProgress({
+    required this.stage,
+    required this.percent,
+    required this.message,
+  });
+
+  factory TrackImportProgress.fromJson(Map<String, dynamic> json) {
+    return TrackImportProgress(
+      stage: json['stage']?.toString() ?? 'idle',
+      percent: (json['percent'] as num?)?.round().clamp(0, 100) ?? 0,
+      message: json['message']?.toString() ?? '',
+    );
+  }
 }
 

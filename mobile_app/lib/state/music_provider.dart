@@ -11,7 +11,7 @@ import '../data/services/spotify_importer_service.dart';
 import '../data/services/download_notification_service.dart';
 import '../ui/features/library/artist_detail_screen.dart';
 
-enum SpotifySyncState { idle, syncing, playing, error }
+enum SpotifySyncState { idle, syncing, error }
 
 class MusicProvider extends ChangeNotifier {
   final MusicRepository _musicRepository;
@@ -417,34 +417,108 @@ class MusicProvider extends ChangeNotifier {
 
   Future<Track?> convertAndSyncSpotifyTrack(SpotifyTrackItem spotifyItem) async {
     final trackId = spotifyItem.id;
+    if (_spotifyTrackSyncStates[trackId] == SpotifySyncState.syncing) {
+      return null;
+    }
+
     _spotifyTrackSyncStates[trackId] = SpotifySyncState.syncing;
     _spotifyTrackSyncProgress[trackId] = 0.0;
     _spotifyTrackSyncMessages[trackId] = 'Syncing "${spotifyItem.title}"...';
     _activeSyncingItem = spotifyItem;
     notifyListeners();
 
+    Timer? pollTimer;
+    bool isCancelled = false;
+    bool isPollInProgress = false;
+
     try {
+      pollTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) async {
+        if (isCancelled || _spotifyTrackSyncStates[trackId] != SpotifySyncState.syncing) {
+          timer.cancel();
+          return;
+        }
+
+        if (isPollInProgress) return;
+        isPollInProgress = true;
+
+        try {
+          final progress = await _musicRepository.getImportProgress(
+            title: spotifyItem.title,
+            artist: spotifyItem.artist,
+          );
+
+          if (isCancelled || _spotifyTrackSyncStates[trackId] != SpotifySyncState.syncing) {
+            return;
+          }
+
+          if (progress == null || progress.stage == 'idle') {
+            return;
+          }
+
+          final newProgress = (progress.percent / 100.0).clamp(0.0, 1.0);
+          final String newMessage;
+          switch (progress.stage) {
+            case 'searching':
+              newMessage = 'Finding the right version...';
+              break;
+            case 'downloading':
+              newMessage = 'Downloading ${progress.percent}%';
+              break;
+            case 'processing':
+              newMessage = 'Adding lyrics and artwork...';
+              break;
+            case 'ready':
+              newMessage = 'Starting playback...';
+              break;
+            default:
+              newMessage = progress.message.isNotEmpty
+                  ? progress.message
+                  : (_spotifyTrackSyncMessages[trackId] ?? 'Syncing...');
+          }
+
+          final currentProgress = _spotifyTrackSyncProgress[trackId] ?? 0.0;
+          final currentMessage = _spotifyTrackSyncMessages[trackId] ?? '';
+
+          if (currentProgress != newProgress || currentMessage != newMessage) {
+            _spotifyTrackSyncProgress[trackId] = newProgress;
+            _spotifyTrackSyncMessages[trackId] = newMessage;
+            notifyListeners();
+          }
+        } catch (_) {
+          // Ignore polling errors
+        } finally {
+          isPollInProgress = false;
+        }
+      });
+
       final track = await _musicRepository.createTrackFromSpotifyItem(spotifyItem);
 
       _spotifyTrackSyncProgress[trackId] = 1.0;
-      _spotifyTrackSyncStates[trackId] = SpotifySyncState.playing;
+      _spotifyTrackSyncStates[trackId] = SpotifySyncState.idle;
       _spotifyTrackSyncMessages[trackId] = 'Playing';
       notifyListeners();
 
-      // Clear active banner after brief feedback
+      // Clear active banner and progress/message entries after brief feedback
       Future.delayed(const Duration(seconds: 3), () {
         if (_activeSyncingItem?.id == trackId) {
           _activeSyncingItem = null;
-          notifyListeners();
         }
+        _spotifyTrackSyncStates.remove(trackId);
+        _spotifyTrackSyncProgress.remove(trackId);
+        _spotifyTrackSyncMessages.remove(trackId);
+        notifyListeners();
       });
 
       return track;
     } catch (e) {
       _spotifyTrackSyncStates[trackId] = SpotifySyncState.error;
+      _spotifyTrackSyncProgress[trackId] = 0.0;
       _spotifyTrackSyncMessages[trackId] = 'Failed to load audio. Tap to retry.';
       notifyListeners();
       return null;
+    } finally {
+      isCancelled = true;
+      pollTimer?.cancel();
     }
   }
 

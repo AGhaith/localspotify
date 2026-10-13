@@ -46,7 +46,7 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     final music = context.watch<MusicProvider>();
-    final player = context.read<AudioPlayerProvider>();
+    final player = context.watch<AudioPlayerProvider>();
     final query = _searchController.text.trim();
 
     // Compute dynamic suggestions matching recent searches
@@ -358,6 +358,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                       final item = music.spotifySearchTracks[i];
                                       final syncState = music.getSpotifySyncState(item.id);
                                       final syncProgress = music.getSpotifySyncProgress(item.id);
+                                      final isPlaying = _isSpotifyItemPlaying(item, player);
 
                                       return ListTile(
                                         contentPadding: const EdgeInsets.symmetric(vertical: 2),
@@ -395,7 +396,12 @@ class _SearchScreenState extends State<SearchScreen> {
                                           overflow: TextOverflow.ellipsis,
                                           style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
                                         ),
-                                        trailing: _buildSpotifyTrackTrailing(item, syncState, syncProgress),
+                                        trailing: _buildSpotifyTrackTrailing(
+                                          item,
+                                          syncState,
+                                          syncProgress,
+                                          isPlaying: isPlaying,
+                                        ),
                                         onLongPress: () {
                                           HapticFeedback.selectionClick();
                                           if (item.individualArtists.length > 1) {
@@ -454,108 +460,147 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  Widget _buildSpotifyTrackTrailing(SpotifyTrackItem item, SpotifySyncState syncState, double progress) {
-    switch (syncState) {
-      case SpotifySyncState.syncing:
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox(
-                width: 14,
-                height: 14,
-                child: CircularProgressIndicator(
-                  value: progress > 0 ? progress : null,
-                  strokeWidth: 2,
-                  valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
-                ),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                progress > 0 ? '${(progress * 100).toInt()}%' : 'Syncing...',
-                style: AppTypography.labelSmall.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        );
-      case SpotifySyncState.playing:
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color: AppColors.primary,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.equalizer_rounded, color: Colors.black, size: 16),
-              const SizedBox(width: 4),
-              Text(
-                'Playing',
-                style: AppTypography.labelSmall.copyWith(
-                  color: Colors.black,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        );
-      case SpotifySyncState.error:
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color: Colors.redAccent.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.redAccent.withValues(alpha: 0.5)),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.refresh_rounded, color: Colors.redAccent, size: 16),
-              const SizedBox(width: 4),
-              Text(
-                'Retry',
-                style: AppTypography.labelSmall.copyWith(
-                  color: Colors.redAccent,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        );
-      case SpotifySyncState.idle:
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.play_arrow_rounded, color: AppColors.primary, size: 16),
-              const SizedBox(width: 4),
-              Text(
-                'Play & Sync',
-                style: AppTypography.labelSmall.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        );
+  bool _isSpotifyItemPlaying(SpotifyTrackItem item, AudioPlayerProvider player) {
+    if (!player.isPlaying) return false;
+    final current = player.currentTrack;
+    if (current == null) return false;
+
+    final pseudoId = 'spotify_${item.title.hashCode.abs()}_${item.artist.hashCode.abs()}';
+    if (current.id == pseudoId) return true;
+
+    String clean(String s) => s.trim().toLowerCase().replaceAll(RegExp(r'[^\w\s]'), '');
+    final currentTitle = clean(current.title);
+    final itemTitle = clean(item.title);
+    if (currentTitle.isEmpty || currentTitle != itemTitle) return false;
+
+    final currentArtist = clean(current.artist);
+    final itemArtist = clean(item.artist);
+    final itemPrimaryArtist = clean(item.primaryArtist);
+
+    if (currentArtist == itemArtist || currentArtist == itemPrimaryArtist) return true;
+    if (itemPrimaryArtist.isNotEmpty &&
+        (currentArtist.contains(itemPrimaryArtist) || itemPrimaryArtist.contains(currentArtist))) {
+      return true;
     }
+    if (itemArtist.isNotEmpty &&
+        (currentArtist.contains(itemArtist) || itemArtist.contains(currentArtist))) {
+      return true;
+    }
+
+    return false;
+  }
+
+  Widget _buildSpotifyTrackTrailing(
+    SpotifyTrackItem item,
+    SpotifySyncState syncState,
+    double progress, {
+    required bool isPlaying,
+  }) {
+    if (syncState == SpotifySyncState.syncing) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: AppColors.primary.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(
+                value: progress > 0 ? progress : null,
+                strokeWidth: 2,
+                valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                backgroundColor: progress > 0 ? AppColors.primary.withValues(alpha: 0.2) : null,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              progress > 0 ? '${(progress * 100).toInt()}%' : 'Syncing...',
+              style: AppTypography.labelSmall.copyWith(
+                color: AppColors.primary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (syncState == SpotifySyncState.error) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.redAccent.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.redAccent.withValues(alpha: 0.5)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.refresh_rounded, color: Colors.redAccent, size: 16),
+            const SizedBox(width: 4),
+            Text(
+              'Retry',
+              style: AppTypography.labelSmall.copyWith(
+                color: Colors.redAccent,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (isPlaying) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: AppColors.primary,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.equalizer_rounded, color: Colors.black, size: 16),
+            const SizedBox(width: 4),
+            Text(
+              'Playing',
+              style: AppTypography.labelSmall.copyWith(
+                color: Colors.black,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.play_arrow_rounded, color: AppColors.primary, size: 16),
+          const SizedBox(width: 4),
+          Text(
+            'Play & Sync',
+            style: AppTypography.labelSmall.copyWith(
+              color: AppColors.primary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildFloatingSyncBanner(MusicProvider music, AudioPlayerProvider player) {
@@ -564,7 +609,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
     final syncState = music.getSpotifySyncState(item.id);
     final progress = music.getSpotifySyncProgress(item.id);
-    final message = music.getSpotifySyncMessage(item.id) ?? 'Syncing with server vault...';
+    final message = music.getSpotifySyncMessage(item.id) ?? 'Syncing...';
 
     return Positioned(
       left: 16,
@@ -647,12 +692,14 @@ class _SearchScreenState extends State<SearchScreen> {
                     ),
                     const SizedBox(width: 8),
                     if (syncState == SpotifySyncState.syncing)
-                      const SizedBox(
+                      SizedBox(
                         width: 18,
                         height: 18,
                         child: CircularProgressIndicator(
+                          value: progress > 0 ? progress : null,
                           strokeWidth: 2.2,
-                          valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                          valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                          backgroundColor: progress > 0 ? AppColors.primary.withValues(alpha: 0.2) : null,
                         ),
                       )
                     else if (syncState == SpotifySyncState.error)
@@ -661,6 +708,7 @@ class _SearchScreenState extends State<SearchScreen> {
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                         onPressed: () async {
+                          if (music.getSpotifySyncState(item.id) == SpotifySyncState.syncing) return;
                           HapticFeedback.mediumImpact();
                           final track = await music.convertAndSyncSpotifyTrack(item);
                           if (track != null) {
@@ -681,7 +729,7 @@ class _SearchScreenState extends State<SearchScreen> {
               if (syncState == SpotifySyncState.syncing)
                 LinearProgressIndicator(
                   value: progress > 0 ? progress : null,
-                  minHeight: 3,
+                  minHeight: 2.5,
                   backgroundColor: Colors.white.withValues(alpha: 0.06),
                   valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
                 ),
