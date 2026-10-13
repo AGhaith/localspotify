@@ -102,5 +102,26 @@ void main() {
       expect(track.previewUrl, equals('https://audio-ssl.itunes.apple.com/preview.m4a'));
       expect(track.coverUrl, contains('600x600bb.jpg'));
     });
+
+    test('ArtistCatalogAlbum extension accessors work correctly', () {
+      const track = SpotifyTrackItem(
+        title: 'Song 1',
+        artist: 'Artist 1',
+        durationMs: 180000,
+        uri: 'uri1',
+      );
+      final ArtistCatalogAlbum album = ('Album A', '2022', 'https://cover.jpg', [track]);
+      expect(album.albumTitle, equals('Album A'));
+      expect(album.year, equals('2022'));
+      expect(album.coverUrl, equals('https://cover.jpg'));
+      expect(album.tracks.length, equals(1));
+    });
+
+    test('fetchArtistCatalog returns empty catalog on empty artist name', () async {
+      final service = SpotifyService();
+      final catalog = await service.fetchArtistCatalog('');
+      expect(catalog.top, isEmpty);
+      expect(catalog.albums, isEmpty);
+    });
   });
 }

@@ -1,5 +1,25 @@
 import 'dart:convert';
+import 'dart:math' as math;
 import 'package:dio/dio.dart';
+
+typedef ArtistCatalogAlbum = (
+  String albumTitle,
+  String? year,
+  String? coverUrl,
+  List<SpotifyTrackItem> tracks,
+);
+
+typedef ArtistCatalog = ({
+  List<SpotifyTrackItem> top,
+  List<ArtistCatalogAlbum> albums,
+});
+
+extension ArtistCatalogAlbumExt on ArtistCatalogAlbum {
+  String get albumTitle => $1;
+  String? get year => $2;
+  String? get coverUrl => $3;
+  List<SpotifyTrackItem> get tracks => $4;
+}
 
 class SpotifyTrackItem {
   final String title;
@@ -400,6 +420,324 @@ class SpotifyService {
     } catch (_) {}
 
     return null;
+  }
+
+  final Map<String, ArtistCatalog> _artistCatalogCache = {};
+
+  /// Fetch public Deezer music catalog for an artist: top 10 songs and albums with full tracklists.
+  Future<ArtistCatalog> fetchArtistCatalog(String artistName) async {
+    final cleanName = artistName.trim();
+    if (cleanName.isEmpty) {
+      return (top: const <SpotifyTrackItem>[], albums: const <ArtistCatalogAlbum>[]);
+    }
+
+    final cacheKey = cleanName.toLowerCase();
+    if (_artistCatalogCache.containsKey(cacheKey)) {
+      return _artistCatalogCache[cacheKey]!;
+    }
+
+    try {
+      // 1. Search Deezer for the artist
+      final searchResp = await _dio.get(
+        'https://api.deezer.com/search/artist',
+        queryParameters: {
+          'q': cleanName,
+          'limit': 15,
+        },
+        options: Options(
+          receiveTimeout: const Duration(seconds: 6),
+          sendTimeout: const Duration(seconds: 4),
+        ),
+      );
+
+      final searchData = searchResp.data is String ? jsonDecode(searchResp.data) : searchResp.data;
+      final artistList = (searchData['data'] as List?)?.whereType<Map>().toList() ?? [];
+      if (artistList.isEmpty) {
+        const emptyResult = (top: <SpotifyTrackItem>[], albums: <ArtistCatalogAlbum>[]);
+        _artistCatalogCache[cacheKey] = emptyResult;
+        return emptyResult;
+      }
+
+      // Pick the Deezer artist whose name best matches (case-insensitive exact first, then highest nb_fan)
+      final lowerTarget = cleanName.toLowerCase();
+      final exactMatches = artistList
+          .where((a) => (a['name']?.toString().trim().toLowerCase() ?? '') == lowerTarget)
+          .toList();
+
+      Map bestArtist;
+      if (exactMatches.isNotEmpty) {
+        exactMatches.sort((a, b) {
+          final fansA = (a['nb_fan'] as num?)?.toInt() ?? 0;
+          final fansB = (b['nb_fan'] as num?)?.toInt() ?? 0;
+          return fansB.compareTo(fansA);
+        });
+        bestArtist = exactMatches.first;
+      } else {
+        artistList.sort((a, b) {
+          final fansA = (a['nb_fan'] as num?)?.toInt() ?? 0;
+          final fansB = (b['nb_fan'] as num?)?.toInt() ?? 0;
+          return fansB.compareTo(fansA);
+        });
+        bestArtist = artistList.first;
+      }
+
+      final artistId = bestArtist['id'];
+      if (artistId == null) {
+        const emptyResult = (top: <SpotifyTrackItem>[], albums: <ArtistCatalogAlbum>[]);
+        _artistCatalogCache[cacheKey] = emptyResult;
+        return emptyResult;
+      }
+
+      // 2. Concurrently fetch top 10 songs and artist albums
+      final topFuture = _dio.get(
+        'https://api.deezer.com/artist/$artistId/top',
+        queryParameters: {'limit': 10},
+        options: Options(
+          receiveTimeout: const Duration(seconds: 6),
+          sendTimeout: const Duration(seconds: 4),
+        ),
+      ).catchError((_) => Response(requestOptions: RequestOptions(path: '')));
+
+      final albumsFuture = _dio.get(
+        'https://api.deezer.com/artist/$artistId/albums',
+        queryParameters: {'limit': 100},
+        options: Options(
+          receiveTimeout: const Duration(seconds: 6),
+          sendTimeout: const Duration(seconds: 4),
+        ),
+      ).catchError((_) => Response(requestOptions: RequestOptions(path: '')));
+
+      final responses = await Future.wait([topFuture, albumsFuture]);
+
+      // Parse top 10 songs
+      final topTracks = <SpotifyTrackItem>[];
+      final topResp = responses[0];
+      if (topResp.data != null) {
+        try {
+          final data = topResp.data is String ? jsonDecode(topResp.data) : topResp.data;
+          final items = (data['data'] as List?)?.whereType<Map>().toList() ?? [];
+          final seenTop = <String>{};
+          for (final t in items) {
+            final title = t['title']?.toString() ?? 'Unknown Track';
+            final norm = _normalizeTrackTitle(title);
+            if (norm.isEmpty || !seenTop.add(norm)) continue;
+
+            final artist = t['artist']?['name']?.toString() ?? bestArtist['name']?.toString() ?? cleanName;
+            final durationSec = (t['duration'] as num?)?.toInt() ?? 180;
+            final preview = t['preview']?.toString();
+            final cover = t['album']?['cover_xl']?.toString() ??
+                t['album']?['cover_big']?.toString() ??
+                t['album']?['cover_medium']?.toString();
+            final album = t['album']?['title']?.toString();
+            final link = t['link']?.toString() ?? '';
+
+            topTracks.add(
+              SpotifyTrackItem(
+                title: title,
+                artist: artist,
+                durationMs: durationSec * 1000,
+                uri: link,
+                previewUrl: preview,
+                coverUrl: cover,
+                album: album,
+              ),
+            );
+          }
+        } catch (_) {}
+      }
+
+      // Parse albums
+      final albumsResp = responses[1];
+      final rawAlbums = <Map>[];
+      if (albumsResp.data != null) {
+        try {
+          final data = albumsResp.data is String ? jsonDecode(albumsResp.data) : albumsResp.data;
+          final items = (data['data'] as List?)?.whereType<Map>().toList() ?? [];
+          rawAlbums.addAll(items);
+        } catch (_) {}
+      }
+
+      // Prioritize albums: original studio albums first, deprioritize compilations, deluxe, live
+      final prioritizedAlbums = List<Map>.from(rawAlbums);
+      prioritizedAlbums.sort((a, b) {
+        final penA = _albumPenalty(a);
+        final penB = _albumPenalty(b);
+        if (penA != penB) return penA.compareTo(penB);
+        final dateA = a['release_date']?.toString() ?? '';
+        final dateB = b['release_date']?.toString() ?? '';
+        return dateA.compareTo(dateB);
+      });
+
+      // Concurrently fetch album tracklists with max concurrency 6
+      final albumTracklists = List<List<Map>?>.filled(prioritizedAlbums.length, null);
+      var nextAlbumIdx = 0;
+
+      Future<void> worker() async {
+        while (true) {
+          final i = nextAlbumIdx++;
+          if (i >= prioritizedAlbums.length) break;
+
+          final alb = prioritizedAlbums[i];
+          final albId = alb['id'];
+          if (albId == null) {
+            albumTracklists[i] = const [];
+            continue;
+          }
+
+          try {
+            final resp = await _dio.get(
+              'https://api.deezer.com/album/$albId/tracks',
+              queryParameters: {'limit': 200},
+              options: Options(
+                receiveTimeout: const Duration(seconds: 6),
+                sendTimeout: const Duration(seconds: 4),
+              ),
+            );
+            final d = resp.data is String ? jsonDecode(resp.data) : resp.data;
+            final trkList = (d['data'] as List?)?.whereType<Map>().toList() ?? [];
+            albumTracklists[i] = trkList;
+          } catch (_) {
+            albumTracklists[i] = const [];
+          }
+        }
+      }
+
+      final workerCount = math.min(6, prioritizedAlbums.length);
+      if (workerCount > 0) {
+        await Future.wait(List.generate(workerCount, (_) => worker()));
+      }
+
+      // Dedupe tracks across albums (keep original album version over compilations/"Deluxe"/live)
+      final seenTracks = <String>{};
+      final parsedAlbums = <({
+        String albumTitle,
+        String? year,
+        String? coverUrl,
+        String releaseDate,
+        List<SpotifyTrackItem> tracks,
+      })>[];
+
+      for (var i = 0; i < prioritizedAlbums.length; i++) {
+        final alb = prioritizedAlbums[i];
+        final trkList = albumTracklists[i] ?? [];
+        if (trkList.isEmpty) continue;
+
+        final albTitle = alb['title']?.toString() ?? 'Unknown Album';
+        final releaseDate = alb['release_date']?.toString() ?? '';
+        String? year;
+        if (releaseDate.isNotEmpty) {
+          final yMatch = RegExp(r'^\d{4}').firstMatch(releaseDate);
+          if (yMatch != null) year = yMatch.group(0);
+        }
+        final cover = alb['cover_xl']?.toString() ??
+            alb['cover_big']?.toString() ??
+            alb['cover_medium']?.toString();
+
+        final albumTracks = <SpotifyTrackItem>[];
+        for (final t in trkList) {
+          final title = t['title']?.toString() ?? 'Unknown Track';
+          final normTitle = _normalizeTrackTitle(title);
+          if (normTitle.isEmpty) continue;
+
+          // Dedupe tracks by normalized title (keep original album version)
+          if (!seenTracks.add(normTitle)) continue;
+
+          final artist = t['artist']?['name']?.toString() ?? bestArtist['name']?.toString() ?? cleanName;
+          final durationSec = (t['duration'] as num?)?.toInt() ?? 180;
+          final preview = t['preview']?.toString();
+          final link = t['link']?.toString() ?? '';
+
+          albumTracks.add(
+            SpotifyTrackItem(
+              title: title,
+              artist: artist,
+              durationMs: durationSec * 1000,
+              uri: link,
+              previewUrl: preview,
+              coverUrl: cover,
+              album: albTitle,
+            ),
+          );
+        }
+
+        if (albumTracks.isNotEmpty) {
+          parsedAlbums.add((
+            albumTitle: albTitle,
+            year: year,
+            coverUrl: cover,
+            releaseDate: releaseDate,
+            tracks: albumTracks,
+          ));
+        }
+      }
+
+      // Sort albums reverse-chronologically for display
+      parsedAlbums.sort((a, b) => b.releaseDate.compareTo(a.releaseDate));
+
+      final finalAlbums = parsedAlbums
+          .map<ArtistCatalogAlbum>((a) => (a.albumTitle, a.year, a.coverUrl, a.tracks))
+          .toList();
+
+      final result = (top: topTracks, albums: finalAlbums);
+      _artistCatalogCache[cacheKey] = result;
+      return result;
+    } catch (_) {
+      const empty = (top: <SpotifyTrackItem>[], albums: <ArtistCatalogAlbum>[]);
+      return empty;
+    }
+  }
+
+  int _albumPenalty(Map alb) {
+    final title = (alb['title']?.toString() ?? '').toLowerCase();
+    final recType = (alb['record_type']?.toString() ?? '').toLowerCase();
+    int penalty = 0;
+
+    // Compilations / Best of / Greatest Hits
+    if (recType == 'compile' ||
+        title.contains('compilation') ||
+        title.contains('greatest hits') ||
+        title.contains('best of') ||
+        title.contains('anthology') ||
+        title.contains('the collection')) {
+      penalty += 1000;
+    }
+
+    // Live albums
+    if (recType == 'live' || title.contains('live') || title.contains('tour') || title.contains('concert')) {
+      penalty += 500;
+    }
+
+    // Deluxe / Expanded / Anniversary / Remastered / Special editions
+    if (title.contains('deluxe') ||
+        title.contains('expanded') ||
+        title.contains('anniversary') ||
+        title.contains('special edition') ||
+        title.contains('remaster') ||
+        title.contains('edition') ||
+        title.contains('bonus track')) {
+      penalty += 200;
+    }
+
+    if (recType == 'single') {
+      penalty += 50;
+    } else if (recType == 'ep') {
+      penalty += 30;
+    }
+
+    return penalty;
+  }
+
+  String _normalizeTrackTitle(String title) {
+    var s = title.toLowerCase();
+    s = s.replaceAll(
+      RegExp(
+        r'\s*[\(\[](?:feat\.?|ft\.?|with|live|remaster(?:ed)?|deluxe|version|radio edit|bonus|instrumental|edit|mix)[^\)\]]*[\)\]]',
+        caseSensitive: false,
+      ),
+      '',
+    );
+    s = s.replaceAll(RegExp(r'[^\w\s\u0600-\u06FF]'), ' ');
+    return s.replaceAll(RegExp(r'\s+'), ' ').trim();
   }
 }
 

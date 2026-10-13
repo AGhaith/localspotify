@@ -415,6 +415,10 @@ class MusicProvider extends ChangeNotifier {
   String? getSpotifySyncMessage(String trackId) => _spotifyTrackSyncMessages[trackId];
   SpotifyTrackItem? get activeSyncingItem => _activeSyncingItem;
 
+  Future<ArtistCatalog> getArtistCatalog(String artistName) {
+    return _musicRepository.getArtistCatalog(artistName);
+  }
+
   Future<Track?> convertAndSyncSpotifyTrack(SpotifyTrackItem spotifyItem) async {
     final trackId = spotifyItem.id;
     if (_spotifyTrackSyncStates[trackId] == SpotifySyncState.syncing) {

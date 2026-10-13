@@ -521,6 +521,10 @@ class MusicRepository {
     return _spotifyService.searchTracks(query);
   }
 
+  Future<ArtistCatalog> getArtistCatalog(String artistName) {
+    return _spotifyService.fetchArtistCatalog(artistName);
+  }
+
   Future<Track> createTrackFromSpotifyItem(SpotifyTrackItem item) async {
     // 0. Quick check: Is this track already present in the server's Subsonic library?
     try {
