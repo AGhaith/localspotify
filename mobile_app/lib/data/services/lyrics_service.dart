@@ -33,9 +33,10 @@ class LyricsService {
   static String cleanTrackTitle(String title) {
     return title
         .replaceAll(RegExp(r'\.[a-zA-Z0-9]{3,4}$'), '') // strip extensions
-        .replaceAll(RegExp(r'\s*[\(\[](?:feat|ft|with|prod)\.?\s+[^\)\]]+[\)\]]', caseSensitive: false), '')
-        .replaceAll(RegExp(r'\s*[\(\[](?:official\s+(?:audio|video|music\s+video)|remastered(?:\s+\d+)?|remix|bonus\s+track|deluxe\s+edition)[\)\]]', caseSensitive: false), '')
-        .replaceAll(RegExp(r'\s*-\s*(?:remastered(?:\s+\d+)?|single\s+version|live)[\w\s]*', caseSensitive: false), '')
+        .replaceAll(RegExp(r'\s*[\(\[](?:feat|ft|featuring|with|prod)\b\.?[^\)\]]*[\)\]]', caseSensitive: false), '')
+        .replaceAll(RegExp(r'\s*[\(\[]official\b[^\)\]]*[\)\]]', caseSensitive: false), '')
+        .replaceAll(RegExp(r'\s*[\(\[](?:(?:\d{4}\s+)?remaster(?:ed)?|radio\s+edit|remix|bonus\s+track|deluxe\s+edition)\b[^\)\]]*[\)\]]', caseSensitive: false), '')
+        .replaceAll(RegExp(r'\s*[-–—]\s*(?:(?:\d{4}\s+)?remaster(?:ed)?|radio\s+edit|single\s+version|live)\b.*$', caseSensitive: false), '')
         .trim();
   }
 
@@ -48,9 +49,9 @@ class LyricsService {
 
   /// Fetch lyrics for a track with a robust fallback chain:
   /// 1. Local offline cached lyrics
-  /// 2. LRCLIB Direct GET (high-accuracy synced LRC)
-  /// 3. LRCLIB Search endpoint (fuzzy fallback)
-  /// 4. Server getLyricsBySongId & getLyrics (server local files)
+  /// 2. Server/Subsonic lyrics (getLyricsBySongId - local .lrc files) for real library tracks
+  /// 3. Companion GET /api/lyrics (port 6969)
+  /// 4. LRCLIB Direct GET then /search (with cleaned title and primary artist retry)
   Future<Lyrics?> getLyrics(Track track) async {
     final trackId = track.id;
 
@@ -62,11 +63,79 @@ class LyricsService {
 
     final rawArtist = track.artist;
     final rawTitle = track.title;
-    final cleanArtist = cleanArtistName(rawArtist);
-    final cleanTitle = cleanTrackTitle(rawTitle);
     final durationSec = track.duration;
 
-    // 2. Try LRCLIB Direct GET (Exact match)
+    // (a) Server/Subsonic lyrics (getLyricsBySongId - local .lrc files) for real library tracks (non spotify_ ids)
+    if (!trackId.startsWith('spotify_')) {
+      try {
+        final subsonicLyrics = await _subsonicService.getLyrics(
+          songId: trackId,
+          artist: rawArtist,
+          title: rawTitle,
+        );
+        if (subsonicLyrics != null &&
+            (subsonicLyrics.lines.isNotEmpty || subsonicLyrics.rawText.isNotEmpty)) {
+          await _storageService.saveCachedLyrics(trackId, subsonicLyrics.rawText, subsonicLyrics.isSynced);
+          return subsonicLyrics;
+        }
+      } catch (_) {}
+    }
+
+    // (b) Companion GET /api/lyrics (derive companion base from session server URL by replacing ':6767' with ':6969'; 20s receive timeout)
+    final session = _subsonicService.session;
+    if (session != null && session.serverUrl.isNotEmpty) {
+      try {
+        final companionServer = session.serverUrl.replaceAll(':6767', ':6969');
+        final cleanBase = companionServer.endsWith('/')
+            ? companionServer.substring(0, companionServer.length - 1)
+            : companionServer;
+
+        final companionParams = <String, dynamic>{
+          'title': rawTitle,
+          'artist': rawArtist,
+        };
+        if (track.album.isNotEmpty) {
+          companionParams['album'] = track.album;
+        }
+        if (durationSec > 0) {
+          companionParams['duration'] = durationSec;
+        }
+
+        final response = await _dio.get(
+          '$cleanBase/api/lyrics',
+          queryParameters: companionParams,
+          options: Options(
+            receiveTimeout: const Duration(seconds: 20),
+          ),
+        );
+
+        final data = response.data;
+        if (data is Map) {
+          final isSynced = data['synced'] == true;
+          final lrc = data['lrc']?.toString();
+          if (lrc != null && lrc.trim().isNotEmpty) {
+            if (isSynced) {
+              final lyrics = Lyrics.fromLrc(lrc, artist: rawArtist, title: rawTitle);
+              if (lyrics.lines.isNotEmpty) {
+                await _storageService.saveCachedLyrics(trackId, lrc, true);
+                return lyrics;
+              }
+            }
+            final lyrics = Lyrics.fromPlainText(lrc, artist: rawArtist, title: rawTitle);
+            await _storageService.saveCachedLyrics(trackId, lrc, false);
+            return lyrics;
+          }
+        }
+      } catch (_) {
+        // Companion failed or 404, proceed to LRCLIB fallback
+      }
+    }
+
+    // (c) Existing LRCLIB path as the final fallback
+    final cleanArtist = cleanArtistName(rawArtist);
+    final cleanTitle = cleanTrackTitle(rawTitle);
+
+    // 1. Try LRCLIB Direct GET (Exact match)
     try {
       final params = <String, dynamic>{
         'artist_name': cleanArtist.isNotEmpty ? cleanArtist : rawArtist,
@@ -106,9 +175,58 @@ class LyricsService {
       // Direct GET didn't find or 404'd, proceed to search
     }
 
-    // 3. Try LRCLIB Search Endpoint (Fuzzy match)
+    // 2. Try LRCLIB Search Endpoint (Fuzzy match)
+    final searchTitle = cleanTitle.isNotEmpty ? cleanTitle : rawTitle;
+    final initialQuery = rawArtist.isNotEmpty ? '$rawArtist $searchTitle' : searchTitle;
+    var lrclibLyrics = await _searchLrclib(
+      query: initialQuery,
+      trackId: trackId,
+      rawArtist: rawArtist,
+      rawTitle: rawTitle,
+    );
+    if (lrclibLyrics != null) {
+      return lrclibLyrics;
+    }
+
+    // Retry with primary artist only (first of comma-separated artists)
+    final primaryArtist = rawArtist.split(',').first.trim();
+    if (primaryArtist.isNotEmpty && primaryArtist != rawArtist) {
+      final retryQuery = '$primaryArtist $searchTitle';
+      lrclibLyrics = await _searchLrclib(
+        query: retryQuery,
+        trackId: trackId,
+        rawArtist: rawArtist,
+        rawTitle: rawTitle,
+      );
+      if (lrclibLyrics != null) {
+        return lrclibLyrics;
+      }
+    }
+
+    if (cleanArtist.isNotEmpty && cleanArtist != rawArtist && cleanArtist != primaryArtist) {
+      final cleanRetryQuery = '$cleanArtist $searchTitle';
+      lrclibLyrics = await _searchLrclib(
+        query: cleanRetryQuery,
+        trackId: trackId,
+        rawArtist: rawArtist,
+        rawTitle: rawTitle,
+      );
+      if (lrclibLyrics != null) {
+        return lrclibLyrics;
+      }
+    }
+
+    return null;
+  }
+
+  /// Helper to search LRCLIB and parse best match synced or plain lyrics
+  Future<Lyrics?> _searchLrclib({
+    required String query,
+    required String trackId,
+    required String rawArtist,
+    required String rawTitle,
+  }) async {
     try {
-      final query = cleanArtist.isNotEmpty ? '$cleanArtist $cleanTitle' : '$rawArtist $rawTitle';
       final response = await _dio.get(
         '$_lrclibBaseUrl/search',
         queryParameters: {'q': query},
@@ -145,21 +263,6 @@ class LyricsService {
     } catch (_) {
       // LRCLIB search failed or offline
     }
-
-    // 4. Try server endpoints
-    try {
-      final subsonicLyrics = await _subsonicService.getLyrics(
-        songId: trackId,
-        artist: rawArtist,
-        title: rawTitle,
-      );
-      if (subsonicLyrics != null &&
-          (subsonicLyrics.lines.isNotEmpty || subsonicLyrics.rawText.isNotEmpty)) {
-        await _storageService.saveCachedLyrics(trackId, subsonicLyrics.rawText, subsonicLyrics.isSynced);
-        return subsonicLyrics;
-      }
-    } catch (_) {}
-
     return null;
   }
 }

@@ -40,3 +40,6 @@ downloaded_apk/
 downloaded_subsonic_apk/
 builds/
 
+
+# Redis persistence
+redis-data/

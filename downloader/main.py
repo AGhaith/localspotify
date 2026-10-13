@@ -1,8 +1,11 @@
 import asyncio
+from collections import OrderedDict
 from difflib import SequenceMatcher
 import logging
 import os
 import re
+import threading
+import time
 import unicodedata
 import urllib.request
 from pathlib import Path
@@ -11,6 +14,7 @@ from typing import NamedTuple
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 import yt_dlp
+import syncedlyrics
 from ytmusicapi import YTMusic
 
 from download_liked_songs import (
@@ -28,6 +32,12 @@ music_dir = Path(os.environ.get("MUSIC_DIR", "/music"))
 max_downloads = max(1, int(os.environ.get("MAX_CONCURRENT_DOWNLOADS", "3")))
 download_slots = asyncio.Semaphore(max_downloads)
 in_flight: dict[str, asyncio.Task[str]] = {}
+progress: dict[str, dict] = {}
+progress_lock = threading.Lock()
+progress_retention_seconds = 600
+lyrics_cache: OrderedDict[tuple[str, str, str, float | None], tuple[float, dict | None]] = OrderedDict()
+lyrics_cache_limit = 500
+lyrics_miss_ttl = 600
 logger = logging.getLogger("uvicorn.error")
 ytmusic = YTMusic()
 app = FastAPI()
@@ -54,6 +64,63 @@ class AudioCandidate(NamedTuple):
     title_score: float
     artist_score: float
     album_score: float
+
+
+def filename_key(title: str, artist: str) -> str:
+    clean_title = sanitize_filename(title.strip())
+    clean_artist = sanitize_filename(artist.strip().replace(";", ", "))
+    return f"{clean_artist} - {clean_title}.m4a"
+
+
+def lyrics_response(lyrics: str, source: str) -> dict:
+    return {
+        "synced": bool(re.search(r"\[\d{1,2}:\d{2}(?:\.\d{1,3})?\]", lyrics)),
+        "lrc": lyrics,
+        "source": source,
+    }
+
+
+def search_lyrics(title: str, artist: str, album: str, duration: float | None) -> dict | None:
+    clean_title = re.sub(r"\s*[\[(]\s*(?:feat|ft|featuring)\b[^\])]*[\])]", "", title, flags=re.I)
+    clean_title = re.sub(r"\s*[-–—]\s*remaster(?:ed)?\b.*$", "", clean_title, flags=re.I).strip()
+    primary_artist = artist.split(",", 1)[0].strip()
+    for search_artist in dict.fromkeys((artist, primary_artist)):
+        lyrics, _ = fetch_synced_lyrics(search_artist, clean_title, album, duration)
+        if lyrics:
+            return lyrics_response(lyrics, "syncedlyrics")
+        for search_options in ({"synced_only": True}, {"plain_only": True}):
+            lyrics = syncedlyrics.search(f"{clean_title} {search_artist}", **search_options)
+            if lyrics:
+                return lyrics_response(lyrics, "syncedlyrics")
+    return None
+
+
+def set_progress(filename: str, stage: str, percent: int, message: str) -> None:
+    updated = time.monotonic()
+    with progress_lock:
+        progress[filename] = {
+            "stage": stage, "percent": percent, "message": message, "updated": updated,
+        }
+    if stage in ("ready", "failed"):
+        expiry = threading.Timer(progress_retention_seconds, clear_expired_progress, args=(filename, updated))
+        expiry.daemon = True
+        expiry.start()
+
+
+def clear_expired_progress(filename: str, updated: float) -> None:
+    with progress_lock:
+        current = progress.get(filename)
+        if current and current["updated"] == updated:
+            del progress[filename]
+
+
+def download_progress_hook(filename: str, status: dict) -> None:
+    if status.get("status") != "downloading":
+        return
+    total = status.get("total_bytes") or status.get("total_bytes_estimate")
+    downloaded = status.get("downloaded_bytes") or 0
+    percent = min(100, max(0, int(downloaded * 100 / total))) if total else 50
+    set_progress(filename, "downloading", percent, "Downloading audio")
 
 
 def download_cover(url: str) -> bytes | None:
@@ -138,6 +205,7 @@ def accepted_candidate(track: DownloadRequest, source: str, song: dict, duration
 
 
 def download_video(video_id: str, output_base: Path, need_thumbnail: bool) -> tuple[str | None, bytes | None]:
+    filename = f"{output_base.name}.m4a"
     ydl_opts = {
         "format": "bestaudio[ext=m4a]/bestaudio[ext=aac]/bestaudio/best",
         "outtmpl": f"{output_base}.%(ext)s",
@@ -150,7 +218,9 @@ def download_video(video_id: str, output_base: Path, need_thumbnail: bool) -> tu
         "socket_timeout": 10,
         "retries": 2,
         "concurrent_fragment_downloads": 2,
+        "progress_hooks": [lambda status: download_progress_hook(filename, status)],
     }
+    set_progress(filename, "downloading", 0, "Downloading audio")
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         ydl.download([f"https://www.youtube.com/watch?v={video_id}"])
 
@@ -171,6 +241,7 @@ def download_video(video_id: str, output_base: Path, need_thumbnail: bool) -> tu
 
 
 def download_matching_audio(track: DownloadRequest, output_base: Path, need_thumbnail: bool) -> tuple[str | None, bytes | None]:
+    filename = f"{output_base.name}.m4a"
     duration = track.durationMs / 1000 if track.durationMs else None
     if duration:
         searches = (
@@ -202,6 +273,7 @@ def download_matching_audio(track: DownloadRequest, output_base: Path, need_thum
                 )
                 return file_path, cover
     logger.info("Audio source=fallback candidate=unknown artists=unknown scores=unknown duration=unknown for %s - %s", track.artist, track.title)
+    set_progress(filename, "downloading", 50, "Downloading audio")
     return download_audio_with_ytdlp(
         track.artist, track.title, str(output_base), audio_format="m4a", need_thumbnail=need_thumbnail
     )
@@ -215,8 +287,14 @@ def youtube_search(track: DownloadRequest) -> list[dict]:
 
 def download_track(track: DownloadRequest, output_base: Path, expected_file: Path) -> str:
     if expected_file.is_file():
+        set_progress(expected_file.name, "ready", 100, "Ready")
         return expected_file.name
 
+    file_path, fallback_cover = download_matching_audio(track, output_base, True)
+    if not file_path or not expected_file.is_file():
+        raise RuntimeError("Download stream failed")
+
+    set_progress(expected_file.name, "processing", 95, "Processing audio")
     cover_bytes = None
     if track.uri and track.uri.startswith("spotify:track:"):
         cover_bytes = fetch_spotify_hd_cover(track.uri)
@@ -234,10 +312,6 @@ def download_track(track: DownloadRequest, output_base: Path, expected_file: Pat
     except Exception:
         logger.warning("Could not fetch lyrics for %s", expected_file.name, exc_info=True)
 
-    file_path, fallback_cover = download_matching_audio(track, output_base, cover_bytes is None)
-    if not file_path or not expected_file.is_file():
-        raise RuntimeError("Download stream failed")
-
     embed_metadata(
         file_path,
         {
@@ -253,12 +327,17 @@ def download_track(track: DownloadRequest, output_base: Path, expected_file: Pat
         lyrics_text=lyrics_text,
         audio_format="m4a",
     )
+    set_progress(expected_file.name, "ready", 100, "Ready")
     return expected_file.name
 
 
 async def run_download(track: DownloadRequest, output_base: Path, expected_file: Path) -> str:
     async with download_slots:
-        return await asyncio.to_thread(download_track, track, output_base, expected_file)
+        try:
+            return await asyncio.to_thread(download_track, track, output_base, expected_file)
+        except Exception as exc:
+            set_progress(expected_file.name, "failed", 0, str(exc) or "Download failed")
+            raise
 
 
 def clear_finished_download(filename: str, finished: asyncio.Task[str]) -> None:
@@ -271,17 +350,67 @@ def health() -> dict[str, bool]:
     return {"ok": True}
 
 
+@app.get("/progress")
+def get_progress(title: str, artist: str) -> dict:
+    filename = filename_key(title, artist)
+    with progress_lock:
+        current = progress.get(filename)
+        if current:
+            return {key: current[key] for key in ("stage", "percent", "message")}
+    if (music_dir / filename).is_file():
+        return {"stage": "ready", "percent": 100, "message": "Ready"}
+    return {"stage": "idle", "percent": 0, "message": ""}
+
+
+@app.get("/lyrics")
+async def get_lyrics(title: str, artist: str, album: str = "", duration: float | None = None) -> dict:
+    title, artist, album = title.strip(), artist.strip(), album.strip()
+    if not sanitize_filename(title) or not sanitize_filename(artist.replace(";", ", ")):
+        raise HTTPException(status_code=422, detail="title and artist are required")
+
+    audio_path = music_dir / filename_key(title, artist)
+    lyrics_path = audio_path.with_suffix(".lrc")
+    if lyrics_path.is_file():
+        return lyrics_response(lyrics_path.read_text(encoding="utf-8"), "file")
+
+    cache_key = (title, artist, album, duration)
+    cached = lyrics_cache.get(cache_key)
+    if cached and (cached[1] is not None or time.monotonic() - cached[0] < lyrics_miss_ttl):
+        lyrics_cache.move_to_end(cache_key)
+        if cached[1] is None:
+            raise HTTPException(status_code=404, detail="Lyrics not found")
+        if audio_path.is_file():
+            save_lrc_file(str(lyrics_path.with_suffix("")), cached[1]["lrc"])
+        return cached[1]
+
+    try:
+        found = await asyncio.wait_for(
+            asyncio.to_thread(search_lyrics, title, artist, album, duration), timeout=15
+        )
+    except TimeoutError:
+        logger.warning("Lyrics search timed out for %s - %s", artist, title)
+        raise HTTPException(status_code=404, detail="Lyrics not found") from None
+
+    if found and audio_path.is_file():
+        save_lrc_file(str(lyrics_path.with_suffix("")), found["lrc"])
+    lyrics_cache[cache_key] = (time.monotonic(), found)
+    lyrics_cache.move_to_end(cache_key)
+    if len(lyrics_cache) > lyrics_cache_limit:
+        lyrics_cache.popitem(last=False)
+    if found is None:
+        raise HTTPException(status_code=404, detail="Lyrics not found")
+    return found
+
+
 @app.post("/download")
 async def download(track: DownloadRequest) -> dict[str, str]:
     title = track.title.strip()
     artist = track.artist.strip()
-    clean_title = sanitize_filename(title)
-    clean_artist = sanitize_filename(artist.replace(";", ", "))
-    if not clean_title or not clean_artist:
+    filename = filename_key(title, artist)
+    if not sanitize_filename(title) or not sanitize_filename(artist.replace(";", ", ")):
         raise HTTPException(status_code=422, detail="title and artist must contain valid filename characters")
 
     track = track.model_copy(update={"title": title, "artist": artist})
-    filename = f"{clean_artist} - {clean_title}.m4a"
     expected_file = music_dir / filename
     task = in_flight.get(filename)
     if task is None:
@@ -291,6 +420,7 @@ async def download(track: DownloadRequest) -> dict[str, str]:
             music_dir.mkdir(parents=True, exist_ok=True)
         except OSError as exc:
             raise HTTPException(status_code=502, detail=f"Cannot create music directory: {exc}") from exc
+        set_progress(filename, "searching", 5, "Searching for audio")
         task = asyncio.create_task(run_download(track, expected_file.with_suffix(""), expected_file))
         in_flight[filename] = task
         task.add_done_callback(lambda finished: clear_finished_download(filename, finished))
