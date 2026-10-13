@@ -13,6 +13,40 @@ import '../ui/features/library/artist_detail_screen.dart';
 
 enum SpotifySyncState { idle, syncing, error }
 
+String normalizeArtistName(String name) {
+  final trimmed = name.trim();
+  if (RegExp(r'[\u0600-\u06ff]').hasMatch(trimmed)) return trimmed;
+  const accents = 'àáâãäåāçćčďèéêëēěìíîïīñńòóôõöøōřśšùúûüūýÿžźż';
+  const plain = 'aaaaaaacccdeeeeeeiiiiinnooooooorssuuuuuyyzzz';
+  final lower =
+      trimmed.toLowerCase().replaceAll(RegExp(r'[\u0300-\u036f]'), '');
+  final folded = lower.split('').map((letter) {
+    final index = accents.indexOf(letter);
+    return index < 0 ? letter : plain[index];
+  }).join();
+  return folded
+      .replaceAll(
+          RegExp(r'''[!"#\$%&'()*+,\-./:;<=>?@\[\\\]^_`{|}~\u2000-\u206f]'''),
+          ' ')
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .trim();
+}
+
+List<String> splitArtistNames(String name) => name
+    .split(RegExp(r'\s*(?:,|;|\bfeat\.?|\bft\.?|\bwith\b)\s*',
+        caseSensitive: false))
+    .map((part) => part.trim())
+    .where((part) => part.isNotEmpty)
+    .toList();
+
+bool _trackMatchesArtist(Track track, Artist artist) {
+  if (!artist.id.startsWith('sub_') && track.artistId == artist.id) return true;
+  final name = normalizeArtistName(artist.name);
+  return name.isNotEmpty &&
+      splitArtistNames(track.artist)
+          .any((part) => normalizeArtistName(part) == name);
+}
+
 class MusicProvider extends ChangeNotifier {
   final MusicRepository _musicRepository;
 
@@ -171,35 +205,26 @@ class MusicProvider extends ChangeNotifier {
   /// Decomposes compound artist entries (e.g. "dizzytooskinny, marwan pablo") into individual artists
   List<Artist> _sanitizeArtists(List<Artist> rawArtists) {
     final Map<String, Artist> cleanMap = {};
-    final separator = RegExp(r'\s*(?:,|/|;|&|\bfeat\.?|\bft\.?|\bwith\b)\s*', caseSensitive: false);
 
     for (final artist in rawArtists) {
       final name = artist.name.trim();
-      if (separator.hasMatch(name)) {
-        // Compound artist entry
-        final subNames = name
-            .split(separator)
-            .map((s) => s.trim())
-            .where((s) => s.isNotEmpty && !s.toLowerCase().startsWith('feat') && !s.toLowerCase().startsWith('ft'))
-            .toList();
-
+      final subNames = splitArtistNames(name);
+      if (subNames.length > 1) {
         for (final sub in subNames) {
-          final key = sub.toLowerCase();
-          if (!cleanMap.containsKey(key)) {
-            cleanMap[key] = Artist(
-              id: 'sub_${artist.id}_${sub.hashCode.abs()}',
+          final key = normalizeArtistName(sub);
+          cleanMap.putIfAbsent(
+            key,
+            () => Artist(
+              id: 'sub_split_${Uri.encodeComponent(artist.id)}|${Uri.encodeComponent(sub)}',
               name: sub,
               coverArtId: artist.coverArtId,
               artistImageUrl: artist.artistImageUrl,
               albumCount: 1,
-            );
-          }
+            ),
+          );
         }
       } else {
-        final key = name.toLowerCase();
-        if (!cleanMap.containsKey(key)) {
-          cleanMap[key] = artist;
-        }
+        cleanMap[normalizeArtistName(name)] = artist;
       }
     }
 
@@ -209,6 +234,7 @@ class MusicProvider extends ChangeNotifier {
   // In-memory detail caches to eliminate redundant network requests and UI flickering
   final Map<String, Album> _albumCache = {};
   final Map<String, Artist> _artistCache = {};
+  final Map<String, List<Track>> _artistLibraryTracksCache = {};
   final Map<String, Playlist> _playlistCache = {};
   final Map<String, Lyrics> _lyricsCache = {};
 
@@ -221,47 +247,74 @@ class MusicProvider extends ChangeNotifier {
     return album;
   }
 
-  Future<Artist> getArtistDetails(String artistId, {bool forceRefresh = false}) async {
+  Future<Artist> getArtistDetails(String artistId,
+      {bool forceRefresh = false}) async {
+    if (forceRefresh) {
+      _artistCache.remove(artistId);
+      _artistLibraryTracksCache.remove(artistId);
+    }
     if (!forceRefresh && _artistCache.containsKey(artistId)) {
       return _artistCache[artistId]!;
     }
-    try {
-      if (!artistId.startsWith('sub_')) {
-        final artist = await _musicRepository.getArtist(artistId);
-        _artistCache[artistId] = artist;
-        return artist;
+    if (!artistId.startsWith('sub_')) {
+      final artist = await _musicRepository.getArtist(artistId);
+      if (artist.id != artistId || artist.name.trim().isEmpty) {
+        throw StateError('Invalid artist details for $artistId');
       }
-    } catch (_) {}
-
-    // Fallback for decomposed sub-artists: query tracks and albums matching artist name
-    final found = _artists.where((a) => a.id == artistId).firstOrNull;
-    String artistName = found?.name ?? '';
-    if (artistName.isEmpty) {
-      if (artistId.startsWith('sub_name_')) {
-        artistName = Uri.decodeComponent(artistId.substring('sub_name_'.length));
-      } else {
-        artistName = artistId;
-      }
-    }
-    try {
-      final searchRes = await _musicRepository.search(artistName);
-      final tracks = (searchRes['tracks'] as List<Track>?) ?? [];
-      final albums = (searchRes['albums'] as List<Album>?) ?? [];
-      final artist = Artist(
-        id: artistId,
-        name: artistName,
-        coverArtId: tracks.isNotEmpty ? tracks.first.coverArtId : null,
-        albumCount: albums.length,
-        albums: albums,
-        topTracks: tracks,
-      );
       _artistCache[artistId] = artist;
       return artist;
-    } catch (_) {
-      final fallback = Artist(id: artistId, name: artistName);
-      _artistCache[artistId] = fallback;
-      return fallback;
     }
+
+    final found = _artists.where((a) => a.id == artistId).firstOrNull;
+    final artistName = artistId.startsWith('sub_name_')
+        ? Uri.decodeComponent(artistId.substring('sub_name_'.length))
+        : artistId.startsWith('sub_split_') && artistId.contains('|')
+            ? Uri.decodeComponent(artistId.substring(artistId.indexOf('|') + 1))
+            : found?.name;
+    if (artistName == null || artistName.isEmpty) {
+      throw StateError('Artist name unavailable for $artistId');
+    }
+    final selected = Artist(id: artistId, name: artistName);
+    final searchRes = await _musicRepository.searchArtistLibrary(artistName);
+    final tracks = ((searchRes['songs'] as List<Track>?) ?? [])
+        .where((track) => _trackMatchesArtist(track, selected))
+        .toList();
+    final albums = ((searchRes['albums'] as List<Album>?) ?? [])
+        .where((album) => splitArtistNames(album.artist).any((part) =>
+            normalizeArtistName(part) == normalizeArtistName(artistName)))
+        .toList();
+    final artist = selected.copyWith(
+      coverArtId:
+          tracks.isNotEmpty ? tracks.first.coverArtId : found?.coverArtId,
+      albumCount: albums.length,
+      albums: albums,
+      topTracks: tracks,
+    );
+    _artistCache[artistId] = artist;
+    _artistLibraryTracksCache[artistId] = tracks;
+    return artist;
+  }
+
+  Future<List<Track>> getArtistLibraryTracks(Artist artist) async {
+    final cached = _artistLibraryTracksCache[artist.id];
+    if (cached != null) return cached;
+    final details = await getArtistDetails(artist.id);
+    if (artist.id.startsWith('sub_')) {
+      return _artistLibraryTracksCache[artist.id] ?? details.topTracks;
+    }
+    final tracks = <Track>[];
+    for (var i = 0; i < details.albums.length; i += 4) {
+      final batch = details.albums.skip(i).take(4);
+      final albums = await Future.wait(
+          batch.map((album) => _musicRepository.getAlbum(album.id)));
+      for (final album in albums) {
+        tracks.addAll(album.tracks);
+      }
+    }
+    final unique =
+        {for (final track in tracks) track.id: track}.values.toList();
+    _artistLibraryTracksCache[artist.id] = unique;
+    return unique;
   }
 
   Future<void> openArtistByName(BuildContext context, String artistName) async {
@@ -270,7 +323,8 @@ class MusicProvider extends ChangeNotifier {
 
     // 1. Check if directly in _artists list
     for (final a in _artists) {
-      if (a.name.toLowerCase() == clean.toLowerCase()) {
+      if (normalizeArtistName(a.name) == normalizeArtistName(clean)) {
+        if (!context.mounted) return;
         Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => ArtistDetailScreen(artistId: a.id)),
@@ -283,23 +337,29 @@ class MusicProvider extends ChangeNotifier {
     try {
       final searchRes = await _musicRepository.search(clean);
       final searchArtists = (searchRes['artists'] as List<Artist>?) ?? [];
-      if (searchArtists.isNotEmpty) {
-        final matched = searchArtists.firstWhere(
-          (a) => a.name.toLowerCase() == clean.toLowerCase(),
-          orElse: () => searchArtists.first,
-        );
+      final matched = searchArtists
+          .where(
+            (a) => normalizeArtistName(a.name) == normalizeArtistName(clean),
+          )
+          .firstOrNull;
+      if (matched != null) {
+        if (!context.mounted) return;
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => ArtistDetailScreen(artistId: matched.id)),
+          MaterialPageRoute(
+              builder: (_) => ArtistDetailScreen(artistId: matched.id)),
         );
         return;
       }
     } catch (_) {}
 
     // 3. Fallback: navigate using sub_name_ ID with artist name
+    if (!context.mounted) return;
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => ArtistDetailScreen(artistId: 'sub_name_${Uri.encodeComponent(clean)}')),
+      MaterialPageRoute(
+          builder: (_) => ArtistDetailScreen(
+              artistId: 'sub_name_${Uri.encodeComponent(clean)}')),
     );
   }
 

@@ -130,18 +130,25 @@ class MusicRepository {
   }
 
   Future<Artist> getArtist(String artistId) async {
+    final infoFuture = _apiService.getArtistInfo2(artistId);
     final baseArtist = await _apiService.getArtist(artistId);
-    final info = await _apiService.getArtistInfo2(artistId);
-    final topSongs = await _apiService.getTopSongs(baseArtist.name, count: 20);
+    final topSongsFuture = _apiService.getTopSongs(baseArtist.name, count: 20);
+    final info = await infoFuture;
+    final topSongs = await topSongsFuture;
 
     var enriched = baseArtist;
     if (info != null) {
-      enriched = Artist.fromArtistInfoJson(baseArtist: enriched, infoJson: info);
+      enriched =
+          Artist.fromArtistInfoJson(baseArtist: enriched, infoJson: info);
     }
     if (topSongs.isNotEmpty) {
       enriched = enriched.copyWith(topTracks: topSongs);
     }
     return enriched;
+  }
+
+  Future<Map<String, dynamic>> searchArtistLibrary(String artistName) {
+    return _apiService.search(artistName, count: 5000);
   }
 
   Future<List<Track>> getTopSongs(String artistName, {int count = 25}) {
