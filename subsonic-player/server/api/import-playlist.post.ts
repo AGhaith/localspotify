@@ -1,51 +1,40 @@
-import { spawn } from 'child_process';
-import fs from 'fs';
-import path from 'path';
+import { createImportJob, runImportJob } from '../utils/playlist-import';
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
-  const { spotifyUrl, playlistName, tracks, username } = body || {};
+  const { spotifyUrl, playlistName, tracks } = body || {};
 
-  if (!spotifyUrl) {
+  if (typeof spotifyUrl !== 'string' || !/^(https:\/\/open\.spotify\.com\/playlist\/[\w]+(?:\?.*)?|spotify:playlist:[\w]+|[a-zA-Z0-9]{15,30})$/.test(spotifyUrl)) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'spotifyUrl is required',
+      statusMessage: 'Valid spotifyUrl is required',
     });
   }
-
-  // Look for import script in /music or host path
-  const scriptCandidates = [
-    '/music/import_spotify_playlist.py',
-    path.resolve(process.cwd(), '../my-music/import_spotify_playlist.py'),
-    path.resolve(process.cwd(), './scripts/import_spotify_playlist.py'),
-  ];
-  const scriptPath = scriptCandidates.find((p) => fs.existsSync(p));
-
-  if (scriptPath) {
-    const musicDir = process.env.MUSIC_FOLDER || '/music';
-    const serverUrl = process.env.NUXT_PUBLIC_SERVER_URL || 'http://localhost:6767';
-
-    // Spawn download worker asynchronously
-    const targetDir = fs.existsSync(musicDir)
-      ? musicDir
-      : path.resolve(process.cwd(), '../my-music');
-
-    const child = spawn(
-      'python3',
-      [scriptPath, spotifyUrl, '--music-dir', targetDir, '--server', serverUrl],
-      {
-        detached: true,
-        stdio: 'ignore',
-      }
-    );
-    child.unref();
+  if (playlistName !== undefined && (typeof playlistName !== 'string' || !playlistName.trim())) {
+    throw createError({ statusCode: 400, statusMessage: 'Invalid playlistName' });
   }
+  if (tracks !== undefined && (!Array.isArray(tracks) || tracks.some((track) =>
+    !track || typeof track.title !== 'string' || !track.title.trim() ||
+    typeof track.artist !== 'string' || !track.artist.trim() ||
+    (track.durationMs !== undefined && (!Number.isFinite(track.durationMs) || track.durationMs < 0)) ||
+    ['album', 'coverUrl', 'uri', 'isrc'].some((key) => track[key] != null && typeof track[key] !== 'string')
+  ))) {
+    throw createError({ statusCode: 400, statusMessage: 'Invalid tracks' });
+  }
+
+  const job = createImportJob(Array.isArray(tracks) ? tracks.length : 0);
+  void runImportJob(job, spotifyUrl, tracks || []).catch((error) => {
+    job.status = 'error';
+    job.error = error instanceof Error ? error.message : String(error);
+    console.error('Playlist import failed:', error);
+  });
 
   return {
     success: true,
     status: 'downloading',
     playlistName: playlistName || 'Imported Playlist',
-    trackCount: Array.isArray(tracks) ? tracks.length : 0,
+    trackCount: job.totalCount,
+    jobId: job.id,
     timestamp: new Date().toISOString(),
   };
 });

@@ -68,6 +68,7 @@ class SpotifyImporterService {
 
     final playlistInfo = await _spotifyService.fetchPlaylist(spotifyUrl);
     final totalTracks = playlistInfo.tracks.length;
+    if (totalTracks == 0) throw StateError('Spotify playlist has no tracks to import');
 
     onProgress(
       ImportProgressStatus(
@@ -93,7 +94,7 @@ class SpotifyImporterService {
       try {
         final serverBase = session.serverUrl;
         final companionServer = serverBase.replaceAll(':6767', ':6969');
-        await _dio.post(
+        final importResponse = await _dio.post(
           '$companionServer/api/import-playlist',
           data: {
             'spotifyUrl': spotifyUrl,
@@ -105,6 +106,8 @@ class SpotifyImporterService {
                       'artist': t.artist,
                       'durationMs': t.durationMs,
                       'uri': t.uri,
+                      'album': t.album == playlistInfo.name ? null : t.album,
+                      'coverUrl': t.coverUrl == playlistInfo.coverUrl ? null : t.coverUrl,
                     })
                 .toList(),
             'username': session.username,
@@ -114,21 +117,64 @@ class SpotifyImporterService {
             sendTimeout: const Duration(seconds: 10),
           ),
         );
-      } catch (_) {
-        // Continue gracefully if server companion downloader is running in background or using local sync
+        final jobId = importResponse.data?['jobId']?.toString();
+        if (jobId != null) {
+          while (true) {
+            await Future.delayed(const Duration(seconds: 2));
+            final progressResponse = await _dio.get(
+              '$companionServer/api/import-playlist-status',
+              queryParameters: {'jobId': jobId},
+              options: Options(receiveTimeout: const Duration(seconds: 10)),
+            );
+            final job = progressResponse.data;
+            if (job['status'] == 'error') {
+              throw StateError(job['error']?.toString() ?? 'Playlist download failed');
+            }
+            if (job['status'] == 'completed') {
+              if (job['failedCount'] == totalTracks) {
+                throw StateError('Every track failed to download');
+              }
+              break;
+            }
+            onProgress(ImportProgressStatus(
+              stage: ImportStage.downloading,
+              message: 'Downloading ${job['completedCount']}/$totalTracks tracks...',
+              progress: 0.25 + (job['completedCount'] as num).toDouble() / totalTracks * 0.5,
+              completedCount: (job['completedCount'] as num).toInt(),
+              totalCount: totalTracks,
+            ));
+          }
+        }
+      } catch (error) {
+        throw StateError('Playlist download failed: $error');
       }
+    } else {
+      throw StateError('Connect to a music server before importing a playlist');
+    }
+
+    onProgress(ImportProgressStatus(
+      stage: ImportStage.indexing,
+      message: 'Syncing audio files into music catalog...',
+      progress: 0.85,
+      totalCount: totalTracks,
+    ));
+    await _apiService.startScan();
+    for (int attempt = 0; attempt < 60; attempt++) {
+      final scan = await _apiService.getScanStatus();
+      if (scan != null && scan['scanning'] == false) break;
+      await Future.delayed(const Duration(seconds: 2));
     }
 
     // 3. Process & Match Tracks against Server Library
     final matchedSongIds = <String>[];
     for (int i = 0; i < totalTracks; i++) {
       final track = playlistInfo.tracks[i];
-      final currentProgress = 0.25 + ((i + 1) / totalTracks) * 0.55;
+      final currentProgress = 0.86 + ((i + 1) / totalTracks) * 0.05;
 
       onProgress(
         ImportProgressStatus(
-          stage: ImportStage.downloading,
-          message: 'Processing (${i + 1}/$totalTracks): "${track.title}"',
+          stage: ImportStage.indexing,
+          message: 'Matching (${i + 1}/$totalTracks): "${track.title}"',
           progress: currentProgress,
           currentTrack: '${track.title} - ${track.artist}',
           completedCount: i + 1,
@@ -142,15 +188,14 @@ class SpotifyImporterService {
         final songs = searchRes['songs'];
         if (songs is List && songs.isNotEmpty) {
           final cleanArtist = track.artist.toLowerCase();
-          final matched = songs.firstWhere(
+          final matched = songs.where(
             (s) {
               final sArtist = s.artist.toString().toLowerCase();
               return sArtist.contains(cleanArtist) || cleanArtist.contains(sArtist);
             },
-            orElse: () => songs.first,
           );
-          if (matched != null && !matchedSongIds.contains(matched.id)) {
-            matchedSongIds.add(matched.id);
+          if (matched.isNotEmpty && !matchedSongIds.contains(matched.first.id)) {
+            matchedSongIds.add(matched.first.id);
           }
         }
       } catch (_) {}
@@ -158,21 +203,6 @@ class SpotifyImporterService {
       // Short delay for smooth UI feedback
       await Future.delayed(const Duration(milliseconds: 30));
     }
-
-    // 4. Trigger Server Scan to index new tracks
-    onProgress(
-      ImportProgressStatus(
-        stage: ImportStage.indexing,
-        message: 'Syncing audio files into music catalog...',
-        progress: 0.85,
-        totalCount: totalTracks,
-        completedCount: totalTracks,
-      ),
-    );
-
-    try {
-      await _apiService.startScan();
-    } catch (_) {}
 
     // 5. Create the playlist on the user's account
     onProgress(
