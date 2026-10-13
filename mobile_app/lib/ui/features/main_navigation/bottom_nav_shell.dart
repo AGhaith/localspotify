@@ -20,6 +20,17 @@ class BottomNavShell extends StatefulWidget {
 
 class _BottomNavShellState extends State<BottomNavShell> {
   int _currentIndex = 0;
+  final _overlayKey = GlobalKey();
+  double _overlayHeight = 0;
+
+  // Tabs scroll under the mini-player + nav bar; hand them the real overlay
+  // height as bottom padding so the last row can always scroll clear of it.
+  void _measureOverlay() {
+    final h = _overlayKey.currentContext?.size?.height ?? 0;
+    if ((h - _overlayHeight).abs() > 0.5 && mounted) {
+      setState(() => _overlayHeight = h);
+    }
+  }
 
   final List<Widget> _screens = const [
     HomeScreen(),
@@ -32,6 +43,7 @@ class _BottomNavShellState extends State<BottomNavShell> {
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).padding.bottom;
     final player = context.watch<AudioPlayerProvider>();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _measureOverlay());
 
     return PopScope(
       canPop: _currentIndex == 0,
@@ -45,9 +57,15 @@ class _BottomNavShellState extends State<BottomNavShell> {
         backgroundColor: AppColors.background,
         body: Stack(
           children: [
-            IndexedStack(
-              index: _currentIndex,
-              children: _screens,
+            MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                padding: MediaQuery.paddingOf(context)
+                    .copyWith(bottom: _overlayHeight),
+              ),
+              child: IndexedStack(
+                index: _currentIndex,
+                children: _screens,
+              ),
             ),
 
             // Docked Mini-Player + Custom Bottom Navigation Bar
@@ -56,6 +74,7 @@ class _BottomNavShellState extends State<BottomNavShell> {
               right: 0,
               bottom: 0,
               child: Column(
+                key: _overlayKey,
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (player.hasTrack) const MiniPlayerBar(),

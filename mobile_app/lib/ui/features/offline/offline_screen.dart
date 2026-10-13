@@ -172,7 +172,9 @@ class _OfflineScreenState extends State<OfflineScreen> {
 
                 // Downloaded Tracks List
                 SliverPadding(
-                  padding: const EdgeInsets.only(bottom: 100),
+                  padding: EdgeInsets.only(
+                      bottom: MediaQuery.paddingOf(context).bottom +
+                          AppSpacing.xl),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (ctx, i) {

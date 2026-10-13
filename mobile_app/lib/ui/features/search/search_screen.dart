@@ -516,8 +516,8 @@ class _SearchScreenState extends State<SearchScreen> {
                                 ),
                               ),
 
-                            const SliverToBoxAdapter(
-                                child: SizedBox(height: 120)),
+                            SliverToBoxAdapter(
+                                child: SizedBox(height: MediaQuery.paddingOf(context).bottom + AppSpacing.xl)),
                           ],
                         ),
                 ),

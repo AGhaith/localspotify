@@ -350,8 +350,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
                 ),
 
               // Bottom padding so mini-player does not cover last row
-              const SliverToBoxAdapter(
-                child: SizedBox(height: 140),
+              SliverToBoxAdapter(
+                child: SizedBox(height: MediaQuery.paddingOf(context).bottom + AppSpacing.xl),
               ),
             ],
           ),
