@@ -14,7 +14,7 @@ import 'cached_cover_art.dart';
 import 'circular_download_button.dart';
 import 'pressable_scale.dart';
 
-class TrackRow extends StatelessWidget {
+class TrackRow extends StatefulWidget {
   final Track track;
   final VoidCallback onTap;
   final int? index;
@@ -29,161 +29,338 @@ class TrackRow extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final player = context.watch<AudioPlayerProvider>();
-    final music = context.watch<MusicProvider>();
-    final isCurrent = player.currentTrack?.id == track.id;
-    final isPlaying = isCurrent && player.isPlaying;
-    final isDownloaded = music.isDownloaded(track.id);
+  State<TrackRow> createState() => _TrackRowState();
+}
 
-    return Dismissible(
-      key: Key('track_row_${track.id}_${index ?? 0}'),
-      direction: DismissDirection.startToEnd,
-      background: Container(
-        color: AppColors.primary,
-        alignment: Alignment.centerLeft,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: const Row(
-          children: [
-            Icon(Icons.queue_music_rounded, color: Colors.black, size: 24),
-            SizedBox(width: 8),
-            Text(
-              'Add to Queue',
-              style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 13),
-            ),
-          ],
-        ),
+class _TrackRowState extends State<TrackRow> with TickerProviderStateMixin {
+  late final AnimationController _translateController;
+  late Animation<double> _translateAnimation;
+
+  late final AnimationController _iconScaleController;
+  late final Animation<double> _iconScaleAnimation;
+
+  double _rawDrag = 0.0;
+  double _dragOffset = 0.0;
+  bool _thresholdCrossed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _translateController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _translateAnimation = const AlwaysStoppedAnimation<double>(0.0);
+    _translateController.addListener(() {
+      if (mounted) {
+        setState(() {
+          _dragOffset = _translateAnimation.value;
+        });
+      }
+    });
+
+    _iconScaleController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 180),
+      reverseDuration: const Duration(milliseconds: 140),
+    );
+    _iconScaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.25,
+    ).animate(
+      CurvedAnimation(
+        parent: _iconScaleController,
+        curve: Curves.easeOutBack,
+        reverseCurve: Curves.easeOutCubic,
       ),
-      confirmDismiss: (direction) async {
-        HapticFeedback.mediumImpact();
-        player.addToQueue(track);
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant TrackRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.track.id != widget.track.id) {
+      if (_translateController.isAnimating) {
+        _translateController.stop();
+      }
+      _rawDrag = 0.0;
+      _dragOffset = 0.0;
+      _thresholdCrossed = false;
+      _iconScaleController.reset();
+    }
+  }
+
+  @override
+  void dispose() {
+    _translateController.dispose();
+    _iconScaleController.dispose();
+    super.dispose();
+  }
+
+  void _onHorizontalDragStart(DragStartDetails details) {
+    if (_translateController.isAnimating) {
+      _translateController.stop();
+    }
+    _rawDrag = _dragOffset;
+  }
+
+  void _onHorizontalDragUpdate(DragUpdateDetails details, double rowWidth) {
+    final delta = details.primaryDelta ?? details.delta.dx;
+    if (_rawDrag == 0 && delta <= 0) {
+      return;
+    }
+
+    _rawDrag = (_rawDrag + delta).clamp(0.0, rowWidth * 1.5);
+
+    final resistanceThreshold = rowWidth * 0.35;
+    double newOffset;
+    if (_rawDrag <= resistanceThreshold) {
+      newOffset = _rawDrag;
+    } else {
+      final excess = _rawDrag - resistanceThreshold;
+      newOffset = resistanceThreshold + (excess * 0.25);
+    }
+
+    final threshold = rowWidth * 0.25;
+    if (newOffset >= threshold && !_thresholdCrossed) {
+      _thresholdCrossed = true;
+      HapticFeedback.mediumImpact();
+      _iconScaleController.forward();
+    } else if (newOffset < threshold && _thresholdCrossed) {
+      _thresholdCrossed = false;
+      _iconScaleController.reverse();
+    }
+
+    setState(() {
+      _dragOffset = newOffset;
+    });
+  }
+
+  void _onHorizontalDragEnd(DragEndDetails details, double rowWidth) {
+    final threshold = rowWidth * 0.25;
+    final passedThreshold = _thresholdCrossed || _dragOffset >= threshold;
+
+    if (passedThreshold) {
+      context.read<AudioPlayerProvider>().addToQueue(widget.track);
+      if (mounted) {
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Added "${track.title}" to queue'),
-            duration: const Duration(seconds: 1),
+          const SnackBar(
+            content: Text('Added to queue'),
+            duration: Duration(seconds: 1),
             behavior: SnackBarBehavior.floating,
           ),
         );
-        return false; // Don't remove the item from the list
-      },
-      child: PressableScale(
-        onTap: onTap,
-        scaleFactor: 0.98,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: isCurrent ? AppColors.surface.withValues(alpha: 0.4) : Colors.transparent,
-            border: isCurrent
-                ? const Border(left: BorderSide(color: AppColors.primary, width: 3))
-                : null,
-          ),
-          child: Row(
+      }
+    }
+
+    _animateReset();
+  }
+
+  void _onHorizontalDragCancel() {
+    _animateReset();
+  }
+
+  void _animateReset() {
+    _thresholdCrossed = false;
+    _iconScaleController.reverse();
+
+    if (_dragOffset == 0.0) {
+      _rawDrag = 0.0;
+      return;
+    }
+
+    _translateAnimation = Tween<double>(
+      begin: _dragOffset,
+      end: 0.0,
+    ).animate(
+      CurvedAnimation(
+        parent: _translateController,
+        curve: Curves.easeOutBack,
+      ),
+    );
+
+    _rawDrag = 0.0;
+    _translateController.forward(from: 0.0);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final player = context.watch<AudioPlayerProvider>();
+    final music = context.watch<MusicProvider>();
+    final isCurrent = player.currentTrack?.id == widget.track.id;
+    final isPlaying = isCurrent && player.isPlaying;
+    final isDownloaded = music.isDownloaded(widget.track.id);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final rowWidth = constraints.maxWidth;
+        final stripWidth = _dragOffset.clamp(0.0, rowWidth);
+
+        return GestureDetector(
+          key: Key('track_row_${widget.track.id}_${widget.index ?? 0}'),
+          behavior: HitTestBehavior.opaque,
+          onHorizontalDragStart: _onHorizontalDragStart,
+          onHorizontalDragUpdate: (details) => _onHorizontalDragUpdate(details, rowWidth),
+          onHorizontalDragEnd: (details) => _onHorizontalDragEnd(details, rowWidth),
+          onHorizontalDragCancel: _onHorizontalDragCancel,
+          child: Stack(
+            clipBehavior: Clip.hardEdge,
             children: [
-              if (index != null && !showCover) ...[
-                SizedBox(
-                  width: 28,
-                  child: isPlaying
-                      ? const Icon(Icons.graphic_eq_rounded, color: AppColors.primary, size: 18)
-                      : Text(
-                          '$index',
-                          style: AppTypography.bodyMedium.copyWith(
-                            color: isCurrent ? AppColors.primary : AppColors.textMuted,
-                            fontWeight: isCurrent ? FontWeight.w800 : FontWeight.w500,
-                          ),
-                        ),
-                ),
-                const SizedBox(width: 8),
-              ],
-              if (showCover) ...[
-                Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    CachedCoverArt(
-                      imageUrl: music.getCoverArtUrl(track.coverArtId, albumName: track.album, size: 150),
-                      localImagePath: track.localCoverArtPath,
-                      width: 48,
-                      height: 48,
-                      borderRadius: 8,
-                    ),
-                    if (isPlaying)
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.55),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(
-                          Icons.graphic_eq_rounded,
-                          color: AppColors.primary,
-                          size: 22,
-                        ),
-                      ),
-                  ],
-                ),
-                const SizedBox(width: 14),
-              ],
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      track.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTypography.titleMedium.copyWith(
-                        color: isCurrent ? AppColors.primary : AppColors.textPrimary,
-                        fontWeight: isCurrent ? FontWeight.w800 : FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Row(
-                      children: [
-                        if (isDownloaded) ...[
-                          const Icon(
-                            Icons.check_circle_rounded,
+              if (stripWidth > 0)
+                Positioned.fill(
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: SizedBox(
+                      width: stripWidth,
+                      height: double.infinity,
+                      child: ClipRect(
+                        child: OverflowBox(
+                          alignment: Alignment.centerLeft,
+                          minWidth: rowWidth,
+                          maxWidth: rowWidth,
+                          child: Container(
                             color: AppColors.primary,
-                            size: 13,
+                            alignment: Alignment.centerLeft,
+                            padding: const EdgeInsets.only(left: 20),
+                            child: ScaleTransition(
+                              scale: _iconScaleAnimation,
+                              child: const Icon(
+                                Icons.queue_music_rounded,
+                                color: Colors.black,
+                                size: 24,
+                              ),
+                            ),
                           ),
-                          const SizedBox(width: 4),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              Transform.translate(
+                offset: Offset(_dragOffset, 0),
+                child: PressableScale(
+                  onTap: widget.onTap,
+                  scaleFactor: 0.98,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: isCurrent ? AppColors.surface.withValues(alpha: 0.4) : Colors.transparent,
+                      border: isCurrent
+                          ? const Border(left: BorderSide(color: AppColors.primary, width: 3))
+                          : null,
+                    ),
+                    child: Row(
+                      children: [
+                        if (widget.index != null && !widget.showCover) ...[
+                          SizedBox(
+                            width: 28,
+                            child: isPlaying
+                                ? const Icon(Icons.graphic_eq_rounded, color: AppColors.primary, size: 18)
+                                : Text(
+                                    '${widget.index}',
+                                    style: AppTypography.bodyMedium.copyWith(
+                                      color: isCurrent ? AppColors.primary : AppColors.textMuted,
+                                      fontWeight: isCurrent ? FontWeight.w800 : FontWeight.w500,
+                                    ),
+                                  ),
+                          ),
+                          const SizedBox(width: 8),
+                        ],
+                        if (widget.showCover) ...[
+                          Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              CachedCoverArt(
+                                imageUrl: music.getCoverArtUrl(widget.track.coverArtId, albumName: widget.track.album, size: 150),
+                                localImagePath: widget.track.localCoverArtPath,
+                                width: 48,
+                                height: 48,
+                                borderRadius: 8,
+                              ),
+                              if (isPlaying)
+                                Container(
+                                  width: 48,
+                                  height: 48,
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withValues(alpha: 0.55),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Icon(
+                                    Icons.graphic_eq_rounded,
+                                    color: AppColors.primary,
+                                    size: 22,
+                                  ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(width: 14),
                         ],
                         Expanded(
-                          child: Text(
-                            '${track.artist} • ${track.album}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                widget.track.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTypography.titleMedium.copyWith(
+                                  color: isCurrent ? AppColors.primary : AppColors.textPrimary,
+                                  fontWeight: isCurrent ? FontWeight.w800 : FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              Row(
+                                children: [
+                                  if (isDownloaded) ...[
+                                    const Icon(
+                                      Icons.check_circle_rounded,
+                                      color: AppColors.primary,
+                                      size: 13,
+                                    ),
+                                    const SizedBox(width: 4),
+                                  ],
+                                  Expanded(
+                                    child: Text(
+                                      '${widget.track.artist} • ${widget.track.album}',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
+                        ),
+                        const SizedBox(width: 4),
+                        // Optimistic Animated Like Button
+                        AnimatedLikeButton(track: widget.track, size: 20),
+                        const SizedBox(width: 4),
+                        // Duration
+                        Text(
+                          DurationFormatter.format(widget.track.duration),
+                          style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
+                        ),
+                        const SizedBox(width: 2),
+                        // 3-Dot Options
+                        IconButton(
+                          icon: const Icon(
+                            Icons.more_vert_rounded,
+                            color: AppColors.textMuted,
+                            size: 20,
+                          ),
+                          onPressed: () => _showTrackOptions(context, widget.track, music, player),
                         ),
                       ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 4),
-              // Optimistic Animated Like Button
-              AnimatedLikeButton(track: track, size: 20),
-              const SizedBox(width: 4),
-              // Duration
-              Text(
-                DurationFormatter.format(track.duration),
-                style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
-              ),
-              const SizedBox(width: 2),
-              // 3-Dot Options
-              IconButton(
-                icon: const Icon(
-                  Icons.more_vert_rounded,
-                  color: AppColors.textMuted,
-                  size: 20,
-                ),
-                onPressed: () => _showTrackOptions(context, track, music, player),
               ),
             ],
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
