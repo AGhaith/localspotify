@@ -230,28 +230,23 @@ class _SyncedLyricsListState extends State<SyncedLyricsList> {
     });
   }
 
-  Color get _upcomingColor {
+  // Lines are drawn with an opaque colour and dimmed via opacity: a
+  // translucent text colour double-blends where joined Arabic glyphs overlap,
+  // leaving visible seams between letters.
+  bool get _darkUpcoming {
     final bg = widget.backgroundColor;
-    if (bg != null) {
-      final lum = bg.computeLuminance();
-      if (lum > 0.08) {
-        return Colors.black.withValues(alpha: 0.45);
-      }
-    }
-    return Colors.white.withValues(alpha: 0.35);
+    return bg != null && bg.computeLuminance() > 0.08;
   }
 
   Color _getLineColor(int index) {
-    if (_activeIndex == -1) {
-      return _upcomingColor;
-    }
-    if (index == _activeIndex) {
-      return Colors.white;
-    }
-    if (index < _activeIndex) {
-      return Colors.white.withValues(alpha: 0.55);
-    }
-    return _upcomingColor;
+    if (_activeIndex != -1 && index <= _activeIndex) return Colors.white;
+    return _darkUpcoming ? Colors.black : Colors.white;
+  }
+
+  double _getLineOpacity(int index) {
+    if (_activeIndex != -1 && index == _activeIndex) return 1.0;
+    if (_activeIndex != -1 && index < _activeIndex) return 0.55;
+    return _darkUpcoming ? 0.45 : 0.35;
   }
 
   TextStyle _getLineStyle({
@@ -323,14 +318,19 @@ class _SyncedLyricsListState extends State<SyncedLyricsList> {
         padding: const EdgeInsets.symmetric(vertical: 7.0),
         child: Align(
           alignment: isArabic ? Alignment.centerRight : Alignment.centerLeft,
-          child: AnimatedDefaultTextStyle(
+          child: AnimatedOpacity(
             duration: const Duration(milliseconds: 250),
             curve: Curves.easeOut,
-            style: lineStyle,
-            child: Text(
-              line.text.isEmpty ? '...' : line.text,
-              textAlign: isArabic ? TextAlign.right : TextAlign.left,
-              textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
+            opacity: _getLineOpacity(index),
+            child: AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOut,
+              style: lineStyle,
+              child: Text(
+                line.text.isEmpty ? '...' : line.text,
+                textAlign: isArabic ? TextAlign.right : TextAlign.left,
+                textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
+              ),
             ),
           ),
         ),
@@ -354,18 +354,22 @@ class _SyncedLyricsListState extends State<SyncedLyricsList> {
             final isArabic = AppTypography.isArabicText(text);
             final lineStyle = _getLineStyle(
               text: text,
-              color: Colors.white.withValues(alpha: 0.85),
+              color: Colors.white,
               fontSize: widget.textSize,
             );
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 7.0),
               child: Align(
                 alignment: isArabic ? Alignment.centerRight : Alignment.centerLeft,
-                child: Text(
-                  text,
-                  style: lineStyle,
-                  textAlign: isArabic ? TextAlign.right : TextAlign.left,
-                  textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
+                child: Opacity(
+                  opacity: 0.85,
+                  child: Text(
+                    text,
+                    style: lineStyle,
+                    textAlign: isArabic ? TextAlign.right : TextAlign.left,
+                    textDirection:
+                        isArabic ? TextDirection.rtl : TextDirection.ltr,
+                  ),
                 ),
               ),
             );
