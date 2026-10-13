@@ -625,7 +625,7 @@ def main():
     parser = argparse.ArgumentParser(
         description="High-Speed Spotify tracks downloader with HD cover art, synchronized .lrc lyrics, rich tags, and parallel downloads."
     )
-    parser.add_argument("--csv", "-c", default="Liked_Songs.csv", help="Path to Liked_Songs.csv (default: Liked_Songs.csv)")
+    parser.add_argument("--csv", "-c", default="Club_festival_.csv", help="Path to the Spotify export CSV (default: Club_festival_.csv)")
     parser.add_argument("--format", "-f", default="m4a", choices=["m4a", "mp3", "flac"], help="Audio format (default: m4a)")
     parser.add_argument("--workers", "-w", type=int, default=5, help="Number of concurrent download threads (default: 5)")
     parser.add_argument("--save-jpg", action="store_true", help="Also save standalone .jpg album artwork file alongside song")
