@@ -672,7 +672,7 @@ class _ImportSpotifyPlaylistSheetState extends State<ImportSpotifyPlaylistSheet>
           ),
           const SizedBox(height: 8),
           Text(
-            '"$playlistName" ($songCount songs)\nis now available on this app and on your account.',
+            '"$playlistName" ($songCount ${songCount == 1 ? "song" : "songs"})\nis now available on this app and on your account.',
             textAlign: TextAlign.center,
             style: AppTypography.bodyMedium.copyWith(color: Colors.white70, height: 1.4),
           ),

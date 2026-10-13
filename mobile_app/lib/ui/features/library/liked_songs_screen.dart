@@ -95,7 +95,7 @@ class _LikedSongsScreenState extends State<LikedSongsScreen> {
                     children: [
                       Expanded(
                         child: Text(
-                          '${tracks.length} songs',
+                          '${tracks.length} ${tracks.length == 1 ? "song" : "songs"}',
                           style: AppTypography.bodySmall,
                         ),
                       ),

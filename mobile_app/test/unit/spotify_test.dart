@@ -1,6 +1,10 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:localspotify/core/utils/catalog_matcher.dart';
+import 'package:localspotify/data/models/track.dart';
 import 'package:localspotify/data/services/spotify_service.dart';
 import 'package:localspotify/data/services/spotify_importer_service.dart';
+import 'package:localspotify/ui/core_widgets/track_row.dart';
 
 void main() {
   group('SpotifyService & Parser Tests', () {
@@ -122,6 +126,168 @@ void main() {
       final catalog = await service.fetchArtistCatalog('');
       expect(catalog.top, isEmpty);
       expect(catalog.albums, isEmpty);
+    });
+
+    test('fetchArtistProfile returns empty profile on empty artist name', () async {
+      final service = SpotifyService();
+      final profile = await service.fetchArtistProfile('');
+      expect(profile.isEmpty, isTrue);
+      expect(profile.topTracks, isEmpty);
+      expect(profile.releases, isEmpty);
+      expect(profile.relatedArtists, isEmpty);
+    });
+
+    test('fetchAlbumTracks returns empty list on empty album ID', () async {
+      final service = SpotifyService();
+      final tracks = await service.fetchAlbumTracks('');
+      expect(tracks, isEmpty);
+    });
+
+    test('CatalogRelease typeLabel formats correctly for all record types', () {
+      const album = CatalogRelease(id: '1', title: 'Album 1', recordType: 'album');
+      expect(album.typeLabel, equals('Album'));
+
+      const single = CatalogRelease(id: '2', title: 'Single 1', recordType: 'single');
+      expect(single.typeLabel, equals('Single'));
+
+      const ep = CatalogRelease(id: '3', title: 'EP 1', recordType: 'ep');
+      expect(ep.typeLabel, equals('EP'));
+
+      const compilation = CatalogRelease(id: '4', title: 'Comp 1', recordType: 'compile');
+      expect(compilation.typeLabel, equals('Compilation'));
+    });
+
+    test('calculateNameSimilarity handles exact, diacritics, and article variations', () {
+      expect(SpotifyService.calculateNameSimilarity('Beyonce', 'Beyonce'), equals(1.0));
+      expect(SpotifyService.calculateNameSimilarity('Beyoncé', 'Beyonce'), equals(1.0));
+      expect(SpotifyService.calculateNameSimilarity('The Beatles', 'Beatles'), greaterThanOrEqualTo(0.95));
+      expect(SpotifyService.calculateNameSimilarity('Coldplay', 'coldplay'), equals(1.0));
+    });
+
+    test('calculateNameSimilarity rejects unrelated artists below threshold (fix item 4)', () {
+      // "Ali" and "Alina" should be rejected (< 0.85)
+      final simAliAlina = SpotifyService.calculateNameSimilarity('Ali', 'Alina');
+      expect(simAliAlina, lessThan(0.85));
+
+      // "Michael" and "Michael Jackson" should be rejected (< 0.85)
+      final simMichael = SpotifyService.calculateNameSimilarity('Michael', 'Michael Jackson');
+      expect(simMichael, lessThan(0.85));
+
+      // Completely different artists
+      final simDifferent = SpotifyService.calculateNameSimilarity('Taylor Swift', 'Kanye West');
+      expect(simDifferent, lessThan(0.5));
+    });
+
+    test('findLibraryMatch matches by title and artist token equality (fix item 7)', () {
+      const ownedTrack = Track(
+        id: 'track_1',
+        title: 'Song Title',
+        artist: 'Ali',
+        album: 'Album 1',
+        duration: 180,
+      );
+
+      // Same title, exact artist -> MATCH
+      const catalogMatch = SpotifyTrackItem(
+        title: 'Song Title',
+        artist: 'Ali',
+        durationMs: 180000,
+        uri: 'uri_1',
+      );
+      expect(findLibraryMatch(catalogMatch, [ownedTrack]), equals(ownedTrack));
+
+      // Same title, but unrelated substring artist "Alina" -> MUST NOT MATCH (fix item 7)!
+      const catalogAlina = SpotifyTrackItem(
+        title: 'Song Title',
+        artist: 'Alina',
+        durationMs: 180000,
+        uri: 'uri_2',
+      );
+      expect(findLibraryMatch(catalogAlina, [ownedTrack]), isNull);
+
+      // Collaboration with featuring artist -> MATCH via token intersection
+      const catalogCollab = SpotifyTrackItem(
+        title: 'Song Title',
+        artist: 'Ali feat. Guest',
+        durationMs: 180000,
+        uri: 'uri_3',
+      );
+      expect(findLibraryMatch(catalogCollab, [ownedTrack]), equals(ownedTrack));
+    });
+
+    test('findLibraryMatch normalizes title variants (remaster, deluxe, live)', () {
+      const owned = Track(
+        id: 'track_2',
+        title: 'Blinding Lights',
+        artist: 'The Weeknd',
+        album: 'After Hours',
+        duration: 200,
+      );
+
+      const catalogRemaster = SpotifyTrackItem(
+        title: 'Blinding Lights (Remastered 2020)',
+        artist: 'The Weeknd',
+        durationMs: 200000,
+        uri: 'uri_4',
+      );
+      expect(findLibraryMatch(catalogRemaster, [owned]), equals(owned));
+    });
+
+    testWidgets('TrackRowLayout renders song info and trailing more without Play & Sync', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: TrackRowLayout(
+              isCurrent: false,
+              isPlaying: false,
+              title: 'Starboy',
+              subtitle: const Text('The Weeknd • Starboy'),
+              durationText: '3:50',
+              onMoreTap: () {},
+              onTap: () {},
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Starboy'), findsOneWidget);
+      expect(find.text('The Weeknd • Starboy'), findsOneWidget);
+      expect(find.text('3:50'), findsOneWidget);
+      expect(find.byIcon(Icons.more_vert_rounded), findsOneWidget);
+      expect(find.text('Play & Sync'), findsNothing);
+      expect(find.text('Syncing...'), findsNothing);
+    });
+
+    testWidgets('TrackRowLayout displays coverOverlay and dims cover when syncing or on error', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: TrackRowLayout(
+              isCurrent: false,
+              isPlaying: false,
+              title: 'Starboy',
+              subtitle: const Text('The Weeknd'),
+              durationText: '3:50',
+              coverOverlay: const CircularProgressIndicator(),
+              onMoreTap: () {},
+              onTap: () {},
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.text('Play & Sync'), findsNothing);
+      expect(find.text('Syncing...'), findsNothing);
+    });
+
+    test('Song pluralization formats 1 song and N songs correctly', () {
+      String formatSongCount(int count) => '$count ${count == 1 ? "song" : "songs"}';
+
+      expect(formatSongCount(1), equals('1 song'));
+      expect(formatSongCount(2), equals('2 songs'));
+      expect(formatSongCount(15), equals('15 songs'));
+      expect(formatSongCount(0), equals('0 songs'));
     });
   });
 }

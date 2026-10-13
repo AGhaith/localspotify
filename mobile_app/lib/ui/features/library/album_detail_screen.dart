@@ -185,7 +185,7 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        '${album.tracks.length} songs • ${DurationFormatter.format(album.duration)} ${album.year != null ? "• ${album.year}" : ""}',
+                        '${album.tracks.length} ${album.tracks.length == 1 ? "song" : "songs"} • ${DurationFormatter.format(album.duration)} ${album.year != null ? "• ${album.year}" : ""}',
                         style: AppTypography.bodySmall,
                       ),
                       const SizedBox(height: 16),

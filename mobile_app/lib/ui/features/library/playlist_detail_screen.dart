@@ -264,7 +264,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                     children: [
                       Text(
                         isFullySynced
-                            ? '${playlist.tracks.length} songs • ${DurationFormatter.format(playlist.duration)}'
+                            ? '${playlist.tracks.length} ${playlist.tracks.length == 1 ? "song" : "songs"} • ${DurationFormatter.format(playlist.duration)}'
                             : (hasImported
                                 ? '${playlist.tracks.length} of $totalExpected tracks ready'
                                 : '0 songs'),

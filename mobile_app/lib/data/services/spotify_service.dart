@@ -21,6 +21,75 @@ extension ArtistCatalogAlbumExt on ArtistCatalogAlbum {
   List<SpotifyTrackItem> get tracks => $4;
 }
 
+class CatalogRelease {
+  final String id;
+  final String title;
+  final String? year;
+  final String? releaseDate;
+  final String? coverUrl;
+  final String recordType;
+  final String? artistName;
+
+  const CatalogRelease({
+    required this.id,
+    required this.title,
+    this.year,
+    this.releaseDate,
+    this.coverUrl,
+    required this.recordType,
+    this.artistName,
+  });
+
+  String get typeLabel {
+    final rt = recordType.toLowerCase();
+    if (rt == 'single') return 'Single';
+    if (rt == 'ep') return 'EP';
+    if (rt == 'compile') return 'Compilation';
+    return 'Album';
+  }
+}
+
+class CatalogRelatedArtist {
+  final String id;
+  final String name;
+  final String? pictureUrl;
+
+  const CatalogRelatedArtist({
+    required this.id,
+    required this.name,
+    this.pictureUrl,
+  });
+}
+
+class ArtistProfile {
+  final String artistId;
+  final String artistName;
+  final String? pictureUrl;
+  final List<SpotifyTrackItem> topTracks;
+  final List<CatalogRelease> releases;
+  final List<CatalogRelatedArtist> relatedArtists;
+
+  const ArtistProfile({
+    required this.artistId,
+    required this.artistName,
+    this.pictureUrl,
+    required this.topTracks,
+    required this.releases,
+    this.relatedArtists = const [],
+  });
+
+  static const empty = ArtistProfile(
+    artistId: '',
+    artistName: '',
+    topTracks: [],
+    releases: [],
+    relatedArtists: [],
+  );
+
+  bool get isEmpty => artistId.isEmpty && topTracks.isEmpty && releases.isEmpty;
+  bool get isNotEmpty => !isEmpty;
+}
+
 class SpotifyTrackItem {
   final String title;
   final String artist;
@@ -422,18 +491,98 @@ class SpotifyService {
     return null;
   }
 
-  final Map<String, ArtistCatalog> _artistCatalogCache = {};
+  static final Map<String, ArtistProfile> _artistProfileCache = {};
+  static final Map<String, List<SpotifyTrackItem>> _albumTracksCache = {};
+  static final Map<String, ArtistCatalog> _artistCatalogCache = {};
 
-  /// Fetch public Deezer music catalog for an artist: top 10 songs and albums with full tracklists.
-  Future<ArtistCatalog> fetchArtistCatalog(String artistName) async {
+  /// Invalidate cached catalog/profile for an artist (used by retry / pull-to-refresh)
+  void invalidateArtistCache(String artistName) {
+    final clean = artistName.trim().toLowerCase();
+    _artistProfileCache.remove(clean);
+    _artistCatalogCache.remove(clean);
+  }
+
+  /// Invalidate cached tracks for an album
+  void invalidateAlbumCache(String albumId) {
+    _albumTracksCache.remove(albumId.trim());
+  }
+
+  /// Calculates name similarity score between 0.0 and 1.0 using normalized string comparison
+  /// and Levenshtein edit distance.
+  static double calculateNameSimilarity(String target, String candidate) {
+    final t = _normalizeCatalogArtistName(target);
+    final c = _normalizeCatalogArtistName(candidate);
+    if (t == c) return 1.0;
+    if (t.isEmpty || c.isEmpty) return 0.0;
+
+    // Handle optional "the " prefix
+    final tNoThe = t.startsWith('the ') ? t.substring(4).trim() : t;
+    final cNoThe = c.startsWith('the ') ? c.substring(4).trim() : c;
+    if (tNoThe == cNoThe && tNoThe.isNotEmpty) return 0.98;
+
+    final dist = _levenshtein(t, c);
+    final maxLen = math.max(t.length, c.length);
+    return maxLen == 0 ? 1.0 : (1.0 - (dist / maxLen));
+  }
+
+  static String _normalizeCatalogArtistName(String name) {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) return '';
+    if (RegExp(r'[\u0600-\u06ff]').hasMatch(trimmed)) {
+      return trimmed
+          .replaceAll(RegExp(r'''[!"#\$%&'()*+,\-./:;<=>?@\[\\\]^_`{|}~\u2000-\u206f]'''), ' ')
+          .replaceAll(RegExp(r'\s+'), ' ')
+          .trim();
+    }
+    const accents = 'àáâãäåāçćčďèéêëēěìíîïīñńòóôõöøōřśšùúûüūýÿžźż';
+    const plain = 'aaaaaaacccdeeeeeeiiiiinnooooooorssuuuuuyyzzz';
+    final lower = trimmed.toLowerCase().replaceAll(RegExp(r'[\u0300-\u036f]'), '');
+    final folded = lower.split('').map((letter) {
+      final index = accents.indexOf(letter);
+      return index < 0 ? letter : plain[index];
+    }).join();
+    return folded
+        .replaceAll(RegExp(r'''[!"#\$%&'()*+,\-./:;<=>?@\[\\\]^_`{|}~\u2000-\u206f]'''), ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+  }
+
+  static int _levenshtein(String s1, String s2) {
+    if (s1 == s2) return 0;
+    if (s1.isEmpty) return s2.length;
+    if (s2.isEmpty) return s1.length;
+
+    List<int> v0 = List<int>.generate(s2.length + 1, (i) => i);
+    List<int> v1 = List<int>.filled(s2.length + 1, 0);
+
+    for (int i = 0; i < s1.length; i++) {
+      v1[0] = i + 1;
+      for (int j = 0; j < s2.length; j++) {
+        int cost = (s1[i] == s2[j]) ? 0 : 1;
+        v1[j + 1] = math.min(v1[j] + 1, math.min(v0[j + 1] + 1, v0[j] + cost));
+      }
+      for (int j = 0; j <= s2.length; j++) {
+        v0[j] = v1[j];
+      }
+    }
+    return v0[s2.length];
+  }
+
+  /// Fetches Deezer artist profile: matching Deezer artist, top 10 songs, bounded releases list
+  /// (WITHOUT tracklists for immediate response), and related artists.
+  Future<ArtistProfile> fetchArtistProfile(String artistName, {bool forceRefresh = false}) async {
     final cleanName = artistName.trim();
     if (cleanName.isEmpty) {
-      return (top: const <SpotifyTrackItem>[], albums: const <ArtistCatalogAlbum>[]);
+      return ArtistProfile.empty;
     }
 
     final cacheKey = cleanName.toLowerCase();
-    if (_artistCatalogCache.containsKey(cacheKey)) {
-      return _artistCatalogCache[cacheKey]!;
+    if (forceRefresh) {
+      _artistProfileCache.remove(cacheKey);
+      _artistCatalogCache.remove(cacheKey);
+    }
+    if (!forceRefresh && _artistProfileCache.containsKey(cacheKey)) {
+      return _artistProfileCache[cacheKey]!;
     }
 
     try {
@@ -453,42 +602,50 @@ class SpotifyService {
       final searchData = searchResp.data is String ? jsonDecode(searchResp.data) : searchResp.data;
       final artistList = (searchData['data'] as List?)?.whereType<Map>().toList() ?? [];
       if (artistList.isEmpty) {
-        const emptyResult = (top: <SpotifyTrackItem>[], albums: <ArtistCatalogAlbum>[]);
-        _artistCatalogCache[cacheKey] = emptyResult;
-        return emptyResult;
+        _artistProfileCache[cacheKey] = ArtistProfile.empty;
+        return ArtistProfile.empty;
       }
 
-      // Pick the Deezer artist whose name best matches (case-insensitive exact first, then highest nb_fan)
-      final lowerTarget = cleanName.toLowerCase();
-      final exactMatches = artistList
-          .where((a) => (a['name']?.toString().trim().toLowerCase() ?? '') == lowerTarget)
-          .toList();
-
-      Map bestArtist;
-      if (exactMatches.isNotEmpty) {
-        exactMatches.sort((a, b) {
-          final fansA = (a['nb_fan'] as num?)?.toInt() ?? 0;
-          final fansB = (b['nb_fan'] as num?)?.toInt() ?? 0;
-          return fansB.compareTo(fansA);
-        });
-        bestArtist = exactMatches.first;
-      } else {
-        artistList.sort((a, b) {
-          final fansA = (a['nb_fan'] as num?)?.toInt() ?? 0;
-          final fansB = (b['nb_fan'] as num?)?.toInt() ?? 0;
-          return fansB.compareTo(fansA);
-        });
-        bestArtist = artistList.first;
+      // Filter Deezer search results using a name similarity threshold (fix item 4)
+      final candidates = <({Map artist, double similarity, int fans})>[];
+      for (final a in artistList) {
+        final candName = a['name']?.toString() ?? '';
+        final sim = calculateNameSimilarity(cleanName, candName);
+        if (sim >= 0.85) {
+          final fans = (a['nb_fan'] as num?)?.toInt() ?? 0;
+          candidates.add((artist: a, similarity: sim, fans: fans));
+        }
       }
 
-      final artistId = bestArtist['id'];
-      if (artistId == null) {
-        const emptyResult = (top: <SpotifyTrackItem>[], albums: <ArtistCatalogAlbum>[]);
-        _artistCatalogCache[cacheKey] = emptyResult;
-        return emptyResult;
+      if (candidates.isEmpty) {
+        _artistProfileCache[cacheKey] = ArtistProfile.empty;
+        return ArtistProfile.empty;
       }
 
-      // 2. Concurrently fetch top 10 songs and artist albums
+      // Prioritize exact match, then highest similarity, then fan count
+      candidates.sort((a, b) {
+        final exactA = a.similarity >= 0.98;
+        final exactB = b.similarity >= 0.98;
+        if (exactA != exactB) return exactA ? -1 : 1;
+        if (exactA && exactB) return b.fans.compareTo(a.fans);
+        final simComp = b.similarity.compareTo(a.similarity);
+        if (simComp != 0) return simComp;
+        return b.fans.compareTo(a.fans);
+      });
+
+      final bestArtist = candidates.first.artist;
+      final artistId = bestArtist['id']?.toString();
+      if (artistId == null || artistId.isEmpty) {
+        _artistProfileCache[cacheKey] = ArtistProfile.empty;
+        return ArtistProfile.empty;
+      }
+
+      final artistPicture = bestArtist['picture_xl']?.toString() ??
+          bestArtist['picture_big']?.toString() ??
+          bestArtist['picture_medium']?.toString();
+      final matchedArtistName = bestArtist['name']?.toString() ?? cleanName;
+
+      // 2. Concurrently fetch top 10 songs, bounded releases (limit 50), and related artists
       final topFuture = _dio.get(
         'https://api.deezer.com/artist/$artistId/top',
         queryParameters: {'limit': 10},
@@ -500,16 +657,25 @@ class SpotifyService {
 
       final albumsFuture = _dio.get(
         'https://api.deezer.com/artist/$artistId/albums',
-        queryParameters: {'limit': 100},
+        queryParameters: {'limit': 50},
         options: Options(
           receiveTimeout: const Duration(seconds: 6),
           sendTimeout: const Duration(seconds: 4),
         ),
       ).catchError((_) => Response(requestOptions: RequestOptions(path: '')));
 
-      final responses = await Future.wait([topFuture, albumsFuture]);
+      final relatedFuture = _dio.get(
+        'https://api.deezer.com/artist/$artistId/related',
+        queryParameters: {'limit': 20},
+        options: Options(
+          receiveTimeout: const Duration(seconds: 6),
+          sendTimeout: const Duration(seconds: 4),
+        ),
+      ).catchError((_) => Response(requestOptions: RequestOptions(path: '')));
 
-      // Parse top 10 songs
+      final responses = await Future.wait([topFuture, albumsFuture, relatedFuture]);
+
+      // Parse top 10 tracks
       final topTracks = <SpotifyTrackItem>[];
       final topResp = responses[0];
       if (topResp.data != null) {
@@ -522,7 +688,7 @@ class SpotifyService {
             final norm = _normalizeTrackTitle(title);
             if (norm.isEmpty || !seenTop.add(norm)) continue;
 
-            final artist = t['artist']?['name']?.toString() ?? bestArtist['name']?.toString() ?? cleanName;
+            final artist = t['artist']?['name']?.toString() ?? matchedArtistName;
             final durationSec = (t['duration'] as num?)?.toInt() ?? 180;
             final preview = t['preview']?.toString();
             final cover = t['album']?['cover_xl']?.toString() ??
@@ -546,185 +712,207 @@ class SpotifyService {
         } catch (_) {}
       }
 
-      // Parse albums
+      // Parse bounded releases without fetching tracklists up front (fix item 13)
+      final rawReleases = <CatalogRelease>[];
       final albumsResp = responses[1];
-      final rawAlbums = <Map>[];
       if (albumsResp.data != null) {
         try {
           final data = albumsResp.data is String ? jsonDecode(albumsResp.data) : albumsResp.data;
           final items = (data['data'] as List?)?.whereType<Map>().toList() ?? [];
-          rawAlbums.addAll(items);
+          for (final alb in items) {
+            final albId = alb['id']?.toString() ?? '';
+            if (albId.isEmpty) continue;
+            final albTitle = alb['title']?.toString() ?? 'Unknown Release';
+            final releaseDate = alb['release_date']?.toString() ?? '';
+            String? year;
+            if (releaseDate.isNotEmpty) {
+              final yMatch = RegExp(r'^\d{4}').firstMatch(releaseDate);
+              if (yMatch != null) year = yMatch.group(0);
+            }
+            final cover = alb['cover_xl']?.toString() ??
+                alb['cover_big']?.toString() ??
+                alb['cover_medium']?.toString();
+            final recordType = alb['record_type']?.toString().toLowerCase() ?? 'album';
+
+            rawReleases.add(
+              CatalogRelease(
+                id: albId,
+                title: albTitle,
+                year: year,
+                releaseDate: releaseDate,
+                coverUrl: cover,
+                recordType: recordType,
+                artistName: matchedArtistName,
+              ),
+            );
+          }
         } catch (_) {}
       }
 
-      // Prioritize albums: original studio albums first, deprioritize compilations, deluxe, live
-      final prioritizedAlbums = List<Map>.from(rawAlbums);
-      prioritizedAlbums.sort((a, b) {
-        final penA = _albumPenalty(a);
-        final penB = _albumPenalty(b);
-        if (penA != penB) return penA.compareTo(penB);
-        final dateA = a['release_date']?.toString() ?? '';
-        final dateB = b['release_date']?.toString() ?? '';
-        return dateA.compareTo(dateB);
+      // Sort releases reverse-chronologically by release date
+      rawReleases.sort((a, b) {
+        final dateA = a.releaseDate ?? '';
+        final dateB = b.releaseDate ?? '';
+        return dateB.compareTo(dateA);
       });
 
-      // Concurrently fetch album tracklists with max concurrency 6
-      final albumTracklists = List<List<Map>?>.filled(prioritizedAlbums.length, null);
-      var nextAlbumIdx = 0;
+      // Parse related artists (fix item 15)
+      final relatedArtists = <CatalogRelatedArtist>[];
+      final relatedResp = responses[2];
+      if (relatedResp.data != null) {
+        try {
+          final data = relatedResp.data is String ? jsonDecode(relatedResp.data) : relatedResp.data;
+          final items = (data['data'] as List?)?.whereType<Map>().toList() ?? [];
+          for (final rel in items) {
+            final rId = rel['id']?.toString() ?? '';
+            final rName = rel['name']?.toString() ?? '';
+            if (rId.isEmpty || rName.isEmpty) continue;
+            if (rId == artistId || calculateNameSimilarity(cleanName, rName) >= 0.95) {
+              continue; // Exclude current artist
+            }
 
-      Future<void> worker() async {
-        while (true) {
-          final i = nextAlbumIdx++;
-          if (i >= prioritizedAlbums.length) break;
+            final pic = rel['picture_xl']?.toString() ??
+                rel['picture_big']?.toString() ??
+                rel['picture_medium']?.toString() ??
+                rel['picture']?.toString();
 
-          final alb = prioritizedAlbums[i];
-          final albId = alb['id'];
-          if (albId == null) {
-            albumTracklists[i] = const [];
-            continue;
-          }
-
-          try {
-            final resp = await _dio.get(
-              'https://api.deezer.com/album/$albId/tracks',
-              queryParameters: {'limit': 200},
-              options: Options(
-                receiveTimeout: const Duration(seconds: 6),
-                sendTimeout: const Duration(seconds: 4),
+            relatedArtists.add(
+              CatalogRelatedArtist(
+                id: rId,
+                name: rName,
+                pictureUrl: pic,
               ),
             );
-            final d = resp.data is String ? jsonDecode(resp.data) : resp.data;
-            final trkList = (d['data'] as List?)?.whereType<Map>().toList() ?? [];
-            albumTracklists[i] = trkList;
-          } catch (_) {
-            albumTracklists[i] = const [];
           }
-        }
+        } catch (_) {}
       }
 
-      final workerCount = math.min(6, prioritizedAlbums.length);
-      if (workerCount > 0) {
-        await Future.wait(List.generate(workerCount, (_) => worker()));
-      }
+      final profile = ArtistProfile(
+        artistId: artistId,
+        artistName: matchedArtistName,
+        pictureUrl: artistPicture,
+        topTracks: topTracks,
+        releases: rawReleases,
+        relatedArtists: relatedArtists,
+      );
 
-      // Dedupe tracks across albums (keep original album version over compilations/"Deluxe"/live)
-      final seenTracks = <String>{};
-      final parsedAlbums = <({
-        String albumTitle,
-        String? year,
-        String? coverUrl,
-        String releaseDate,
-        List<SpotifyTrackItem> tracks,
-      })>[];
-
-      for (var i = 0; i < prioritizedAlbums.length; i++) {
-        final alb = prioritizedAlbums[i];
-        final trkList = albumTracklists[i] ?? [];
-        if (trkList.isEmpty) continue;
-
-        final albTitle = alb['title']?.toString() ?? 'Unknown Album';
-        final releaseDate = alb['release_date']?.toString() ?? '';
-        String? year;
-        if (releaseDate.isNotEmpty) {
-          final yMatch = RegExp(r'^\d{4}').firstMatch(releaseDate);
-          if (yMatch != null) year = yMatch.group(0);
-        }
-        final cover = alb['cover_xl']?.toString() ??
-            alb['cover_big']?.toString() ??
-            alb['cover_medium']?.toString();
-
-        final albumTracks = <SpotifyTrackItem>[];
-        for (final t in trkList) {
-          final title = t['title']?.toString() ?? 'Unknown Track';
-          final normTitle = _normalizeTrackTitle(title);
-          if (normTitle.isEmpty) continue;
-
-          // Dedupe tracks by normalized title (keep original album version)
-          if (!seenTracks.add(normTitle)) continue;
-
-          final artist = t['artist']?['name']?.toString() ?? bestArtist['name']?.toString() ?? cleanName;
-          final durationSec = (t['duration'] as num?)?.toInt() ?? 180;
-          final preview = t['preview']?.toString();
-          final link = t['link']?.toString() ?? '';
-
-          albumTracks.add(
-            SpotifyTrackItem(
-              title: title,
-              artist: artist,
-              durationMs: durationSec * 1000,
-              uri: link,
-              previewUrl: preview,
-              coverUrl: cover,
-              album: albTitle,
-            ),
-          );
-        }
-
-        if (albumTracks.isNotEmpty) {
-          parsedAlbums.add((
-            albumTitle: albTitle,
-            year: year,
-            coverUrl: cover,
-            releaseDate: releaseDate,
-            tracks: albumTracks,
-          ));
-        }
-      }
-
-      // Sort albums reverse-chronologically for display
-      parsedAlbums.sort((a, b) => b.releaseDate.compareTo(a.releaseDate));
-
-      final finalAlbums = parsedAlbums
-          .map<ArtistCatalogAlbum>((a) => (a.albumTitle, a.year, a.coverUrl, a.tracks))
-          .toList();
-
-      final result = (top: topTracks, albums: finalAlbums);
-      _artistCatalogCache[cacheKey] = result;
-      return result;
+      _artistProfileCache[cacheKey] = profile;
+      return profile;
     } catch (_) {
-      const empty = (top: <SpotifyTrackItem>[], albums: <ArtistCatalogAlbum>[]);
-      return empty;
+      return ArtistProfile.empty;
     }
   }
 
-  int _albumPenalty(Map alb) {
-    final title = (alb['title']?.toString() ?? '').toLowerCase();
-    final recType = (alb['record_type']?.toString() ?? '').toLowerCase();
-    int penalty = 0;
+  /// Fetches tracklist for a specific album on demand from Deezer /album/{id}.
+  /// Deduplicates tracks within the release strictly by track ID (fix item 5).
+  Future<List<SpotifyTrackItem>> fetchAlbumTracks(String albumId, {bool forceRefresh = false}) async {
+    final cleanId = albumId.trim();
+    if (cleanId.isEmpty) return const [];
 
-    // Compilations / Best of / Greatest Hits
-    if (recType == 'compile' ||
-        title.contains('compilation') ||
-        title.contains('greatest hits') ||
-        title.contains('best of') ||
-        title.contains('anthology') ||
-        title.contains('the collection')) {
-      penalty += 1000;
+    if (forceRefresh) {
+      _albumTracksCache.remove(cleanId);
+    }
+    if (!forceRefresh && _albumTracksCache.containsKey(cleanId)) {
+      return _albumTracksCache[cleanId]!;
     }
 
-    // Live albums
-    if (recType == 'live' || title.contains('live') || title.contains('tour') || title.contains('concert')) {
-      penalty += 500;
+    try {
+      final resp = await _dio.get(
+        'https://api.deezer.com/album/$cleanId',
+        options: Options(
+          receiveTimeout: const Duration(seconds: 6),
+          sendTimeout: const Duration(seconds: 4),
+        ),
+      );
+
+      final data = resp.data is String ? jsonDecode(resp.data) : resp.data;
+      final albumTitle = data['title']?.toString() ?? 'Unknown Album';
+      final albumArtist = data['artist']?['name']?.toString() ?? '';
+      final cover = data['cover_xl']?.toString() ??
+          data['cover_big']?.toString() ??
+          data['cover_medium']?.toString();
+
+      var trackList = (data['tracks']?['data'] as List?)?.whereType<Map>().toList() ?? [];
+
+      if (trackList.isEmpty) {
+        final tracksResp = await _dio.get(
+          'https://api.deezer.com/album/$cleanId/tracks',
+          queryParameters: {'limit': 200},
+          options: Options(
+            receiveTimeout: const Duration(seconds: 6),
+            sendTimeout: const Duration(seconds: 4),
+          ),
+        );
+        final td = tracksResp.data is String ? jsonDecode(tracksResp.data) : tracksResp.data;
+        trackList = (td['data'] as List?)?.whereType<Map>().toList() ?? [];
+      }
+
+      final seenTrackIds = <String>{};
+      final tracks = <SpotifyTrackItem>[];
+
+      for (final t in trackList) {
+        final trackId = t['id']?.toString() ?? '';
+        // Deduplicate within this release strictly by track ID (fix item 5)
+        if (trackId.isNotEmpty && !seenTrackIds.add(trackId)) {
+          continue;
+        }
+
+        final title = t['title']?.toString() ?? 'Unknown Track';
+        final artist = t['artist']?['name']?.toString() ?? albumArtist;
+        final durationSec = (t['duration'] as num?)?.toInt() ?? 180;
+        final preview = t['preview']?.toString();
+        final link = t['link']?.toString() ?? '';
+
+        tracks.add(
+          SpotifyTrackItem(
+            title: title,
+            artist: artist,
+            durationMs: durationSec * 1000,
+            uri: link.isNotEmpty ? link : trackId,
+            previewUrl: preview,
+            coverUrl: cover,
+            album: albumTitle,
+          ),
+        );
+      }
+
+      _albumTracksCache[cleanId] = tracks;
+      return tracks;
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  /// Backward-compatible catalog method. Calls fetchArtistProfile and formats into ArtistCatalog.
+  Future<ArtistCatalog> fetchArtistCatalog(String artistName, {bool forceRefresh = false}) async {
+    final cleanName = artistName.trim();
+    if (cleanName.isEmpty) {
+      return (top: const <SpotifyTrackItem>[], albums: const <ArtistCatalogAlbum>[]);
     }
 
-    // Deluxe / Expanded / Anniversary / Remastered / Special editions
-    if (title.contains('deluxe') ||
-        title.contains('expanded') ||
-        title.contains('anniversary') ||
-        title.contains('special edition') ||
-        title.contains('remaster') ||
-        title.contains('edition') ||
-        title.contains('bonus track')) {
-      penalty += 200;
+    final cacheKey = cleanName.toLowerCase();
+    if (forceRefresh) {
+      _artistCatalogCache.remove(cacheKey);
+    }
+    if (!forceRefresh && _artistCatalogCache.containsKey(cacheKey)) {
+      return _artistCatalogCache[cacheKey]!;
     }
 
-    if (recType == 'single') {
-      penalty += 50;
-    } else if (recType == 'ep') {
-      penalty += 30;
-    }
+    final profile = await fetchArtistProfile(cleanName, forceRefresh: forceRefresh);
+    final catalog = (
+      top: profile.topTracks,
+      albums: profile.releases
+          .map<ArtistCatalogAlbum>((r) => (
+                r.title,
+                r.year,
+                r.coverUrl,
+                const <SpotifyTrackItem>[],
+              ))
+          .toList(),
+    );
 
-    return penalty;
+    _artistCatalogCache[cacheKey] = catalog;
+    return catalog;
   }
 
   String _normalizeTrackTitle(String title) {
