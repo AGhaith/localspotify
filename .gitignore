@@ -50,3 +50,7 @@ my-music/*.csv
 
 # graphify knowledge graph output
 graphify-out/
+
+# Music vault: ignore everything except the import scripts
+my-music/*
+!my-music/*.py
