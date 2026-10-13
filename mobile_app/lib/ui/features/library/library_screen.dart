@@ -170,7 +170,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
         items.add(_ArtistEntry(artist));
       }
     } else if (_selectedFilter == 'Albums') {
-      items.addAll(music.libraryAlbums.map(_AlbumEntry.new));
+      items.addAll(music.savedAlbums.map(_AlbumEntry.new));
     } else if (_selectedFilter == 'Playlists') {
       items.add(const _LikedSongsEntry());
       final sortedPlaylists = List<Playlist>.from(music.playlists)
@@ -185,7 +185,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
       for (final pl in music.playlists) {
         otherEntries.add(_PlaylistEntry(pl));
       }
-      for (final album in music.libraryAlbums) {
+      for (final album in music.savedAlbums) {
         otherEntries.add(_AlbumEntry(album));
       }
       otherEntries.sort(
@@ -244,7 +244,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                           _buildFilterPill(_selectedFilter!, _selectedFilter!),
                         ] else ...[
                           _buildFilterPill('Playlists', 'Playlists'),
-                          if (music.libraryAlbums.isNotEmpty) ...[
+                          if (music.savedAlbums.isNotEmpty) ...[
                             const SizedBox(width: AppSpacing.sm),
                             _buildFilterPill('Albums', 'Albums'),
                           ],
@@ -300,6 +300,19 @@ class _LibraryScreenState extends State<LibraryScreen> {
                           _buildAlbumRow(context, music, album),
                       };
                     },
+                  ),
+                ),
+
+              if (_selectedFilter == 'Albums' && items.isEmpty &&
+                  music.libraryError == null)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: AppSpacing.sectionGap),
+                    child: Center(
+                      child: Text('No saved albums yet',
+                          style: AppTypography.bodySmall),
+                    ),
                   ),
                 ),
 

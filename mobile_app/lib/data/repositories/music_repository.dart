@@ -315,6 +315,18 @@ class MusicRepository {
     return _apiService.getStarredTracks();
   }
 
+  Future<List<Album>> getStarredAlbums() {
+    return _apiService.getStarredAlbums();
+  }
+
+  Future<void> starAlbum(String albumId) {
+    return _apiService.starItem(albumId: albumId);
+  }
+
+  Future<void> unstarAlbum(String albumId) {
+    return _apiService.unstarItem(albumId: albumId);
+  }
+
   Future<void> starTrack(String trackId) {
     return _apiService.starItem(songId: trackId);
   }

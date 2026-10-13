@@ -200,7 +200,9 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
                           style: AppTypography.bodySmall,
                         ),
                         const SizedBox(height: AppSpacing.lg),
-                        Row(
+                        Wrap(
+                          spacing: AppSpacing.sm,
+                          runSpacing: AppSpacing.sm,
                           children: [
                             NeoButton(
                               text: 'Play',
@@ -212,7 +214,6 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
                                       player.playTracks(tracks: album.tracks, initialIndex: 0);
                                     },
                             ),
-                            const SizedBox(width: AppSpacing.sm),
                             NeoButton(
                               text: 'Shuffle',
                               icon: Icons.shuffle_rounded,
@@ -227,8 +228,22 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
                                       player.playTracks(tracks: shuffled, initialIndex: 0);
                                     },
                             ),
+                            IconButton(
+                              icon: Icon(
+                                music.isAlbumSaved(album.id)
+                                    ? Icons.check_circle_rounded
+                                    : Icons.add_circle_outline_rounded,
+                                color: AppColors.textPrimary,
+                              ),
+                              tooltip: music.isAlbumSaved(album.id)
+                                  ? 'Remove from library'
+                                  : 'Add to library',
+                              onPressed: () {
+                                HapticFeedback.lightImpact();
+                                music.toggleAlbumSaved(album);
+                              },
+                            ),
                             if (album.tracks.isNotEmpty) ...[
-                              const SizedBox(width: AppSpacing.rowGap),
                               // Spotify-grade circular download button with spinner and checkmark
                               DownloadActionButton(
                                 isDownloaded: isDownloaded,

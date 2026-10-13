@@ -51,6 +51,7 @@ class _LikedSongsScreenState extends State<LikedSongsScreen> {
               onPressed: () => Navigator.pop(context),
             ),
             flexibleSpace: FlexibleSpaceBar(
+              centerTitle: true,
               title: Text(
                 'Liked Songs',
                 style: AppTypography.titleLarge.copyWith(color: Colors.white),

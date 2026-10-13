@@ -347,6 +347,28 @@ class SubsonicApiService {
     return [];
   }
 
+  Future<List<Album>> getStarredAlbums() async {
+    final url = _getEndpointUrl('getStarred2');
+    final response = await _dio.get(
+      url,
+      queryParameters: _buildParams(),
+    );
+
+    final subResp = response.data['subsonic-response'];
+    if (subResp['status'] != 'ok') {
+      throw Exception(subResp['error']?['message'] ?? 'Failed to get starred albums');
+    }
+
+    final albumListRaw = subResp['starred2']?['album'];
+    if (albumListRaw is List) {
+      return albumListRaw
+          .whereType<Map<String, dynamic>>()
+          .map((e) => Album.fromSubsonicJson(e))
+          .toList();
+    }
+    return [];
+  }
+
   /// Star (Like) an item: song, album, artist
   Future<void> starItem({String? songId, String? albumId, String? artistId}) async {
     final url = _getEndpointUrl('star');

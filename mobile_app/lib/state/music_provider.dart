@@ -56,6 +56,7 @@ class MusicProvider extends ChangeNotifier {
   List<Album> _frequentAlbums = [];
   List<Artist> _artists = [];
   List<Album> _libraryAlbums = [];
+  List<Album> _savedAlbums = [];
   List<Playlist> _playlists = [];
   List<Track> _starredTracks = [];
   List<Track> _offlineTracks = [];
@@ -98,6 +99,7 @@ class MusicProvider extends ChangeNotifier {
   List<Album> get frequentAlbums => _frequentAlbums;
   List<Artist> get artists => _artists;
   List<Album> get libraryAlbums => _libraryAlbums;
+  List<Album> get savedAlbums => _savedAlbums;
   List<Artist> get libraryArtists {
     final counts = <String, int>{};
     final primary = <String>{};
@@ -231,11 +233,13 @@ class MusicProvider extends ChangeNotifier {
       final playlists = await _musicRepository.getPlaylists();
       final artists = await _musicRepository.getArtists();
       final starred = await _musicRepository.getStarredTracks();
+      final savedAlbums = await _musicRepository.getStarredAlbums();
       final albums = await _musicRepository.getNewestAlbums(size: 500);
 
       _playlists = playlists;
       _artists = _sanitizeArtists(artists);
       _libraryAlbums = albums;
+      _savedAlbums = savedAlbums;
       _starredTracks = starred;
       _offlineTracks = _musicRepository.getDownloadedTracks();
     } catch (e) {
@@ -706,6 +710,36 @@ class MusicProvider extends ChangeNotifier {
       notifyListeners();
     } finally {
       _starringInFlight.remove(track.id);
+    }
+  }
+
+  final Set<String> _savingAlbumsInFlight = {};
+
+  bool isAlbumSaved(String albumId) =>
+      _savedAlbums.any((album) => album.id == albumId);
+
+  Future<void> toggleAlbumSaved(Album album) async {
+    if (!_savingAlbumsInFlight.add(album.id)) return;
+
+    final savedIndex = _savedAlbums.indexWhere((saved) => saved.id == album.id);
+    final savedAlbum = savedIndex < 0 ? null : _savedAlbums[savedIndex];
+    final wasSaved = savedIndex >= 0;
+    _savedAlbums.removeWhere((saved) => saved.id == album.id);
+    if (!wasSaved) _savedAlbums.insert(0, album.copyWith(isStarred: true));
+    notifyListeners();
+
+    try {
+      if (wasSaved) {
+        await _musicRepository.unstarAlbum(album.id);
+      } else {
+        await _musicRepository.starAlbum(album.id);
+      }
+    } catch (_) {
+      _savedAlbums.removeWhere((saved) => saved.id == album.id);
+      if (savedAlbum != null) _savedAlbums.insert(savedIndex, savedAlbum);
+      notifyListeners();
+    } finally {
+      _savingAlbumsInFlight.remove(album.id);
     }
   }
 
