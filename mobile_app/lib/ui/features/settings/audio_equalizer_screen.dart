@@ -18,16 +18,21 @@ class AudioEqualizerScreen extends StatefulWidget {
 class _AudioEqualizerScreenState extends State<AudioEqualizerScreen> {
   bool _eqEnabled = true;
   String _selectedPreset = 'Flat';
-  
+
   // 5 Equalizer bands in dB (-10 to +10)
   List<double> _bands = [0.0, 0.0, 0.0, 0.0, 0.0];
-  final List<String> _bandFrequencies = ['60 Hz', '230 Hz', '910 Hz', '3.6 kHz', '14 kHz'];
-  
+  final List<String> _bandFrequencies = [
+    '60 Hz',
+    '230 Hz',
+    '910 Hz',
+    '3.6 kHz',
+    '14 kHz'
+  ];
+
   double _bassBoost = 0.0;
   double _virtualizer = 0.0;
-  
+
   bool _gaplessPlayback = true;
-  bool _volumeNormalization = true;
   double _crossfadeSeconds = 0.0; // 0 = Off, 1 - 12s
 
   final Map<String, List<double>> _presets = {
@@ -52,7 +57,7 @@ class _AudioEqualizerScreenState extends State<AudioEqualizerScreen> {
     setState(() {
       _eqEnabled = prefs.getBool('eq_enabled') ?? true;
       _selectedPreset = prefs.getString('eq_preset') ?? 'Flat';
-      
+
       final savedBands = prefs.getStringList('eq_bands');
       if (savedBands != null && savedBands.length == 5) {
         _bands = savedBands.map((e) => double.tryParse(e) ?? 0.0).toList();
@@ -63,7 +68,6 @@ class _AudioEqualizerScreenState extends State<AudioEqualizerScreen> {
       _bassBoost = prefs.getDouble('bass_boost') ?? 0.0;
       _virtualizer = prefs.getDouble('virtualizer') ?? 0.0;
       _gaplessPlayback = prefs.getBool('gapless_playback') ?? true;
-      _volumeNormalization = prefs.getBool('volume_normalization') ?? true;
       _crossfadeSeconds = prefs.getDouble('crossfade_seconds') ?? 0.0;
     });
   }
@@ -72,11 +76,11 @@ class _AudioEqualizerScreenState extends State<AudioEqualizerScreen> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('eq_enabled', _eqEnabled);
     await prefs.setString('eq_preset', _selectedPreset);
-    await prefs.setStringList('eq_bands', _bands.map((e) => e.toString()).toList());
+    await prefs.setStringList(
+        'eq_bands', _bands.map((e) => e.toString()).toList());
     await prefs.setDouble('bass_boost', _bassBoost);
     await prefs.setDouble('virtualizer', _virtualizer);
     await prefs.setBool('gapless_playback', _gaplessPlayback);
-    await prefs.setBool('volume_normalization', _volumeNormalization);
     await prefs.setDouble('crossfade_seconds', _crossfadeSeconds);
   }
 
@@ -112,9 +116,8 @@ class _AudioEqualizerScreenState extends State<AudioEqualizerScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
-      bottomNavigationBar: player.hasTrack
-          ? const MiniPlayerBar(isStandalone: true)
-          : null,
+      bottomNavigationBar:
+          player.hasTrack ? const MiniPlayerBar(isStandalone: true) : null,
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         physics: const BouncingScrollPhysics(),
@@ -162,9 +165,15 @@ class _AudioEqualizerScreenState extends State<AudioEqualizerScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('-10 dB', style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted, fontSize: 10)),
-                        Text('0 dB', style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted, fontSize: 10)),
-                        Text('+10 dB', style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted, fontSize: 10)),
+                        Text('-10 dB',
+                            style: AppTypography.bodySmall.copyWith(
+                                color: AppColors.textMuted, fontSize: 10)),
+                        Text('0 dB',
+                            style: AppTypography.bodySmall.copyWith(
+                                color: AppColors.textMuted, fontSize: 10)),
+                        Text('+10 dB',
+                            style: AppTypography.bodySmall.copyWith(
+                                color: AppColors.textMuted, fontSize: 10)),
                       ],
                     ),
                   ),
@@ -253,7 +262,8 @@ class _AudioEqualizerScreenState extends State<AudioEqualizerScreen> {
                 const Divider(height: 1, color: AppColors.border),
                 _buildQualityOption(
                   title: 'Extreme Data Saver (96 kbps)',
-                  subtitle: 'Maximum bandwidth savings with Opus/AAC compression',
+                  subtitle:
+                      'Maximum bandwidth savings with Opus/AAC compression',
                   bitrate: 96,
                   currentBitrate: music.getMaxBitRate(),
                   onSelect: () => music.saveMaxBitRate(96),
@@ -284,9 +294,13 @@ class _AudioEqualizerScreenState extends State<AudioEqualizerScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Gapless Playback', style: AppTypography.titleMedium.copyWith(fontSize: 15)),
+                          Text('Gapless Playback',
+                              style: AppTypography.titleMedium
+                                  .copyWith(fontSize: 15)),
                           const SizedBox(height: 2),
-                          Text('Seamless transition between consecutive tracks', style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted)),
+                          Text('Seamless transition between consecutive tracks',
+                              style: AppTypography.bodySmall
+                                  .copyWith(color: AppColors.textMuted)),
                         ],
                       ),
                     ),
@@ -311,19 +325,22 @@ class _AudioEqualizerScreenState extends State<AudioEqualizerScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Normalize Volume', style: AppTypography.titleMedium.copyWith(fontSize: 15)),
+                          Text('Normalize volume',
+                              style: AppTypography.titleMedium
+                                  .copyWith(fontSize: 15)),
                           const SizedBox(height: 2),
-                          Text('Set same volume level for all songs (ReplayGain)', style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted)),
+                          Text('Play all songs at the same loudness',
+                              style: AppTypography.bodySmall
+                                  .copyWith(color: AppColors.textMuted)),
                         ],
                       ),
                     ),
                     const SizedBox(width: 8),
                     Switch.adaptive(
-                      value: _volumeNormalization,
+                      value: player.normalizeVolume,
                       activeTrackColor: AppColors.primary,
                       onChanged: (val) {
-                        setState(() => _volumeNormalization = val);
-                        _savePreferences();
+                        player.setNormalizeVolume(val);
                       },
                     ),
                   ],
@@ -334,10 +351,15 @@ class _AudioEqualizerScreenState extends State<AudioEqualizerScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Crossfade', style: AppTypography.titleMedium.copyWith(fontSize: 15)),
+                    Text('Crossfade',
+                        style:
+                            AppTypography.titleMedium.copyWith(fontSize: 15)),
                     Text(
-                      _crossfadeSeconds == 0 ? 'Off' : '${_crossfadeSeconds.toInt()} s',
-                      style: AppTypography.labelLarge.copyWith(color: AppColors.primary),
+                      _crossfadeSeconds == 0
+                          ? 'Off'
+                          : '${_crossfadeSeconds.toInt()} s',
+                      style: AppTypography.labelLarge
+                          .copyWith(color: AppColors.primary),
                     ),
                   ],
                 ),
@@ -348,7 +370,8 @@ class _AudioEqualizerScreenState extends State<AudioEqualizerScreen> {
                     thumbColor: Colors.white,
                     overlayColor: AppColors.primary.withValues(alpha: 0.2),
                     trackHeight: 4,
-                    thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
+                    thumbShape:
+                        const RoundSliderThumbShape(enabledThumbRadius: 7),
                   ),
                   child: Slider(
                     value: _crossfadeSeconds,
@@ -387,7 +410,9 @@ class _AudioEqualizerScreenState extends State<AudioEqualizerScreen> {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: _eqEnabled ? AppColors.primary.withValues(alpha: 0.15) : AppColors.border,
+                  color: _eqEnabled
+                      ? AppColors.primary.withValues(alpha: 0.15)
+                      : AppColors.border,
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -400,11 +425,13 @@ class _AudioEqualizerScreenState extends State<AudioEqualizerScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Equalizer', style: AppTypography.titleMedium.copyWith(fontSize: 16)),
+                  Text('Equalizer',
+                      style: AppTypography.titleMedium.copyWith(fontSize: 16)),
                   Text(
                     _eqEnabled ? _selectedPreset : 'Disabled',
                     style: AppTypography.bodySmall.copyWith(
-                      color: _eqEnabled ? AppColors.primary : AppColors.textMuted,
+                      color:
+                          _eqEnabled ? AppColors.primary : AppColors.textMuted,
                     ),
                   ),
                 ],
@@ -492,7 +519,8 @@ class _AudioEqualizerScreenState extends State<AudioEqualizerScreen> {
         const SizedBox(height: 4),
         Text(
           _bandFrequencies[index],
-          style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted, fontSize: 10),
+          style: AppTypography.bodySmall
+              .copyWith(color: AppColors.textMuted, fontSize: 10),
         ),
       ],
     );
@@ -514,12 +542,14 @@ class _AudioEqualizerScreenState extends State<AudioEqualizerScreen> {
               children: [
                 Icon(icon, color: AppColors.primary, size: 18),
                 const SizedBox(width: 8),
-                Text(label, style: AppTypography.titleMedium.copyWith(fontSize: 14)),
+                Text(label,
+                    style: AppTypography.titleMedium.copyWith(fontSize: 14)),
               ],
             ),
             Text(
               '${(value * 100).toInt()}%',
-              style: AppTypography.labelMedium.copyWith(color: AppColors.primary),
+              style:
+                  AppTypography.labelMedium.copyWith(color: AppColors.primary),
             ),
           ],
         ),
@@ -553,10 +583,14 @@ class _AudioEqualizerScreenState extends State<AudioEqualizerScreen> {
     final isSelected = bitrate == currentBitrate;
 
     return ListTile(
-      title: Text(title, style: AppTypography.titleMedium.copyWith(fontSize: 15)),
-      subtitle: Text(subtitle, style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted)),
+      title:
+          Text(title, style: AppTypography.titleMedium.copyWith(fontSize: 15)),
+      subtitle: Text(subtitle,
+          style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted)),
       trailing: Icon(
-        isSelected ? Icons.radio_button_checked_rounded : Icons.radio_button_unchecked_rounded,
+        isSelected
+            ? Icons.radio_button_checked_rounded
+            : Icons.radio_button_unchecked_rounded,
         color: isSelected ? AppColors.primary : AppColors.textMuted,
         size: 20,
       ),

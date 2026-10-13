@@ -20,6 +20,8 @@ class Track {
   final bool isOffline;
   final String? localAudioPath;
   final String? localCoverArtPath;
+  final double? replayGainTrackGain;
+  final double? replayGainTrackPeak;
 
   const Track({
     required this.id,
@@ -41,22 +43,29 @@ class Track {
     this.isOffline = false,
     this.localAudioPath,
     this.localCoverArtPath,
+    this.replayGainTrackGain,
+    this.replayGainTrackPeak,
   });
 
   /// Returns list of individual artists separated by comma, slash, semicolon, &, or feat/ft
   List<String> get individualArtists {
     if (artist.trim().isEmpty) return [];
-    final pattern = RegExp(r'\s*(?:,|/|;|&|\bfeat\.?|\bft\.?|\bwith\b)\s*', caseSensitive: false);
+    final pattern = RegExp(r'\s*(?:,|/|;|&|\bfeat\.?|\bft\.?|\bwith\b)\s*',
+        caseSensitive: false);
     final parts = artist
         .split(pattern)
         .map((s) => s.trim())
-        .where((s) => s.isNotEmpty && !s.toLowerCase().startsWith('feat') && !s.toLowerCase().startsWith('ft'))
+        .where((s) =>
+            s.isNotEmpty &&
+            !s.toLowerCase().startsWith('feat') &&
+            !s.toLowerCase().startsWith('ft'))
         .toList();
     return parts.isNotEmpty ? parts : [artist];
   }
 
   /// Primary or lead artist
-  String get primaryArtist => individualArtists.isNotEmpty ? individualArtists.first : artist;
+  String get primaryArtist =>
+      individualArtists.isNotEmpty ? individualArtists.first : artist;
 
   Track copyWith({
     String? id,
@@ -78,6 +87,8 @@ class Track {
     bool? isOffline,
     String? localAudioPath,
     String? localCoverArtPath,
+    double? replayGainTrackGain,
+    double? replayGainTrackPeak,
   }) {
     return Track(
       id: id ?? this.id,
@@ -99,16 +110,21 @@ class Track {
       isOffline: isOffline ?? this.isOffline,
       localAudioPath: localAudioPath ?? this.localAudioPath,
       localCoverArtPath: localCoverArtPath ?? this.localCoverArtPath,
+      replayGainTrackGain: replayGainTrackGain ?? this.replayGainTrackGain,
+      replayGainTrackPeak: replayGainTrackPeak ?? this.replayGainTrackPeak,
     );
   }
 
   factory Track.fromSubsonicJson(Map<String, dynamic> json) {
+    final replayGain = json['replayGain'];
+    final gainValues = replayGain is Map ? replayGain : const {};
     var rawTitle = json['title']?.toString() ?? 'Unknown Title';
     var rawArtist = json['artist']?.toString() ?? 'Unknown Artist';
     var rawAlbum = json['album']?.toString() ?? 'Unknown Album';
 
     // If artist is unknown or placeholder and title contains ' - ', extract artist & title
-    if ((rawArtist.isEmpty || rawArtist.toLowerCase().contains('unknown')) && rawTitle.contains(' - ')) {
+    if ((rawArtist.isEmpty || rawArtist.toLowerCase().contains('unknown')) &&
+        rawTitle.contains(' - ')) {
       final parts = rawTitle.split(' - ');
       if (parts.length >= 2) {
         rawArtist = parts[0].trim();
@@ -133,6 +149,8 @@ class Track {
       bitRate: (json['bitRate'] as num?)?.toInt(),
       suffix: json['suffix']?.toString(),
       isStarred: json['starred'] != null,
+      replayGainTrackGain: (gainValues['trackGain'] as num?)?.toDouble(),
+      replayGainTrackPeak: (gainValues['trackPeak'] as num?)?.toDouble(),
     );
   }
 
@@ -156,6 +174,8 @@ class Track {
         'isOffline': isOffline,
         'localAudioPath': localAudioPath,
         'localCoverArtPath': localCoverArtPath,
+        'replayGainTrackGain': replayGainTrackGain,
+        'replayGainTrackPeak': replayGainTrackPeak,
       };
 
   factory Track.fromJson(Map<String, dynamic> json) => Track(
@@ -178,6 +198,8 @@ class Track {
         isOffline: json['isOffline'] as bool? ?? false,
         localAudioPath: json['localAudioPath']?.toString(),
         localCoverArtPath: json['localCoverArtPath']?.toString(),
+        replayGainTrackGain: (json['replayGainTrackGain'] as num?)?.toDouble(),
+        replayGainTrackPeak: (json['replayGainTrackPeak'] as num?)?.toDouble(),
       );
 
   MediaItem toMediaItem({required Uri audioUri, Uri? artUri}) {

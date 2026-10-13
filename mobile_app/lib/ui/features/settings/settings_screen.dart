@@ -92,11 +92,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
-      bottomNavigationBar: player.hasTrack
-          ? const MiniPlayerBar(isStandalone: true)
-          : null,
+      bottomNavigationBar:
+          player.hasTrack ? const MiniPlayerBar(isStandalone: true) : null,
       body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH, vertical: AppSpacing.sm),
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.screenH, vertical: AppSpacing.sm),
         physics: const BouncingScrollPhysics(),
         children: [
           // 1. Account & Server Profile
@@ -134,13 +134,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(auth.session?.username ?? 'User', style: AppTypography.titleLarge.copyWith(fontSize: 18)),
+                      Text(auth.session?.username ?? 'User',
+                          style:
+                              AppTypography.titleLarge.copyWith(fontSize: 18)),
                       const SizedBox(height: 2),
                       Text(
                         auth.session?.serverUrl ?? '',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
+                        style: AppTypography.bodySmall
+                            .copyWith(color: AppColors.textMuted),
                       ),
                     ],
                   ),
@@ -160,7 +163,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               border: Border.all(color: AppColors.border),
             ),
             child: ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH, vertical: AppSpacing.xs),
+              contentPadding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.screenH, vertical: AppSpacing.xs),
               leading: Container(
                 width: 36,
                 height: 36,
@@ -168,17 +172,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   color: AppColors.primary.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.equalizer_rounded, color: AppColors.primary, size: 20),
+                child: const Icon(Icons.equalizer_rounded,
+                    color: AppColors.primary, size: 20),
               ),
-              title: Text('Audio & Equalizer', style: AppTypography.titleMedium.copyWith(fontSize: 15)),
-              subtitle: Text('5-band EQ, bass boost, bitrate & playback', style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted)),
-              trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted),
+              title: Text('Audio & Equalizer',
+                  style: AppTypography.titleMedium.copyWith(fontSize: 15)),
+              subtitle: Text('5-band EQ, bass boost, bitrate & playback',
+                  style: AppTypography.bodySmall
+                      .copyWith(color: AppColors.textMuted)),
+              trailing: const Icon(Icons.chevron_right_rounded,
+                  color: AppColors.textMuted),
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const AudioEqualizerScreen()),
+                  MaterialPageRoute(
+                      builder: (_) => const AudioEqualizerScreen()),
                 );
               },
+            ),
+          ),
+
+          const SizedBox(height: AppSpacing.sectionGap),
+
+          Container(
+            decoration: BoxDecoration(
+              color: AppColors.card,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: SwitchListTile.adaptive(
+              title: Text('Normalize volume',
+                  style: AppTypography.titleMedium.copyWith(fontSize: 15)),
+              subtitle: Text('Play all songs at the same loudness',
+                  style: AppTypography.bodySmall
+                      .copyWith(color: AppColors.textMuted)),
+              value: player.normalizeVolume,
+              activeTrackColor: AppColors.primary,
+              onChanged: player.setNormalizeVolume,
             ),
           ),
 
@@ -196,18 +226,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Connection speed', style: AppTypography.titleMedium.copyWith(fontSize: 14)),
+                Text('Connection speed',
+                    style: AppTypography.titleMedium.copyWith(fontSize: 14)),
                 if (_isPinging)
                   const SizedBox(
                     width: 14,
                     height: 14,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: AppColors.primary),
                   )
                 else if (_pingResult != null)
                   Text(
                     _pingResult!,
                     style: AppTypography.labelLarge.copyWith(
-                      color: _pingResult == 'Failed' ? AppColors.error : AppColors.primary,
+                      color: _pingResult == 'Failed'
+                          ? AppColors.error
+                          : AppColors.primary,
                     ),
                   )
                 else
@@ -215,7 +249,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     onTap: _testPing,
                     child: Text(
                       'Test connection',
-                      style: AppTypography.labelSmall.copyWith(color: AppColors.primary, fontWeight: FontWeight.bold),
+                      style: AppTypography.labelSmall.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.bold),
                     ),
                   ),
               ],
@@ -239,22 +275,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Downloaded Tracks', style: AppTypography.titleMedium.copyWith(fontSize: 14)),
-                    Text('${music.offlineTracks.length} ${music.offlineTracks.length == 1 ? "song" : "songs"}', style: AppTypography.labelLarge.copyWith(color: AppColors.primary)),
+                    Text('Downloaded Tracks',
+                        style:
+                            AppTypography.titleMedium.copyWith(fontSize: 14)),
+                    Text(
+                        '${music.offlineTracks.length} ${music.offlineTracks.length == 1 ? "song" : "songs"}',
+                        style: AppTypography.labelLarge
+                            .copyWith(color: AppColors.primary)),
                   ],
                 ),
                 const SizedBox(height: AppSpacing.rowGap),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Disk Space Used', style: AppTypography.titleMedium.copyWith(fontSize: 14)),
+                    Text('Disk Space Used',
+                        style:
+                            AppTypography.titleMedium.copyWith(fontSize: 14)),
                     _isLoadingStorage
                         ? const SizedBox(
                             width: 14,
                             height: 14,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: AppColors.primary),
                           )
-                        : Text(_formatBytes(_storageBytes), style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary)),
+                        : Text(_formatBytes(_storageBytes),
+                            style: AppTypography.bodySmall
+                                .copyWith(color: AppColors.textSecondary)),
                   ],
                 ),
                 if (music.offlineTracks.isNotEmpty) ...[
@@ -264,16 +310,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     scaleFactor: 0.96,
                     child: Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                      padding:
+                          const EdgeInsets.symmetric(vertical: AppSpacing.md),
                       decoration: BoxDecoration(
                         color: AppColors.error.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.error.withValues(alpha: 0.35)),
+                        border: Border.all(
+                            color: AppColors.error.withValues(alpha: 0.35)),
                       ),
                       child: Center(
                         child: Text(
                           'Clear All Offline Downloads',
-                          style: AppTypography.labelLarge.copyWith(color: AppColors.error, fontWeight: FontWeight.bold),
+                          style: AppTypography.labelLarge.copyWith(
+                              color: AppColors.error,
+                              fontWeight: FontWeight.bold),
                         ),
                       ),
                     ),
@@ -319,7 +369,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Text(
               'LocalSpotify Mobile v${AppConfig.appVersion}\nHigh-Performance Native Client',
               textAlign: TextAlign.center,
-              style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted, fontSize: 11),
+              style: AppTypography.bodySmall
+                  .copyWith(color: AppColors.textMuted, fontSize: 11),
             ),
           ),
           const SizedBox(height: AppSpacing.xxl),
@@ -330,7 +381,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildSectionHeader(String title) {
     return Padding(
-      padding: const EdgeInsets.only(left: AppSpacing.xs, bottom: AppSpacing.sm),
+      padding:
+          const EdgeInsets.only(left: AppSpacing.xs, bottom: AppSpacing.sm),
       child: Text(
         title,
         style: AppTypography.labelSmall.copyWith(
@@ -347,16 +399,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.card,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.lg)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSpacing.lg)),
         title: Text('Delete All Downloads?', style: AppTypography.titleLarge),
         content: Text(
           'This will remove all downloaded songs from local device storage.',
-          style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary),
+          style:
+              AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+            child: const Text('Cancel',
+                style: TextStyle(color: AppColors.textSecondary)),
           ),
           TextButton(
             onPressed: () async {
@@ -364,7 +419,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               await music.clearAllDownloads();
               await _loadStorageInfo();
             },
-            child: const Text('Clear All', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.bold)),
+            child: const Text('Clear All',
+                style: TextStyle(
+                    color: AppColors.error, fontWeight: FontWeight.bold)),
           ),
         ],
       ),

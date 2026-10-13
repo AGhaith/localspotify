@@ -14,7 +14,10 @@ void main() {
     });
 
     test('formats Duration object', () {
-      expect(DurationFormatter.formatDuration(const Duration(minutes: 3, seconds: 42)), equals('3:42'));
+      expect(
+          DurationFormatter.formatDuration(
+              const Duration(minutes: 3, seconds: 42)),
+          equals('3:42'));
     });
   });
 
@@ -31,6 +34,7 @@ void main() {
         'bitRate': 320,
         'suffix': 'flac',
         'starred': '2023-01-01T00:00:00Z',
+        'replayGain': {'trackGain': -3.21, 'trackPeak': 0.987654},
       };
 
       final track = Track.fromSubsonicJson(json);
@@ -41,6 +45,8 @@ void main() {
       expect(track.isStarred, isTrue);
       expect(track.isOffline, isFalse);
       expect(track.localCoverArtPath, isNull);
+      expect(track.replayGainTrackGain, -3.21);
+      expect(track.replayGainTrackPeak, 0.987654);
 
       final downloadedTrack = track.copyWith(
         isOffline: true,
@@ -48,19 +54,24 @@ void main() {
         localCoverArtPath: '/storage/emulated/0/music/covers/tr-100.jpg',
       );
       expect(downloadedTrack.isOffline, isTrue);
-      expect(downloadedTrack.localCoverArtPath, equals('/storage/emulated/0/music/covers/tr-100.jpg'));
+      expect(downloadedTrack.localCoverArtPath,
+          equals('/storage/emulated/0/music/covers/tr-100.jpg'));
 
       final jsonOutput = downloadedTrack.toJson();
       final restored = Track.fromJson(jsonOutput);
       expect(restored.id, equals('tr-100'));
-      expect(restored.localCoverArtPath, equals('/storage/emulated/0/music/covers/tr-100.jpg'));
+      expect(restored.localCoverArtPath,
+          equals('/storage/emulated/0/music/covers/tr-100.jpg'));
+      expect(restored.replayGainTrackGain, -3.21);
+      expect(restored.replayGainTrackPeak, 0.987654);
     });
   });
 
   group('Artist Model Tests', () {
     test('parses getArtistInfo2 JSON with biography and similar artists', () {
       final json = {
-        'biography': 'M83 is a French electronic music project formed in 2001 in Antibes.',
+        'biography':
+            'M83 is a French electronic music project formed in 2001 in Antibes.',
         'similarArtist': [
           {'id': 'art-201', 'name': 'Chvrches'},
           {'id': 'art-202', 'name': 'Phoenix'},
