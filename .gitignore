@@ -43,3 +43,10 @@ builds/
 
 # Redis persistence
 redis-data/
+
+# Generated lyrics and personal Spotify exports
+my-music/*.lrc
+my-music/*.csv
+
+# graphify knowledge graph output
+graphify-out/
