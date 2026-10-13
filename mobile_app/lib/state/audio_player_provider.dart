@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import 'package:audio_service/audio_service.dart';
+import 'package:flutter/animation.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/config/app_config.dart';
@@ -27,6 +29,10 @@ class AudioPlayerProvider extends ChangeNotifier {
   bool _hasScrobbledCurrent = false;
   String? _playbackError;
   int _playbackErrorVersion = 0;
+  bool _hasFadedOutCurrentTrack = false;
+  int _fadeOperationId = 0;
+  String? _queueSource;
+  int _userQueuedCount = 0;
 
   // Sleep Timer
   Timer? _sleepTimer;
@@ -70,6 +76,8 @@ class AudioPlayerProvider extends ChangeNotifier {
 
   double get playbackSpeed => _playbackSpeed;
   int get crossfadeDurationSeconds => _crossfadeDurationSeconds;
+  int get userQueuedCount => _userQueuedCount;
+  String? get queueSource => _queueSource;
 
   Future<void> setPlaybackSpeed(double speed) async {
     _playbackSpeed = speed;
@@ -79,6 +87,9 @@ class AudioPlayerProvider extends ChangeNotifier {
 
   void setCrossfadeDuration(int seconds) {
     _crossfadeDurationSeconds = seconds;
+    if (seconds == 0) {
+      _restoreVolume();
+    }
     notifyListeners();
   }
 
@@ -107,6 +118,7 @@ class AudioPlayerProvider extends ChangeNotifier {
       final index = prefs.getInt('last_played_index') ?? 0;
       _crossfadeDurationSeconds =
           (prefs.getDouble('crossfade_seconds') ?? 0.0).toInt();
+      _queueSource = prefs.getString('last_played_queue_source');
 
       if (trackJson != null) {
         final track =
@@ -155,6 +167,9 @@ class AudioPlayerProvider extends ChangeNotifier {
         await prefs.setString('last_played_queue',
             jsonEncode(_queue.map((t) => t.toJson()).toList()));
       }
+      if (_queueSource != null) {
+        await prefs.setString('last_played_queue_source', _queueSource!);
+      }
     } catch (_) {}
   }
 
@@ -166,17 +181,49 @@ class AudioPlayerProvider extends ChangeNotifier {
   }
 
   // ================= Crossfade Engine =================
-  Future<void> _fadeVolume(
-      {required double from,
-      required double to,
-      required Duration duration}) async {
-    const steps = 8;
-    final stepDuration =
-        Duration(milliseconds: (duration.inMilliseconds / steps).round());
+  void _cancelFade() {
+    _fadeOperationId++;
+  }
+
+  Future<void> _restoreVolume() async {
+    _cancelFade();
+    try {
+      await _audioHandler.player.setVolume(1.0);
+    } catch (_) {}
+  }
+
+  Future<void> _runFade({
+    required double from,
+    required double to,
+    required Duration duration,
+    Curve curve = Curves.easeInOutCubic,
+  }) async {
+    _cancelFade();
+    final opId = _fadeOperationId;
+    if (duration <= Duration.zero || (from - to).abs() < 0.001) {
+      try {
+        await _audioHandler.player.setVolume(to.clamp(0.0, 1.0));
+      } catch (_) {}
+      return;
+    }
+
+    final totalMs = duration.inMilliseconds;
+    const tickMs = 30;
+    final steps = (totalMs / tickMs).round().clamp(1, 500);
+    final stepDelay = Duration(milliseconds: (totalMs / steps).round().clamp(15, 60));
+
+    try {
+      await _audioHandler.player.setVolume(from.clamp(0.0, 1.0));
+    } catch (_) {}
+
     for (int i = 1; i <= steps; i++) {
-      final v = from + (to - from) * (i / steps);
-      await _audioHandler.player.setVolume(v.clamp(0.0, 1.0));
-      await Future.delayed(stepDuration);
+      await Future.delayed(stepDelay);
+      if (_fadeOperationId != opId) return; // In-flight fade cancelled
+      final t = curve.transform((i / steps).clamp(0.0, 1.0));
+      final v = (from + (to - from) * t).clamp(0.0, 1.0);
+      try {
+        await _audioHandler.player.setVolume(v);
+      } catch (_) {}
     }
   }
 
@@ -197,6 +244,7 @@ class AudioPlayerProvider extends ChangeNotifier {
         _isBuffering = buffering;
         notifyListeners();
         if (!playing) {
+          _restoreVolume();
           _savePlaybackState();
         }
       }
@@ -214,17 +262,33 @@ class AudioPlayerProvider extends ChangeNotifier {
             duration: item.duration?.inSeconds ?? 0,
           ),
         );
+        final isDifferentTrack = _currentTrack?.id != match.id;
         _currentTrack = match;
         _currentIndex = _queue.indexWhere((t) => t.id == item.id);
         if (_currentIndex == -1) _currentIndex = 0;
         _duration = item.duration ?? Duration.zero;
         _hasScrobbledCurrent = false;
+        _hasFadedOutCurrentTrack = false;
         if (_userQueuedCount > 0) {
           _userQueuedCount--;
         }
         notifyListeners();
         _savePlaybackState();
         _ensureMinimumQueue(10);
+
+        // When a new track starts playing, fade-in if crossfade > 0
+        if (isDifferentTrack) {
+          if (_crossfadeDurationSeconds > 0 && _isPlaying) {
+            final fadeInSeconds = min(_crossfadeDurationSeconds, 2);
+            _runFade(
+              from: 0.0,
+              to: 1.0,
+              duration: Duration(seconds: fadeInSeconds),
+            );
+          } else if (_crossfadeDurationSeconds == 0) {
+            _restoreVolume();
+          }
+        }
       }
     });
 
@@ -242,6 +306,28 @@ class AudioPlayerProvider extends ChangeNotifier {
           _hasScrobbledCurrent = true;
           _musicRepository.scrobble(_currentTrack!.id);
         }
+      }
+
+      // Natural track end crossfade fade-out
+      if (_crossfadeDurationSeconds > 0 &&
+          _isPlaying &&
+          !_hasFadedOutCurrentTrack &&
+          _duration.inSeconds > _crossfadeDurationSeconds) {
+        final remaining = _duration - pos;
+        final fadeThreshold = Duration(seconds: _crossfadeDurationSeconds);
+        if (remaining <= fadeThreshold && remaining > Duration.zero) {
+          _hasFadedOutCurrentTrack = true;
+          _runFade(from: 1.0, to: 0.0, duration: remaining);
+        }
+      } else if (_hasFadedOutCurrentTrack &&
+          _duration - pos > Duration(seconds: _crossfadeDurationSeconds)) {
+        // Same track restarted (repeat-one / loop): undo the end fade-out.
+        _hasFadedOutCurrentTrack = false;
+        _runFade(
+          from: 0.0,
+          to: 1.0,
+          duration: Duration(seconds: min(_crossfadeDurationSeconds, 2)),
+        );
       }
     });
 
@@ -286,7 +372,6 @@ class AudioPlayerProvider extends ChangeNotifier {
   }
 
   bool _isBackfillingQueue = false;
-  int _userQueuedCount = 0;
 
   /// Ensures that there are always at least [minRemaining] songs upcoming in the queue
   Future<void> _ensureMinimumQueue([int minRemaining = 10]) async {
@@ -334,15 +419,25 @@ class AudioPlayerProvider extends ChangeNotifier {
   Future<void> playTracks({
     required List<Track> tracks,
     int initialIndex = 0,
+    String? queueSource,
   }) async {
     if (tracks.isEmpty) return;
 
     if (_crossfadeDurationSeconds > 0 && _isPlaying) {
-      await _fadeVolume(
-          from: 1.0, to: 0.1, duration: const Duration(milliseconds: 300));
+      final fadeOutMs =
+          ((min(_crossfadeDurationSeconds.toDouble(), 0.5)).clamp(0.1, 0.5) *
+                  1000)
+              .round();
+      await _runFade(
+          from: 1.0, to: 0.0, duration: Duration(milliseconds: fadeOutMs));
     }
 
+    _queueSource = queueSource ??
+        (tracks.isNotEmpty && tracks.first.album.isNotEmpty
+            ? tracks.first.album
+            : null);
     _userQueuedCount = 0;
+    _hasFadedOutCurrentTrack = false;
     _queue = List.from(tracks);
     _currentIndex = initialIndex.clamp(0, tracks.length - 1);
     _currentTrack = _queue[_currentIndex];
@@ -362,6 +457,7 @@ class AudioPlayerProvider extends ChangeNotifier {
       debugPrint('[AudioPlayerProvider] Failed to play track: $e');
       _playbackError = e.toString();
       _playbackErrorVersion++;
+      await _restoreVolume();
       notifyListeners();
       return;
     }
@@ -369,8 +465,10 @@ class AudioPlayerProvider extends ChangeNotifier {
     _savePlaybackState();
 
     if (_crossfadeDurationSeconds > 0) {
-      await _fadeVolume(
-          from: 0.1, to: 1.0, duration: const Duration(milliseconds: 400));
+      final fadeInSeconds = min(_crossfadeDurationSeconds, 2);
+      _runFade(from: 0.0, to: 1.0, duration: Duration(seconds: fadeInSeconds));
+    } else {
+      await _restoreVolume();
     }
 
     // Auto-backfill to guarantee minimum 10 upcoming tracks
@@ -415,12 +513,31 @@ class AudioPlayerProvider extends ChangeNotifier {
       _queue.removeAt(index);
       if (index < _currentIndex) {
         _currentIndex--;
+      } else if (index > _currentIndex &&
+          index <= _currentIndex + _userQueuedCount) {
+        if (_userQueuedCount > 0) _userQueuedCount--;
       }
       notifyListeners();
       await _audioHandler.removeQueueItemAt(index);
       _savePlaybackState();
       _ensureMinimumQueue(10);
     }
+  }
+
+  Future<void> clearUserQueue() async {
+    if (_userQueuedCount <= 0) return;
+    final start = _currentIndex + 1;
+    final count = _userQueuedCount;
+    for (int i = 0; i < count; i++) {
+      if (start < _queue.length) {
+        _queue.removeAt(start);
+        await _audioHandler.removeQueueItemAt(start);
+      }
+    }
+    _userQueuedCount = 0;
+    notifyListeners();
+    _savePlaybackState();
+    _ensureMinimumQueue(10);
   }
 
   Future<void> reorderQueue(int oldIndex, int newIndex) async {
@@ -446,11 +563,13 @@ class AudioPlayerProvider extends ChangeNotifier {
   }
 
   Future<void> clearQueue() async {
+    await _restoreVolume();
     await _audioHandler.stop();
     _queue.clear();
     _currentTrack = null;
     _currentIndex = 0;
     _userQueuedCount = 0;
+    _hasFadedOutCurrentTrack = false;
     notifyListeners();
     _savePlaybackState();
   }
@@ -458,6 +577,7 @@ class AudioPlayerProvider extends ChangeNotifier {
   // ================= Playback Controls =================
   Future<void> togglePlay() async {
     if (_isPlaying) {
+      await _restoreVolume();
       await _audioHandler.pause();
       _savePlaybackState();
     } else {
@@ -466,6 +586,11 @@ class AudioPlayerProvider extends ChangeNotifier {
   }
 
   Future<void> seek(Duration position) async {
+    await _restoreVolume();
+    if (_duration > Duration.zero &&
+        position < _duration - Duration(seconds: _crossfadeDurationSeconds)) {
+      _hasFadedOutCurrentTrack = false;
+    }
     await _audioHandler.seek(position);
     _savePlaybackState();
   }
@@ -480,11 +605,15 @@ class AudioPlayerProvider extends ChangeNotifier {
 
   Future<void> skipNext() async {
     if (_crossfadeDurationSeconds > 0 && _isPlaying) {
-      await _fadeVolume(
-          from: 1.0, to: 0.15, duration: const Duration(milliseconds: 250));
+      final fadeOutMs =
+          ((min(_crossfadeDurationSeconds.toDouble(), 0.5)).clamp(0.1, 0.5) *
+                  1000)
+              .round();
+      await _runFade(
+          from: 1.0, to: 0.0, duration: Duration(milliseconds: fadeOutMs));
       await _audioHandler.skipToNext();
-      await _fadeVolume(
-          from: 0.15, to: 1.0, duration: const Duration(milliseconds: 350));
+      final fadeInSeconds = min(_crossfadeDurationSeconds, 2);
+      _runFade(from: 0.0, to: 1.0, duration: Duration(seconds: fadeInSeconds));
     } else {
       await _audioHandler.skipToNext();
     }
@@ -492,11 +621,15 @@ class AudioPlayerProvider extends ChangeNotifier {
 
   Future<void> skipPrevious() async {
     if (_crossfadeDurationSeconds > 0 && _isPlaying) {
-      await _fadeVolume(
-          from: 1.0, to: 0.15, duration: const Duration(milliseconds: 250));
+      final fadeOutMs =
+          ((min(_crossfadeDurationSeconds.toDouble(), 0.5)).clamp(0.1, 0.5) *
+                  1000)
+              .round();
+      await _runFade(
+          from: 1.0, to: 0.0, duration: Duration(milliseconds: fadeOutMs));
       await _audioHandler.skipToPrevious();
-      await _fadeVolume(
-          from: 0.15, to: 1.0, duration: const Duration(milliseconds: 350));
+      final fadeInSeconds = min(_crossfadeDurationSeconds, 2);
+      _runFade(from: 0.0, to: 1.0, duration: Duration(seconds: fadeInSeconds));
     } else {
       await _audioHandler.skipToPrevious();
     }
@@ -504,11 +637,27 @@ class AudioPlayerProvider extends ChangeNotifier {
 
   Future<void> skipToQueueItem(int index) async {
     if (index >= 0 && index < _queue.length) {
+      if (_crossfadeDurationSeconds > 0 && _isPlaying) {
+        final fadeOutMs =
+            ((min(_crossfadeDurationSeconds.toDouble(), 0.5)).clamp(0.1, 0.5) *
+                    1000)
+                .round();
+        await _runFade(
+            from: 1.0, to: 0.0, duration: Duration(milliseconds: fadeOutMs));
+      }
       _currentIndex = index;
       _currentTrack = _queue[index];
+      _hasFadedOutCurrentTrack = false;
       notifyListeners();
       await _audioHandler.skipToQueueItem(index);
       _savePlaybackState();
+      if (_crossfadeDurationSeconds > 0) {
+        final fadeInSeconds = min(_crossfadeDurationSeconds, 2);
+        _runFade(
+            from: 0.0, to: 1.0, duration: Duration(seconds: fadeInSeconds));
+      } else {
+        await _restoreVolume();
+      }
     }
   }
 
@@ -559,6 +708,7 @@ class AudioPlayerProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    _cancelFade();
     _sleepTimer?.cancel();
     _savePositionTimer?.cancel();
     _playerStateSub?.cancel();

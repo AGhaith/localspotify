@@ -11,7 +11,7 @@ import '../../../state/audio_player_provider.dart';
 import '../../../state/music_provider.dart';
 import '../../core_widgets/animated_like_button.dart';
 import '../../core_widgets/cached_cover_art.dart';
-import '../../core_widgets/circular_download_button.dart';
+import '../../core_widgets/download_action_button.dart';
 import '../../core_widgets/pressable_scale.dart';
 import '../library/album_detail_screen.dart';
 import '../settings/audio_equalizer_screen.dart';
@@ -76,110 +76,144 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
             ),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      child: SafeArea(
-        child: Column(
-          children: [
-            // Drag handle
-            Padding(
-              padding: const EdgeInsets.only(top: 12, bottom: 4),
-              child: Center(
-                child: Container(
-                  width: 40,
-                  height: 4.5,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(99),
-                  ),
+      child: Stack(
+        children: [
+          // Subtle dark scrim gradient at top of ambient background for WCAG AA contrast
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 140,
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(28)),
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.72),
+                    Colors.black.withValues(alpha: 0.35),
+                    Colors.transparent,
+                  ],
+                  stops: const [0.0, 0.55, 1.0],
                 ),
               ),
             ),
+          ),
 
-            // Header Bar
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textPrimary, size: 28),
-                    constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
-                    tooltip: 'Close',
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () {
-                        if (track.albumId != null && track.albumId!.isNotEmpty) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => AlbumDetailScreen(albumId: track.albumId!),
-                            ),
-                          );
-                        }
-                      },
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'PLAYING FROM ALBUM',
-                            style: AppTypography.labelSmall.copyWith(
-                              color: AppColors.textMuted,
-                              letterSpacing: 1.2,
-                              fontSize: 10,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            track.album,
-                            maxLines: 1,
-                            softWrap: false,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.center,
-                            style: AppTypography.titleMedium.copyWith(fontSize: 13),
-                          ),
-                        ],
+          SafeArea(
+            child: Column(
+              children: [
+                // Drag handle
+                Padding(
+                  padding: const EdgeInsets.only(top: 12, bottom: 4),
+                  child: Center(
+                    child: Container(
+                      width: 40,
+                      height: 4.5,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.25),
+                        borderRadius: BorderRadius.circular(99),
                       ),
                     ),
                   ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
+                ),
+
+                // Header Bar
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+                  child: Row(
                     children: [
-                      // Equalizer & Audio Options Icon
                       IconButton(
-                        icon: const Icon(Icons.tune_rounded, color: AppColors.textSecondary, size: 20),
-                        constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
-                        tooltip: 'Equalizer',
-                        onPressed: () => _showEqualizerSheet(context),
+                        icon: const Icon(Icons.keyboard_arrow_down_rounded,
+                            color: Colors.white, size: 28),
+                        constraints:
+                            const BoxConstraints(minWidth: 44, minHeight: 44),
+                        tooltip: 'Close',
+                        onPressed: () => Navigator.pop(context),
                       ),
-                      const SizedBox(width: AppSpacing.xs),
-                      // Sleep Timer icon
-                      IconButton(
-                        icon: Icon(
-                          Icons.bedtime_rounded,
-                          color: player.hasActiveSleepTimer ? AppColors.primary : AppColors.textSecondary,
-                          size: 20,
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                            if (track.albumId != null &&
+                                track.albumId!.isNotEmpty) {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      AlbumDetailScreen(albumId: track.albumId!),
+                                ),
+                              );
+                            }
+                          },
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'PLAYING FROM ALBUM',
+                                style: AppTypography.labelSmall.copyWith(
+                                  color: Colors.white70,
+                                  letterSpacing: 1.2,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                track.album,
+                                maxLines: 1,
+                                softWrap: false,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
+                                style: AppTypography.titleMedium.copyWith(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                        constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
-                        tooltip: 'Sleep timer',
-                        onPressed: () => _showSleepTimerDialog(context, player),
                       ),
-                      const SizedBox(width: AppSpacing.xs),
-                      // Queue Sheet Icon
-                      IconButton(
-                        icon: const Icon(Icons.queue_music_rounded, color: AppColors.textPrimary, size: 22),
-                        constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
-                        tooltip: 'Queue',
-                        onPressed: () => _showQueue(context),
+                      const SizedBox(width: AppSpacing.sm),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Equalizer & Audio Options Icon
+                          IconButton(
+                            icon: const Icon(Icons.tune_rounded,
+                                color: Colors.white70, size: 20),
+                            constraints: const BoxConstraints(
+                                minWidth: 44, minHeight: 44),
+                            tooltip: 'Equalizer',
+                            onPressed: () => _showEqualizerSheet(context),
+                          ),
+                          const SizedBox(width: AppSpacing.xs),
+                          // Sleep Timer icon
+                          IconButton(
+                            icon: Icon(
+                              Icons.bedtime_rounded,
+                              color: player.hasActiveSleepTimer
+                                  ? AppColors.primary
+                                  : Colors.white70,
+                              size: 20,
+                            ),
+                            constraints: const BoxConstraints(
+                                minWidth: 44, minHeight: 44),
+                            tooltip: 'Sleep timer',
+                            onPressed: () =>
+                                _showSleepTimerDialog(context, player),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
-              ),
-            ),
+                ),
 
             Expanded(
               child: SingleChildScrollView(
@@ -291,8 +325,17 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
                             ],
                           ),
                         ),
-                        // Circular Download Button with real-time progress ring
-                        CircularDownloadButton(track: track, size: 34),
+                        // Download Button with outline idle, progress ring, and done checkmark
+                        DownloadActionButton(
+                          isDownloaded: music.isDownloaded(track.id),
+                          isDownloading:
+                              music.downloadingEntityId == track.id,
+                          progress: music.downloadingProgress,
+                          size: 34,
+                          onDownload: () => music.downloadTrack(track),
+                          onRemove: () => music.deleteOfflineTrack(track.id),
+                          onCancel: () => music.deleteOfflineTrack(track.id),
+                        ),
                         const SizedBox(width: AppSpacing.sm),
                         // Instagram-style Popping Like Button
                         AnimatedLikeButton(track: track, size: 28),
@@ -307,12 +350,16 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
                         SliderTheme(
                           data: SliderTheme.of(context).copyWith(
                             trackHeight: 3.5,
-                            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                            overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+                            thumbShape: const RoundSliderThumbShape(
+                                enabledThumbRadius: 6),
+                            overlayShape: const RoundSliderOverlayShape(
+                                overlayRadius: 14),
                             activeTrackColor: AppColors.primary,
-                            inactiveTrackColor: Colors.white.withValues(alpha: 0.12),
+                            inactiveTrackColor:
+                                Colors.white.withValues(alpha: 0.12),
                             thumbColor: AppColors.primary,
-                            overlayColor: AppColors.primary.withValues(alpha: 0.2),
+                            overlayColor:
+                                AppColors.primary.withValues(alpha: 0.2),
                           ),
                           child: Slider(
                             value: _dragValue ?? player.progress,
@@ -326,7 +373,8 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
                           ),
                         ),
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.xs),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -335,7 +383,8 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
                                 style: AppTypography.bodySmall,
                               ),
                               Text(
-                                DurationFormatter.format(player.duration.inSeconds),
+                                DurationFormatter.format(
+                                    player.duration.inSeconds),
                                 style: AppTypography.bodySmall,
                               ),
                             ],
@@ -350,94 +399,144 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        PressableScale(
-                          onTap: () {
-                            HapticFeedback.lightImpact();
-                            player.toggleShuffle();
-                          },
-                          scaleFactor: 0.88,
-                          child: Padding(
-                            padding: const EdgeInsets.all(AppSpacing.sm),
-                            child: Icon(
-                              Icons.shuffle_rounded,
-                              color: player.isShuffle ? AppColors.primary : AppColors.textMuted,
-                              size: 22,
-                            ),
-                          ),
+                        // Animated Shuffle Button
+                        _ShuffleButton(
+                          isShuffle: player.isShuffle,
+                          onTap: player.toggleShuffle,
                         ),
-                        PressableScale(
+                        // Nudgeable Skip Previous Button (-5px slide nudge)
+                        _NudgeIconButton(
+                          icon: Icons.skip_previous_rounded,
+                          nudgeOffset: -5.0,
+                          tooltip: 'Previous',
                           onTap: () {
                             HapticFeedback.lightImpact();
                             player.skipPrevious();
                           },
-                          scaleFactor: 0.88,
-                          child: const Padding(
-                            padding: EdgeInsets.all(AppSpacing.sm),
-                            child: Icon(
-                              Icons.skip_previous_rounded,
-                              color: AppColors.textPrimary,
-                              size: 34,
-                            ),
-                          ),
+                          size: 36,
                         ),
-                        // Big Play / Pause Button with responsive micro-animation
-                        PressableScale(
+                        // Big Play / Pause Button with AnimatedIcon morph & scale press feedback
+                        _PlayerBigPlayPauseButton(
+                          isPlaying: player.isPlaying,
                           onTap: () {
                             HapticFeedback.mediumImpact();
                             player.togglePlay();
                           },
-                          scaleFactor: 0.92,
-                          child: Container(
-                            width: 64,
-                            height: 64,
-                            decoration: const BoxDecoration(
-                              color: AppColors.primary,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Center(
-                              child: Icon(
-                                player.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                                color: AppColors.textDark,
-                                size: 36,
-                              ),
-                            ),
-                          ),
                         ),
-                        PressableScale(
+                        // Nudgeable Skip Next Button (+5px slide nudge)
+                        _NudgeIconButton(
+                          icon: Icons.skip_next_rounded,
+                          nudgeOffset: 5.0,
+                          tooltip: 'Next',
                           onTap: () {
                             HapticFeedback.lightImpact();
                             player.skipNext();
                           },
-                          scaleFactor: 0.88,
-                          child: const Padding(
-                            padding: EdgeInsets.all(AppSpacing.sm),
-                            child: Icon(
-                              Icons.skip_next_rounded,
-                              color: AppColors.textPrimary,
-                              size: 34,
-                            ),
-                          ),
+                          size: 36,
                         ),
-                        PressableScale(
-                          onTap: () {
-                            HapticFeedback.lightImpact();
-                            player.toggleRepeat();
-                          },
-                          scaleFactor: 0.88,
-                          child: Padding(
-                            padding: const EdgeInsets.all(AppSpacing.sm),
-                            child: Icon(
-                              player.repeatMode == AppRepeatMode.one
-                                  ? Icons.repeat_one_rounded
-                                  : Icons.repeat_rounded,
-                              color: player.repeatMode != AppRepeatMode.off
-                                  ? AppColors.primary
-                                  : AppColors.textMuted,
-                              size: 24,
-                            ),
-                          ),
+                        // Animated Repeat Button with Repeat-One variant & active dot
+                        _RepeatButton(
+                          repeatMode: player.repeatMode,
+                          onTap: player.toggleRepeat,
                         ),
                       ],
+                    ),
+
+                    const SizedBox(height: AppSpacing.xs),
+
+                    // Secondary Bottom Bar Row: [Devices on left ... Share + Queue on right]
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.xs, vertical: AppSpacing.xs),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          // Left: Devices / Audio output affordance
+                          PressableScale(
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Playing on this device'),
+                                  duration: Duration(seconds: 2),
+                                  behavior: SnackBarBehavior.floating,
+                                  backgroundColor: AppColors.surface,
+                                ),
+                              );
+                            },
+                            scaleFactor: 0.9,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: AppSpacing.xs,
+                                  horizontal: AppSpacing.xs),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.devices_rounded,
+                                    color: AppColors.textSecondary,
+                                    size: 19,
+                                  ),
+                                  const SizedBox(width: AppSpacing.xs),
+                                  Text(
+                                    'This Device',
+                                    style: AppTypography.labelSmall.copyWith(
+                                      color: AppColors.textSecondary,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+
+                          // Right: Share and Queue icons
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.share_rounded,
+                                  color: AppColors.textSecondary,
+                                  size: 20,
+                                ),
+                                constraints: const BoxConstraints(
+                                    minWidth: 40, minHeight: 40),
+                                tooltip: 'Share',
+                                onPressed: () {
+                                  HapticFeedback.lightImpact();
+                                  Clipboard.setData(
+                                    ClipboardData(
+                                        text:
+                                            '${track.title} • ${track.artist}'),
+                                  );
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                          'Copied "${track.title}" to clipboard'),
+                                      duration: const Duration(seconds: 2),
+                                      behavior: SnackBarBehavior.floating,
+                                      backgroundColor: AppColors.surface,
+                                    ),
+                                  );
+                                },
+                              ),
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.queue_music_rounded,
+                                  color: AppColors.textPrimary,
+                                  size: 22,
+                                ),
+                                constraints: const BoxConstraints(
+                                    minWidth: 40, minHeight: 40),
+                                tooltip: 'Queue',
+                                onPressed: () => _showQueue(context),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
 
                     const SizedBox(height: AppSpacing.sectionGap),
@@ -453,7 +552,9 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
           ],
         ),
       ),
-    );
+    ],
+  ),
+);
   }
 
   void _showEqualizerSheet(BuildContext context) {
@@ -619,3 +720,297 @@ class _NowPlayingSheetState extends State<NowPlayingSheet> {
     );
   }
 }
+
+class _PlayerBigPlayPauseButton extends StatefulWidget {
+  final bool isPlaying;
+  final VoidCallback onTap;
+
+  const _PlayerBigPlayPauseButton({
+    required this.isPlaying,
+    required this.onTap,
+  });
+
+  @override
+  State<_PlayerBigPlayPauseButton> createState() =>
+      _PlayerBigPlayPauseButtonState();
+}
+
+class _PlayerBigPlayPauseButtonState extends State<_PlayerBigPlayPauseButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 240),
+    );
+    if (widget.isPlaying) {
+      _controller.value = 1.0;
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _PlayerBigPlayPauseButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.isPlaying != widget.isPlaying) {
+      final disableAnimations =
+          MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+      if (disableAnimations) {
+        _controller.value = widget.isPlaying ? 1.0 : 0.0;
+      } else {
+        if (widget.isPlaying) {
+          _controller.forward();
+        } else {
+          _controller.reverse();
+        }
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PressableScale(
+      onTap: widget.onTap,
+      scaleFactor: 0.92,
+      child: Container(
+        width: 64,
+        height: 64,
+        decoration: const BoxDecoration(
+          color: AppColors.primary,
+          shape: BoxShape.circle,
+        ),
+        child: Center(
+          child: AnimatedIcon(
+            icon: AnimatedIcons.play_pause,
+            progress: _controller,
+            color: AppColors.textDark,
+            size: 36,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NudgeIconButton extends StatefulWidget {
+  final IconData icon;
+  final double nudgeOffset;
+  final VoidCallback onTap;
+  final double size;
+  final String tooltip;
+
+  const _NudgeIconButton({
+    required this.icon,
+    required this.nudgeOffset,
+    required this.onTap,
+    this.size = 34,
+    required this.tooltip,
+  });
+
+  @override
+  State<_NudgeIconButton> createState() => _NudgeIconButtonState();
+}
+
+class _NudgeIconButtonState extends State<_NudgeIconButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 180),
+    );
+    _animation = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 0.0, end: widget.nudgeOffset)
+            .chain(CurveTween(curve: Curves.easeOutCubic)),
+        weight: 40,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: widget.nudgeOffset, end: 0.0)
+            .chain(CurveTween(curve: Curves.easeInOutCubic)),
+        weight: 60,
+      ),
+    ]).animate(_controller);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _handleTap() {
+    final disableAnimations =
+        MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+    if (!disableAnimations) {
+      _controller.forward(from: 0.0);
+    }
+    widget.onTap();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PressableScale(
+      onTap: _handleTap,
+      scaleFactor: 0.88,
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.sm),
+        child: AnimatedBuilder(
+          animation: _animation,
+          builder: (context, child) => Transform.translate(
+            offset:
+                Offset(_controller.isAnimating ? _animation.value : 0.0, 0),
+            child: child,
+          ),
+          child: Icon(
+            widget.icon,
+            color: AppColors.textPrimary,
+            size: widget.size,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ShuffleButton extends StatelessWidget {
+  final bool isShuffle;
+  final VoidCallback onTap;
+
+  const _ShuffleButton({
+    required this.isShuffle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final disableAnimations =
+        MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+
+    return PressableScale(
+      onTap: onTap,
+      scaleFactor: 0.88,
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.sm),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedSwitcher(
+              duration: disableAnimations
+                  ? Duration.zero
+                  : const Duration(milliseconds: 200),
+              transitionBuilder: (child, animation) => FadeTransition(
+                opacity: animation,
+                child: ScaleTransition(
+                  scale:
+                      Tween<double>(begin: 0.85, end: 1.0).animate(animation),
+                  child: child,
+                ),
+              ),
+              child: Icon(
+                Icons.shuffle_rounded,
+                key: ValueKey('shuffle_$isShuffle'),
+                color: isShuffle ? AppColors.primary : AppColors.textMuted,
+                size: 22,
+              ),
+            ),
+            const SizedBox(height: 3),
+            AnimatedOpacity(
+              duration: disableAnimations
+                  ? Duration.zero
+                  : const Duration(milliseconds: 200),
+              opacity: isShuffle ? 1.0 : 0.0,
+              child: Container(
+                width: 4,
+                height: 4,
+                decoration: const BoxDecoration(
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RepeatButton extends StatelessWidget {
+  final AppRepeatMode repeatMode;
+  final VoidCallback onTap;
+
+  const _RepeatButton({
+    required this.repeatMode,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final disableAnimations =
+        MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+    final isActive = repeatMode != AppRepeatMode.off;
+    final isOne = repeatMode == AppRepeatMode.one;
+    final iconData = isOne ? Icons.repeat_one_rounded : Icons.repeat_rounded;
+
+    return PressableScale(
+      onTap: onTap,
+      scaleFactor: 0.88,
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.sm),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedSwitcher(
+              duration: disableAnimations
+                  ? Duration.zero
+                  : const Duration(milliseconds: 200),
+              transitionBuilder: (child, animation) => FadeTransition(
+                opacity: animation,
+                child: ScaleTransition(
+                  scale:
+                      Tween<double>(begin: 0.85, end: 1.0).animate(animation),
+                  child: child,
+                ),
+              ),
+              child: Icon(
+                iconData,
+                key: ValueKey('repeat_$repeatMode'),
+                color: isActive ? AppColors.primary : AppColors.textMuted,
+                size: 24,
+              ),
+            ),
+            const SizedBox(height: 3),
+            AnimatedOpacity(
+              duration: disableAnimations
+                  ? Duration.zero
+                  : const Duration(milliseconds: 200),
+              opacity: isActive ? 1.0 : 0.0,
+              child: Container(
+                width: 4,
+                height: 4,
+                decoration: const BoxDecoration(
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
