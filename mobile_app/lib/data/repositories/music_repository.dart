@@ -1,3 +1,4 @@
+import '../../core/utils/text_key.dart';
 import 'dart:convert';
 import '../models/album.dart';
 import '../models/artist.dart';
@@ -194,11 +195,12 @@ class MusicRepository {
       }
 
       SpotifyTrackItem? match;
-      final cleanTitle = title.toLowerCase().replaceAll(RegExp(r'[^\w\s]'), '').trim();
+      final cleanTitle = textKey(title);
       final fullRaw = t.title.toLowerCase().trim();
       for (final imp in imported) {
-        final impTitle = imp.title.toLowerCase().replaceAll(RegExp(r'[^\w\s]'), '').trim();
+        final impTitle = textKey(imp.title);
         final impRaw = imp.title.toLowerCase().trim();
+        if (cleanTitle.isEmpty) break;
         if (impTitle == cleanTitle ||
             impRaw == cleanTitle ||
             fullRaw == '${imp.artist.toLowerCase()} - $impRaw' ||
@@ -550,13 +552,16 @@ class MusicRepository {
       final searchResult = await _apiService.search('${item.title} ${item.artist}').timeout(const Duration(milliseconds: 600));
       final serverTracks = (searchResult['tracks'] as List<Track>?) ?? [];
       if (serverTracks.isNotEmpty) {
-        final cleanTitle = item.title.toLowerCase().replaceAll(RegExp(r'[^\w\s]'), '').trim();
-        final cleanArtist = item.primaryArtist.toLowerCase().replaceAll(RegExp(r'[^\w\s]'), '').trim();
+        final cleanTitle = textKey(item.title);
+        final cleanArtist = textKey(item.primaryArtist);
         for (final st in serverTracks) {
-          final tTitle = st.title.toLowerCase().replaceAll(RegExp(r'[^\w\s]'), '').trim();
-          final tArtist = st.artist.toLowerCase().replaceAll(RegExp(r'[^\w\s]'), '').trim();
+          final tTitle = textKey(st.title);
+          final tArtist = textKey(st.artist);
           // STRICT TITLE MATCH: require exact normalized title match
-          if (tTitle == cleanTitle &&
+          if (cleanTitle.isNotEmpty &&
+              cleanArtist.isNotEmpty &&
+              tArtist.isNotEmpty &&
+              tTitle == cleanTitle &&
               (tArtist == cleanArtist || tArtist.contains(cleanArtist) || cleanArtist.contains(tArtist))) {
             // If matched server track has no cover art or unknown cover, preserve the pristine Spotify/iTunes cover
             if (item.coverUrl != null && item.coverUrl!.isNotEmpty &&

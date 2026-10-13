@@ -1,3 +1,4 @@
+import '../../core/utils/text_key.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -322,12 +323,13 @@ bool isSpotifyItemCurrent(SpotifyTrackItem item, AudioPlayerProvider player) {
   final pseudoId = 'spotify_${item.title.hashCode.abs()}_${item.artist.hashCode.abs()}';
   if (current.id == pseudoId) return true;
 
-  String clean(String s) => s.trim().toLowerCase().replaceAll(RegExp(r'[^\w\s]'), '');
+  String clean(String s) => textKey(s);
   final currentTitle = clean(current.title);
   final itemTitle = clean(item.title);
   if (currentTitle.isEmpty || currentTitle != itemTitle) return false;
 
   final currentArtist = clean(current.artist);
+  if (currentArtist.isEmpty) return false;
   final itemArtist = clean(item.artist);
   final itemPrimaryArtist = clean(item.primaryArtist);
 
