@@ -25,7 +25,8 @@ class AuthProvider extends ChangeNotifier {
   AuthStatus get status => _status;
   UserSession? get session => _session;
   String? get errorMessage => _errorMessage;
-  bool get isAuthenticated => _status == AuthStatus.authenticated && _session != null;
+  bool get isAuthenticated =>
+      _status == AuthStatus.authenticated && _session != null;
 
   Future<void> checkSavedSession() async {
     _status = AuthStatus.checking;
@@ -87,32 +88,6 @@ class AuthProvider extends ChangeNotifier {
         username: username,
         email: email,
         password: password,
-      );
-      _status = AuthStatus.authenticated;
-      notifyListeners();
-      return true;
-    } catch (e) {
-      _status = AuthStatus.error;
-      _errorMessage = e.toString().replaceAll('Exception:', '').trim();
-      notifyListeners();
-      return false;
-    }
-  }
-
-  Future<bool> loginWithGoogle({
-    required String serverUrl,
-    required String email,
-    required String displayName,
-  }) async {
-    _status = AuthStatus.checking;
-    _errorMessage = null;
-    notifyListeners();
-
-    try {
-      _session = await _authRepository.loginWithGoogle(
-        serverUrl: serverUrl,
-        email: email,
-        displayName: displayName,
       );
       _status = AuthStatus.authenticated;
       notifyListeners();

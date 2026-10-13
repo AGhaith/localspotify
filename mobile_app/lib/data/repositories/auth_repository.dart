@@ -1,3 +1,5 @@
+import 'package:dio/dio.dart';
+
 import '../models/user_session.dart';
 import '../services/subsonic_api_service.dart';
 import '../services/offline_storage_service.dart';
@@ -17,7 +19,9 @@ class AuthRepository {
 
   UserSession? getSavedSession() {
     final saved = _storageService.getSavedSession();
-    if (saved != null && saved.serverUrl.isNotEmpty && saved.username.isNotEmpty) {
+    if (saved != null &&
+        saved.serverUrl.isNotEmpty &&
+        saved.username.isNotEmpty) {
       _apiService.updateSession(saved);
       return saved;
     }
@@ -34,18 +38,6 @@ class AuthRepository {
       return saved;
     }
 
-    // If server rejected current token (e.g. password mismatch or user missing from Navidrome DB):
-    // Try reconnecting with admin credentials if available
-    try {
-      final adminSession = await login(
-        serverUrl: saved.serverUrl,
-        username: 'admin',
-        password: 'admin',
-      );
-      return adminSession;
-    } catch (_) {}
-
-    // Bad session that cannot be revived; clear it
     await logout();
     return null;
   }
@@ -94,80 +86,35 @@ class AuthRepository {
     required String email,
     required String password,
   }) async {
-    await _apiService.createUser(
-      serverUrl: serverUrl,
-      username: username,
-      password: password,
-      email: email,
-    );
+    var companionBase = serverUrl.trim();
+    if (!companionBase.startsWith('http://') &&
+        !companionBase.startsWith('https://')) {
+      companionBase = 'http://$companionBase';
+    }
+    companionBase = companionBase.replaceAll(':6767', ':6969');
+    while (companionBase.endsWith('/')) {
+      companionBase = companionBase.substring(0, companionBase.length - 1);
+    }
+
+    try {
+      await Dio().post(
+        '$companionBase/api/register',
+        data: {'username': username, 'email': email, 'password': password},
+      );
+    } on DioException catch (error) {
+      final body = error.response?.data;
+      final message =
+          body is Map ? body['statusMessage'] ?? body['message'] : null;
+      throw Exception(message is String && message.isNotEmpty
+          ? message
+          : 'Could not create account. Please try again.');
+    }
 
     return login(
       serverUrl: serverUrl,
       username: username,
       password: password,
     );
-  }
-
-  Future<UserSession> loginWithGoogle({
-    required String serverUrl,
-    required String email,
-    required String displayName,
-  }) async {
-    var cleanUrl = serverUrl.trim();
-    if (!cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) {
-      cleanUrl = 'http://$cleanUrl';
-    }
-    while (cleanUrl.endsWith('/')) {
-      cleanUrl = cleanUrl.substring(0, cleanUrl.length - 1);
-    }
-
-    final username = email.split('@').first;
-
-    // 1. Check if user already exists on server with email as password
-    bool pingOk = await _apiService.ping(
-      serverUrl: cleanUrl,
-      username: username,
-      password: email,
-    );
-
-    // 2. If not, auto-create user on Navidrome
-    if (!pingOk) {
-      await _apiService.createUser(
-        serverUrl: cleanUrl,
-        username: username,
-        password: email,
-        email: email,
-      );
-      pingOk = await _apiService.ping(
-        serverUrl: cleanUrl,
-        username: username,
-        password: email,
-      );
-    }
-
-    if (pingOk) {
-      return login(
-        serverUrl: cleanUrl,
-        username: username,
-        password: email,
-      );
-    }
-
-    // 3. Fallback: connect with admin credentials so Google login is guaranteed to work
-    final adminOk = await _apiService.ping(
-      serverUrl: cleanUrl,
-      username: 'admin',
-      password: 'admin',
-    );
-    if (adminOk) {
-      return login(
-        serverUrl: cleanUrl,
-        username: 'admin',
-        password: 'admin',
-      );
-    }
-
-    throw Exception('Could not authenticate with server. Please check your connection.');
   }
 
   Future<void> logout() async {

@@ -1,7 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:localspotify/data/models/user_session.dart';
-import 'package:localspotify/ui/core_widgets/google_auth_button.dart';
 
 void main() {
   group('Auth & UserSession Tests', () {
@@ -37,27 +35,6 @@ void main() {
       expect(restored.username, equals('gaith'));
       expect(restored.token, equals('tok123'));
       expect(restored.salt, equals('slt456'));
-    });
-
-    testWidgets('GoogleAuthButton renders with Google logo and text', (tester) async {
-      bool tapped = false;
-
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: GoogleAuthButton(
-              text: 'Continue with Google',
-              onPressed: () => tapped = true,
-            ),
-          ),
-        ),
-      );
-
-      expect(find.text('Continue with Google'), findsOneWidget);
-      expect(find.byType(GoogleLogo), findsOneWidget);
-
-      await tester.tap(find.byType(GoogleAuthButton));
-      expect(tapped, isTrue);
     });
   });
 }
